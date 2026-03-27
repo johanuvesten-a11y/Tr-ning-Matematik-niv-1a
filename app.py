@@ -365,8 +365,157 @@ if vald_kategori == "Funktioner: Grafisk lösning":
 # PLACEHOLDERS FÖR ÖVRIGA LÄGEN
 # ==========================================
 elif vald_kategori == "Funktioner: Algebraisk lösning":
-    st.title("Funktioner: Algebraisk lösning")
-    st.info("Här kommer vi bygga den algebraiska funktionslösningen (f(a)=... och f(x)=C).")
+    st.title("Algebraisk lösning av funktioner")
+    
+    # --- Funktion för att generera uppgifter ---
+    def ny_algebra_uppgift():
+        niva = st.session_state.get('alg_niva', 1)
+        st.session_state.alg_rattat = False
+        st.session_state.alg_status = None
+        
+        while True:
+            if niva == 1:
+                typ = random.choice(['f_a', 'f_x_C'])
+                if typ == 'f_a':
+                    func_type = random.choice(['linjar', 'kvadratisk', 'exponential'])
+                    a = random.randint(-10, 10)
+                    if func_type == 'linjar':
+                        k = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
+                        m = random.randint(-10, 10)
+                        svar = k*a + m
+                        k_str = "x" if k == 1 else ("-x" if k == -1 else f"{k}x")
+                        m_str = f" + {m}" if m > 0 else (f" - {-m}" if m < 0 else "")
+                        f_str = f"{k_str}{m_str}"
+                    elif func_type == 'kvadratisk':
+                        k = random.choice([-3, -2, -1, 1, 2, 3])
+                        m = random.randint(-10, 10)
+                        a = random.randint(-5, 5) 
+                        svar = k*(a**2) + m
+                        k_str = "x^2" if k == 1 else ("-x^2" if k == -1 else f"{k}x^2")
+                        m_str = f" + {m}" if m > 0 else (f" - {-m}" if m < 0 else "")
+                        f_str = f"{k_str}{m_str}"
+                    else: # exponential
+                        bas = random.choice([2, 3])
+                        a = random.randint(0, 4) 
+                        k = random.choice([-3, -2, -1, 1, 2, 3])
+                        svar = k * (bas**a)
+                        if k == 1: f_str = f"{bas}^x"
+                        elif k == -1: f_str = f"-{bas}^x"
+                        else: f_str = f"{k} \cdot {bas}^x"
+                    
+                    if abs(svar) <= 100:
+                        st.session_state.alg_fraga = f"Bestäm $f({a})$"
+                        st.session_state.alg_funktion = f"{f_str}"
+                        st.session_state.alg_svar = svar
+                        break
+                        
+                else: # f(x) = C (Bara linjära, bråk okej)
+                    b = random.choice([1, 1, 2, 3, 4]) 
+                    a_coeff = random.choice([-4, -3, -2, -1, 1, 2, 3, 4])
+                    m = random.randint(-15, 15)
+                    x = random.randint(-20, 20) * b 
+                    
+                    if b == 1:
+                        k_str = "x" if a_coeff == 1 else ("-x" if a_coeff == -1 else f"{a_coeff}x")
+                        C = a_coeff*x + m
+                        term_x = k_str
+                    else:
+                        if a_coeff == 1: term_x = f"\\frac{{x}}{{{b}}}"
+                        elif a_coeff == -1: term_x = f"-\\frac{{x}}{{{b}}}"
+                        else: term_x = f"\\frac{{{a_coeff}x}}{{{b}}}"
+                        C = int((a_coeff*x)/b + m)
+                        
+                    m_str = f" + {m}" if m > 0 else (f" - {-m}" if m < 0 else "")
+                    f_str = f"{term_x}{m_str}"
+                    
+                    if abs(x) <= 100 and abs(C) <= 100:
+                        st.session_state.alg_fraga = f"Bestäm $x$ om $f(x) = {C}$"
+                        st.session_state.alg_funktion = f"{f_str}"
+                        st.session_state.alg_svar = x
+                        break
+                        
+            else: # Niva 2: Sammansatta funktioner (bara linjära)
+                typ = random.choice(['f_f_a', 'f_f_x_C'])
+                k = random.choice([-3, -2, -1, 2, 3])
+                m = random.randint(-10, 10)
+                k_str = "x" if k == 1 else ("-x" if k == -1 else f"{k}x")
+                m_str = f" + {m}" if m > 0 else (f" - {-m}" if m < 0 else "")
+                f_str = f"{k_str}{m_str}"
+                
+                if typ == 'f_f_a':
+                    a = random.randint(-8, 8)
+                    inner = k*a + m
+                    svar = k*inner + m
+                    if abs(svar) <= 100:
+                        st.session_state.alg_fraga = f"Bestäm $f(f({a}))$"
+                        st.session_state.alg_funktion = f"{f_str}"
+                        st.session_state.alg_svar = svar
+                        break
+                else:
+                    x = random.randint(-12, 12)
+                    inner = k*x + m
+                    C = k*inner + m
+                    if abs(x) <= 100 and abs(C) <= 100:
+                        st.session_state.alg_fraga = f"Bestäm $x$ om $f(f(x)) = {C}$"
+                        st.session_state.alg_funktion = f"{f_str}"
+                        st.session_state.alg_svar = x
+                        break
+
+    # --- Initiera variabler ---
+    if 'alg_niva' not in st.session_state:
+        st.session_state.alg_niva = 1
+        ny_algebra_uppgift()
+    if 'alg_fraga' not in st.session_state:
+        ny_algebra_uppgift()
+
+    # --- UI för modulen ---
+    col_uppgift, col_installningar = st.columns([1.5, 1], gap="large")
+    
+    with col_installningar:
+        st.subheader("Inställningar")
+        aktuellt_index = 0 if st.session_state.alg_niva == 1 else 1
+        ny_niva = st.radio("Välj svårighetsgrad:", [1, 2], horizontal=True, index=aktuellt_index, key="alg_niva_val")
+        if ny_niva != st.session_state.alg_niva:
+            st.session_state.alg_niva = ny_niva
+            ny_algebra_uppgift()
+            st.rerun()
+            
+    with col_uppgift:
+        st.markdown("<div style='text-align: center; font-size: 20px; color: gray;'>Givet funktionen:</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='text-align: center; font-size: 45px; font-weight: bold; margin-bottom: 20px;'>$$ f(x) = {st.session_state.alg_funktion} $$</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='text-align: center; font-size: 32px; color: #0056b3; margin-bottom: 25px;'>{st.session_state.alg_fraga}</div>", unsafe_allow_html=True)
+        
+        svar = st.text_input("Skriv in ditt svar (heltal):", key="alg_input", value="")
+        
+        k1, k2 = st.columns(2)
+        with k1:
+            if st.button("Rätta svar", type="primary", use_container_width=True, key="alg_ratta"):
+                st.session_state.alg_rattat = True
+                if svar.strip() != "":
+                    try:
+                        anv_svar = int(svar.strip())
+                        if anv_svar == st.session_state.alg_svar:
+                            st.session_state.alg_status = 'ratt'
+                        else:
+                            st.session_state.alg_status = 'fel'
+                    except ValueError:
+                        st.session_state.alg_status = 'format'
+                else:
+                    st.session_state.alg_status = 'tom'
+        with k2:
+            if st.button("Ny uppgift", use_container_width=True, key="alg_ny"):
+                ny_algebra_uppgift()
+                st.rerun()
+
+        if st.session_state.get('alg_rattat', False):
+            if st.session_state.alg_status == 'ratt':
+                st.success("✅ Helt rätt! Bra jobbat.")
+            elif st.session_state.alg_status == 'fel':
+                st.error(f"❌ Tyvärr fel. Rätt svar var: {st.session_state.alg_svar}")
+            elif st.session_state.alg_status == 'format':
+                st.warning("⚠️ Svaret ska vara ett heltal (t.ex. 5 eller -3).")
+            elif st.session_state.alg_status == 'tom':
+                st.warning("Skriv in ett svar först.")
 
 elif vald_kategori == "Ekvationer":
     st.title("Ekvationer")
