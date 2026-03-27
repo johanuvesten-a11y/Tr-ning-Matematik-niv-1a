@@ -648,7 +648,7 @@ elif vald_kategori == "Ekvationer":
                 st.warning("Skriv in ett svar först.")
 
 # ==========================================
-# MODUL 4: Algebra (Fixad)
+# MODUL 4: Algebra (LaTeX-fixad)
 # ==========================================
 elif vald_kategori == "Algebra":
     st.title("Förenkla och faktorisera uttryck")
@@ -690,7 +690,6 @@ elif vald_kategori == "Algebra":
             if res == "": return "0"
             return res
 
-        # Nu är allt under samma "nivå"
         typ = random.choice(['minus_parentes', 'mult_parentes', 'konstant_parentes', 'faktorisera'])
         
         if typ == 'minus_parentes':
@@ -754,12 +753,10 @@ elif vald_kategori == "Algebra":
         elif typ == 'faktorisera':
             st.session_state.alg_rubrik = "Faktorisera uttrycket så långt som möjligt:"
             
-            # Bryt ut gemensam konstant faktor från Ax + B (t.ex. 25x - 15)
             k = random.choice([2, 3, 4, 5, 6, 7]) 
             a = random.choice([2, 3, 4, 5, 6])
             b = random.choice([1, 2, 3, 4, 5, 6])
             
-            # Säkerställ att vi inte kan bryta ut mer (a och b ska inte ha gemensamma delare)
             while math.gcd(a, b) != 1:
                 b = random.randint(1, 6)
                 
@@ -769,20 +766,26 @@ elif vald_kategori == "Algebra":
             
             st.session_state.alg_uttryck_str = f"{A}x {op} {B}"
             svar_ratt = f"{k}({a}x {op} {b})"
-            
-            # Felaktiga alternativ (distraktorer)
             d1 = f"{k}({a}x {op} {B})"  
             d2 = f"{a}({k}x {op} {b})" 
-            d3 = f"{k}x({a} {op} {b})" if op == '+' else f"{k}x({a} - {b})" # Sätta in ett x av misstag
+            d3 = f"{k}x({a} {op} {b})" if op == '+' else f"{k}x({a} - {b})"
+        
+        # Här lägger vi till dollartecken runt svarsalternativen för att det ska bli LaTeX-matte!
+        svar_ratt_latex = f"${svar_ratt}$"
+        d1_latex = f"${d1}$"
+        d2_latex = f"${d2}$"
+        d3_latex = f"${d3}$"
         
         # Sammanställ svarsalternativen
-        alternativ = list(set([svar_ratt, d1, d2, d3]))
+        alternativ = list(set([svar_ratt_latex, d1_latex, d2_latex, d3_latex]))
         while len(alternativ) < 4:
-            alternativ.append(alternativ[0] + " ") 
+            # Om slumpen råkar göra två likadana svar, lägger vi till ett mellanslag inuti så de är unika men ser likadana ut
+            alternativ.append(alternativ[0].replace("$", " $", 1)) 
             alternativ = list(set(alternativ))
+        
         random.shuffle(alternativ)
         st.session_state.alg_uttryck_alternativ = alternativ
-        st.session_state.alg_uttryck_svar = svar_ratt
+        st.session_state.alg_uttryck_svar = svar_ratt_latex
 
     # --- Initiera variabler ---
     if 'alg_uttryck_str' not in st.session_state:
@@ -800,16 +803,21 @@ elif vald_kategori == "Algebra":
         st.latex(st.session_state.alg_uttryck_str)
         
         st.write("")
-        valt_svar = st.radio("Välj rätt förenkling/faktorisering:", st.session_state.alg_uttryck_alternativ, key=f"alg_val_{st.session_state.alg_uttryck_uppgift_nr}")
+        # index=None betyder att ingen radio-knapp är förvald från början
+        unik_key = f"alg_val_{st.session_state.alg_uttryck_uppgift_nr}"
+        valt_svar = st.radio("Välj rätt alternativ:", st.session_state.alg_uttryck_alternativ, index=None, key=unik_key)
         
         k1, k2 = st.columns(2)
         with k1:
             if st.button("Rätta svar", type="primary", use_container_width=True, key="alg_uttryck_ratta"):
                 st.session_state.alg_uttryck_rattat = True
-                if valt_svar.strip() == st.session_state.alg_uttryck_svar.strip():
-                    st.session_state.alg_uttryck_status = 'ratt'
+                if valt_svar is not None:
+                    if valt_svar.strip() == st.session_state.alg_uttryck_svar.strip():
+                        st.session_state.alg_uttryck_status = 'ratt'
+                    else:
+                        st.session_state.alg_uttryck_status = 'fel'
                 else:
-                    st.session_state.alg_uttryck_status = 'fel'
+                    st.session_state.alg_uttryck_status = 'tom'
         with k2:
             if st.button("Ny uppgift", use_container_width=True, key="alg_uttryck_ny"):
                 ny_algebra_uttryck()
@@ -818,8 +826,10 @@ elif vald_kategori == "Algebra":
         if st.session_state.get('alg_uttryck_rattat', False):
             if st.session_state.alg_uttryck_status == 'ratt':
                 st.success("✅ Helt rätt! Bra jobbat!")
-            else:
+            elif st.session_state.alg_uttryck_status == 'fel':
                 st.error(f"❌ Tyvärr fel. Rätt svar var: {st.session_state.alg_uttryck_svar}")
+            elif st.session_state.alg_uttryck_status == 'tom':
+                st.warning("Välj ett alternativ innan du klickar på Rätta.")
 
 # ==========================================
 # MODUL 5: Blandat (Slumpas)
