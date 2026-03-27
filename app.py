@@ -524,9 +524,124 @@ elif vald_kategori == "Funktioner: Algebraisk lösning":
                 st.warning("⚠️ Svaret ska vara ett heltal (t.ex. 5 eller -3).")
             elif st.session_state.alg_status == 'tom':
                 st.warning("Skriv in ett svar först.")
+                
 elif vald_kategori == "Ekvationer":
-    st.title("Ekvationer")
-    st.info("Här kommer ekvationer med variabel på båda sidor att dyka upp.")
+    st.title("Lös ekvationerna")
+    
+    # --- Funktion för att generera ekvationer ---
+    def ny_ekvation():
+        niva = st.session_state.get('ekv_niva', 1)
+        st.session_state.ekv_rattat = False
+        st.session_state.ekv_status = None
+        
+        # Uppdaterar ID för att tömma svarsrutan säkert
+        st.session_state.ekv_uppgift_nr = st.session_state.get('ekv_uppgift_nr', 0) + 1
+        
+        while True:
+            # Vi bestämmer svaret (x) först, så det alltid blir ett heltal!
+            x = random.randint(-10, 10)
+            
+            def formatera_sida(k, m):
+                if k == 1: k_str = "x"
+                elif k == -1: k_str = "-x"
+                else: k_str = f"{k}x"
+                
+                if m > 0: return f"{k_str} + {m}"
+                elif m < 0: return f"{k_str} - {-m}"
+                else: return k_str
+
+            if niva == 1:
+                # Nivå 1: ax + b = cx + d
+                a = random.choice([-5, -4, -3, -2, 2, 3, 4, 5])
+                c = random.choice([-5, -4, -3, -2, 2, 3, 4, 5])
+                if a == c: continue # x-termerna får inte ta ut varandra
+                
+                b = random.randint(-20, 20)
+                # Räkna ut vad d måste vara för att vårt x ska stämma: a*x + b = c*x + d
+                d = a*x + b - c*x
+                
+                VL = formatera_sida(a, b)
+                HL = formatera_sida(c, d)
+                st.session_state.ekv_str = f"{VL} = {HL}"
+                st.session_state.ekv_svar = x
+                break
+                
+            else:
+                # Nivå 2: a(x + b) = cx + d
+                a = random.choice([-4, -3, -2, 2, 3, 4])
+                c = random.choice([-5, -4, -3, -2, 2, 3, 4, 5])
+                if a == c: continue
+                
+                b = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
+                # Räkna ut d för att x ska stämma: a*(x + b) = c*x + d
+                d = a*(x + b) - c*x
+                
+                b_str = f"+ {b}" if b > 0 else f"- {-b}"
+                VL = f"{a}(x {b_str})"
+                HL = formatera_sida(c, d)
+                
+                st.session_state.ekv_str = f"{VL} = {HL}"
+                st.session_state.ekv_svar = x
+                break
+
+    # --- Initiera variabler ---
+    if 'ekv_niva' not in st.session_state:
+        st.session_state.ekv_niva = 1
+    if 'ekv_uppgift_nr' not in st.session_state:
+        st.session_state.ekv_uppgift_nr = 0
+    if 'ekv_str' not in st.session_state:
+        ny_ekvation()
+
+    # --- UI för modulen ---
+    col_uppgift, col_installningar = st.columns([1.5, 1], gap="large")
+    
+    with col_installningar:
+        st.subheader("Inställningar")
+        aktuellt_index = 0 if st.session_state.ekv_niva == 1 else 1
+        ny_niva = st.radio("Välj svårighetsgrad:", [1, 2], horizontal=True, index=aktuellt_index, key="ekv_niva_val")
+        if ny_niva != st.session_state.ekv_niva:
+            st.session_state.ekv_niva = ny_niva
+            ny_ekvation()
+            st.rerun()
+            
+    with col_uppgift:
+        st.markdown("<div style='text-align: center; font-size: 20px; color: gray;'>Lös ekvationen:</div>", unsafe_allow_html=True)
+        
+        st.latex(st.session_state.ekv_str)
+        
+        st.write("") # Lite mellanrum
+        unik_key = f"ekv_input_{st.session_state.ekv_uppgift_nr}"
+        svar = st.text_input("Vad är x? (Svara med ett heltal):", key=unik_key)
+        
+        k1, k2 = st.columns(2)
+        with k1:
+            if st.button("Rätta svar", type="primary", use_container_width=True, key="ekv_ratta"):
+                st.session_state.ekv_rattat = True
+                if svar.strip() != "":
+                    try:
+                        anv_svar = int(svar.strip())
+                        if anv_svar == st.session_state.ekv_svar:
+                            st.session_state.ekv_status = 'ratt'
+                        else:
+                            st.session_state.ekv_status = 'fel'
+                    except ValueError:
+                        st.session_state.ekv_status = 'format'
+                else:
+                    st.session_state.ekv_status = 'tom'
+        with k2:
+            if st.button("Ny ekvation", use_container_width=True, key="ekv_ny"):
+                ny_ekvation()
+                st.rerun()
+
+        if st.session_state.get('ekv_rattat', False):
+            if st.session_state.ekv_status == 'ratt':
+                st.success("✅ Helt rätt! Snyggt jobbat.")
+            elif st.session_state.ekv_status == 'fel':
+                st.error(f"❌ Tyvärr fel. Rätt svar var: {st.session_state.ekv_svar}")
+            elif st.session_state.ekv_status == 'format':
+                st.warning("⚠️ Svaret ska vara ett heltal (t.ex. 5 eller -3). Skriv inte 'x=' i rutan.")
+            elif st.session_state.ekv_status == 'tom':
+                st.warning("Skriv in ett svar först.")
 
 elif vald_kategori == "Algebra":
     st.title("Algebra")
