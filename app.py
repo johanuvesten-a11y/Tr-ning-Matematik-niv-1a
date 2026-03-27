@@ -655,12 +655,10 @@ elif vald_kategori == "Algebra":
     
     # --- Funktion för att generera uppgifter ---
     def ny_algebra_uttryck():
-        niva = st.session_state.get('alg_uttryck_niva', 1)
         st.session_state.alg_uttryck_rattat = False
         st.session_state.alg_uttryck_status = None
         st.session_state.alg_uttryck_uppgift_nr = st.session_state.get('alg_uttryck_uppgift_nr', 0) + 1
         
-        # Superhjälpfunktion för att formatera k2*x^2 + k*x + m snyggt!
         def formatera_svar(k2, k, m):
             res = ""
             if k2 == 1: res += "x^2"
@@ -692,118 +690,90 @@ elif vald_kategori == "Algebra":
             if res == "": return "0"
             return res
 
-        if niva == 1:
-            # Nivå 1: Förenkling av olika slag
+        # Nu är allt under samma "nivå"
+        typ = random.choice(['minus_parentes', 'mult_parentes', 'konstant_parentes', 'faktorisera'])
+        
+        if typ == 'minus_parentes':
             st.session_state.alg_rubrik = "Förenkla uttrycket:"
-            typ = random.choice(['minus_parentes', 'mult_parentes', 'konstant_parentes'])
+            c = random.choice([2, 3, 4])
+            A = random.randint(-5, 5)
+            B = random.randint(-5, 5)
+            A_str = f"+ {A}" if A > 0 else (f"- {-A}" if A < 0 else "")
+            B_str = f"+ {B}" if B > 0 else (f"- {-B}" if B < 0 else "")
             
-            if typ == 'minus_parentes':
-                # Typ: (x + A) - (cx + B)
-                c = random.choice([2, 3, 4])
-                A = random.randint(-5, 5)
-                B = random.randint(-5, 5)
-                A_str = f"+ {A}" if A > 0 else (f"- {-A}" if A < 0 else "")
-                B_str = f"+ {B}" if B > 0 else (f"- {-B}" if B < 0 else "")
-                
-                st.session_state.alg_uttryck_str = f"(x {A_str}) - ({c}x {B_str})"
-                
-                ratt_k = 1 - c
-                ratt_m = A - B
+            st.session_state.alg_uttryck_str = f"(x {A_str}) - ({c}x {B_str})"
+            
+            ratt_k = 1 - c
+            ratt_m = A - B
+            svar_ratt = formatera_svar(0, ratt_k, ratt_m)
+            d1 = formatera_svar(0, 1 - c, A + B) 
+            d2 = formatera_svar(0, 1 + c, A - B) 
+            d3 = formatera_svar(0, 1 + c, A + B) 
+            
+        elif typ == 'konstant_parentes':
+            st.session_state.alg_rubrik = "Förenkla uttrycket:"
+            a = random.randint(2, 5)
+            c = random.randint(2, 5)
+            A = random.choice([-4, -3, -2, 2, 3, 4])
+            B = random.choice([-4, -3, -2, 2, 3, 4])
+            A_str = f"+ {A}" if A > 0 else f"- {-A}"
+            B_str = f"+ {B}" if B > 0 else f"- {-B}"
+            
+            op = random.choice(['+', '-'])
+            if op == '-':
+                st.session_state.alg_uttryck_str = f"{a}(x {A_str}) - {c}(x {B_str})"
+                ratt_k = a - c
+                ratt_m = a*A - c*B
                 svar_ratt = formatera_svar(0, ratt_k, ratt_m)
-                d1 = formatera_svar(0, 1 - c, A + B) # Teckenfel
-                d2 = formatera_svar(0, 1 + c, A - B) # Adderade x istället för minus
-                d3 = formatera_svar(0, 1 + c, A + B) # Plussade allt
+                d1 = formatera_svar(0, a - c, a*A + c*B)
+                d2 = formatera_svar(0, a - c, a*A - B)
+                d3 = formatera_svar(0, a + c, a*A - c*B)
+            else:
+                st.session_state.alg_uttryck_str = f"{a}(x {A_str}) + {c}(x {B_str})"
+                ratt_k = a + c
+                ratt_m = a*A + c*B
+                svar_ratt = formatera_svar(0, ratt_k, ratt_m)
+                d1 = formatera_svar(0, a + c, a*A - c*B)
+                d2 = formatera_svar(0, a + c, a*A + B)
+                d3 = formatera_svar(0, a - c, a*A + c*B)
                 
-            elif typ == 'konstant_parentes':
-                # Typ: a(x + A) - c(x + B)
-                a = random.randint(2, 5)
-                c = random.randint(2, 5)
-                A = random.choice([-4, -3, -2, 2, 3, 4])
-                B = random.choice([-4, -3, -2, 2, 3, 4])
-                A_str = f"+ {A}" if A > 0 else f"- {-A}"
-                B_str = f"+ {B}" if B > 0 else f"- {-B}"
-                
-                op = random.choice(['+', '-'])
-                if op == '-':
-                    st.session_state.alg_uttryck_str = f"{a}(x {A_str}) - {c}(x {B_str})"
-                    ratt_k = a - c
-                    ratt_m = a*A - c*B
-                    svar_ratt = formatera_svar(0, ratt_k, ratt_m)
-                    d1 = formatera_svar(0, a - c, a*A + c*B)
-                    d2 = formatera_svar(0, a - c, a*A - B)
-                    d3 = formatera_svar(0, a + c, a*A - c*B)
-                else:
-                    st.session_state.alg_uttryck_str = f"{a}(x {A_str}) + {c}(x {B_str})"
-                    ratt_k = a + c
-                    ratt_m = a*A + c*B
-                    svar_ratt = formatera_svar(0, ratt_k, ratt_m)
-                    d1 = formatera_svar(0, a + c, a*A - c*B)
-                    d2 = formatera_svar(0, a + c, a*A + B)
-                    d3 = formatera_svar(0, a - c, a*A + c*B)
-                    
-            elif typ == 'mult_parentes':
-                # Typ: (x + A)(x + B)
-                A = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
-                B = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
-                A_str = f"+ {A}" if A > 0 else f"- {-A}"
-                B_str = f"+ {B}" if B > 0 else f"- {-B}"
-                
-                st.session_state.alg_uttryck_str = f"(x {A_str})(x {B_str})"
-                
-                svar_ratt = formatera_svar(1, A + B, A * B)
-                d1 = formatera_svar(1, A - B, A * B)
-                d2 = formatera_svar(1, A + B, -(A * B))
-                d3 = formatera_svar(1, -A - B, A * B)
-                
-        else:
-            # Nivå 2: Faktorisering
-            st.session_state.alg_rubrik = "Faktorisera uttrycket:"
-            typ = random.choice(['bryt_ut', 'konjugat', 'kvadrering'])
+        elif typ == 'mult_parentes':
+            st.session_state.alg_rubrik = "Förenkla uttrycket:"
+            A = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
+            B = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
+            A_str = f"+ {A}" if A > 0 else f"- {-A}"
+            B_str = f"+ {B}" if B > 0 else f"- {-B}"
             
-            if typ == 'bryt_ut':
-                k = random.randint(2, 6)
-                x_term = random.choice(['x', ''])
-                m = k * random.randint(2, 5)
-                op = random.choice(['+', '-'])
-                
-                if x_term == 'x':
-                    st.session_state.alg_uttryck_str = f"{k}x^2 {op} {m}x"
-                    inner_m = int(m/k)
-                    svar_ratt = f"{k}x(x {op} {inner_m})"
-                    d1 = f"{k}(x^2 {op} {inner_m}x)"
-                    d2 = f"{k}x(x {op} {inner_m+1})"
-                    d3 = f"x({k}x {op} {m})"
-                else:
-                    st.session_state.alg_uttryck_str = f"{k}x {op} {m}"
-                    inner_m = int(m/k)
-                    svar_ratt = f"{k}(x {op} {inner_m})"
-                    d1 = f"{k}x({op} {inner_m})"
-                    d2 = f"{k}(x {op} {inner_m+1})"
-                    d3 = f"{inner_m}({k}x {op} {m})"
+            st.session_state.alg_uttryck_str = f"(x {A_str})(x {B_str})"
             
-            elif typ == 'konjugat':
-                a = random.randint(2, 9)
-                a2 = a**2
-                st.session_state.alg_uttryck_str = f"x^2 - {a2}"
-                svar_ratt = f"(x + {a})(x - {a})"
-                d1 = f"(x - {a})^2"
-                d2 = f"(x + {a})^2"
-                d3 = f"(x - {a2})(x + 1)"
+            svar_ratt = formatera_svar(1, A + B, A * B)
+            d1 = formatera_svar(1, A - B, A * B)
+            d2 = formatera_svar(1, A + B, -(A * B))
+            d3 = formatera_svar(1, -A - B, A * B)
+
+        elif typ == 'faktorisera':
+            st.session_state.alg_rubrik = "Faktorisera uttrycket så långt som möjligt:"
+            
+            # Bryt ut gemensam konstant faktor från Ax + B (t.ex. 25x - 15)
+            k = random.choice([2, 3, 4, 5, 6, 7]) 
+            a = random.choice([2, 3, 4, 5, 6])
+            b = random.choice([1, 2, 3, 4, 5, 6])
+            
+            # Säkerställ att vi inte kan bryta ut mer (a och b ska inte ha gemensamma delare)
+            while math.gcd(a, b) != 1:
+                b = random.randint(1, 6)
                 
-            elif typ == 'kvadrering':
-                a = random.randint(2, 6)
-                op = random.choice(['+', '-'])
-                a2 = a**2
-                st.session_state.alg_uttryck_str = f"x^2 {op} {2*a}x + {a2}"
-                svar_ratt = f"(x {op} {a})^2"
-                if op == '+':
-                    d1 = f"(x - {a})^2"
-                    d2 = f"(x + {a})(x - {a})"
-                    d3 = f"(x + {2*a})^2"
-                else:
-                    d1 = f"(x + {a})^2"
-                    d2 = f"(x + {a})(x - {a})"
-                    d3 = f"(x - {2*a})^2"
+            A = k * a
+            B = k * b
+            op = random.choice(['+', '-'])
+            
+            st.session_state.alg_uttryck_str = f"{A}x {op} {B}"
+            svar_ratt = f"{k}({a}x {op} {b})"
+            
+            # Felaktiga alternativ (distraktorer)
+            d1 = f"{k}({a}x {op} {B})"  
+            d2 = f"{a}({k}x {op} {b})" 
+            d3 = f"{k}x({a} {op} {b})" if op == '+' else f"{k}x({a} - {b})" # Sätta in ett x av misstag
         
         # Sammanställ svarsalternativen
         alternativ = list(set([svar_ratt, d1, d2, d3]))
@@ -815,8 +785,6 @@ elif vald_kategori == "Algebra":
         st.session_state.alg_uttryck_svar = svar_ratt
 
     # --- Initiera variabler ---
-    if 'alg_uttryck_niva' not in st.session_state:
-        st.session_state.alg_uttryck_niva = 1
     if 'alg_uttryck_str' not in st.session_state:
         ny_algebra_uttryck()
 
@@ -825,12 +793,7 @@ elif vald_kategori == "Algebra":
     
     with col_installningar:
         st.subheader("Inställningar")
-        index_val = 0 if st.session_state.alg_uttryck_niva == 1 else 1
-        ny_niva = st.radio("Välj nivå:", [1, 2], index=index_val, key="alg_uttryck_rad")
-        if ny_niva != st.session_state.alg_uttryck_niva:
-            st.session_state.alg_uttryck_niva = ny_niva
-            ny_algebra_uttryck()
-            st.rerun()
+        st.info("Nivå 2 (Kvadreringsreglerna & Konjugatregeln) är tillfälligt dold medan vi planerar om.")
             
     with col_uppgift:
         st.markdown(f"<div style='text-align: center; font-size: 20px; color: gray;'>{st.session_state.alg_rubrik}</div>", unsafe_allow_html=True)
