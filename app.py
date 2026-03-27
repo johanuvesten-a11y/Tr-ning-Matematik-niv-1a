@@ -404,7 +404,7 @@ elif vald_kategori == "Funktioner: Algebraisk lösning":
                         else: f_str = f"{k} \cdot {bas}^x"
                     
                     if abs(svar) <= 100:
-                        st.session_state.alg_fraga = f"Bestäm $f({a})$"
+                        st.session_state.alg_fraga = f"Bestäm f({a})"
                         st.session_state.alg_funktion = f"{f_str}"
                         st.session_state.alg_svar = svar
                         break
@@ -420,8 +420,8 @@ elif vald_kategori == "Funktioner: Algebraisk lösning":
                         C = a_coeff*x + m
                         term_x = k_str
                     else:
-                        if a_coeff == 1: term_x = f"\\frac{{x}}{{{b}}}"
-                        elif a_coeff == -1: term_x = f"-\\frac{{x}}{{{b}}}"
+                        if a_coeff == 1: term_x = f"\\frac{{{x}}}{{{b}}}"
+                        elif a_coeff == -1: term_x = f"-\\frac{{{x}}}{{{b}}}"
                         else: term_x = f"\\frac{{{a_coeff}x}}{{{b}}}"
                         C = int((a_coeff*x)/b + m)
                         
@@ -429,7 +429,7 @@ elif vald_kategori == "Funktioner: Algebraisk lösning":
                     f_str = f"{term_x}{m_str}"
                     
                     if abs(x) <= 100 and abs(C) <= 100:
-                        st.session_state.alg_fraga = f"Bestäm $x$ om $f(x) = {C}$"
+                        st.session_state.alg_fraga = f"Bestäm x om f(x) = {C}"
                         st.session_state.alg_funktion = f"{f_str}"
                         st.session_state.alg_svar = x
                         break
@@ -447,7 +447,7 @@ elif vald_kategori == "Funktioner: Algebraisk lösning":
                     inner = k*a + m
                     svar = k*inner + m
                     if abs(svar) <= 100:
-                        st.session_state.alg_fraga = f"Bestäm $f(f({a}))$"
+                        st.session_state.alg_fraga = f"Bestäm f(f({a}))"
                         st.session_state.alg_funktion = f"{f_str}"
                         st.session_state.alg_svar = svar
                         break
@@ -456,7 +456,7 @@ elif vald_kategori == "Funktioner: Algebraisk lösning":
                     inner = k*x + m
                     C = k*inner + m
                     if abs(x) <= 100 and abs(C) <= 100:
-                        st.session_state.alg_fraga = f"Bestäm $x$ om $f(f(x)) = {C}$"
+                        st.session_state.alg_fraga = f"Bestäm x om f(f(x)) = {C}"
                         st.session_state.alg_funktion = f"{f_str}"
                         st.session_state.alg_svar = x
                         break
@@ -482,7 +482,10 @@ elif vald_kategori == "Funktioner: Algebraisk lösning":
             
     with col_uppgift:
         st.markdown("<div style='text-align: center; font-size: 20px; color: gray;'>Givet funktionen:</div>", unsafe_allow_html=True)
-        st.markdown(f"<div style='text-align: center; font-size: 45px; font-weight: bold; margin-bottom: 20px;'>$$ f(x) = {st.session_state.alg_funktion} $$</div>", unsafe_allow_html=True)
+        
+        # Här använder vi Streamlits inbyggda funktion för matematik!
+        st.latex(f"f(x) = {st.session_state.alg_funktion}")
+        
         st.markdown(f"<div style='text-align: center; font-size: 32px; color: #0056b3; margin-bottom: 25px;'>{st.session_state.alg_fraga}</div>", unsafe_allow_html=True)
         
         svar = st.text_input("Skriv in ditt svar (heltal):", key="alg_input", value="")
@@ -516,7 +519,6 @@ elif vald_kategori == "Funktioner: Algebraisk lösning":
                 st.warning("⚠️ Svaret ska vara ett heltal (t.ex. 5 eller -3).")
             elif st.session_state.alg_status == 'tom':
                 st.warning("Skriv in ett svar först.")
-
 elif vald_kategori == "Ekvationer":
     st.title("Ekvationer")
     st.info("Här kommer ekvationer med variabel på båda sidor att dyka upp.")
