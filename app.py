@@ -1,10 +1,8 @@
 import streamlit as st
-import matplotlib
-matplotlib.use('Agg') 
-import matplotlib.pyplot as plt
 import numpy as np
 import random
 import math
+import plotly.graph_objects as go
 
 # --- Ställ in sidans layout till bred ---
 st.set_page_config(layout="wide", page_title="Matematikträning")
@@ -167,6 +165,59 @@ def skapa_graf_uppgift(niva):
     st.session_state.graf_fraga = fraga.replace('.', ',')
     st.session_state.graf_ratt_svar = [round(ans, 4) + 0.0 for ans in ratt_svar]
 
+# -- PLOTLY RIT-FUNKTION (Ny!) --
+def rita_plotly_graf(f, visa_facit=False, q_vis_type='vis_none', trace_x=None, trace_y=None, trace_alla_x=None):
+    fig = go.Figure()
+    
+    # Skapa x och y värden
+    x_plot = np.linspace(-10, 10, 400)
+    y_plot = f(x_plot)
+    
+    # Huvudgrafen (blå linje)
+    fig.add_trace(go.Scatter(
+        x=x_plot, y=y_plot, mode='lines', 
+        line=dict(color='blue', width=2), 
+        name="f(x)",
+        hovertemplate="x: %{x:.2f}<br>y: %{y:.2f}<extra></extra>"
+    ))
+    
+    # Rita in facit-linjerna om man har svarat
+    if visa_facit:
+        if q_vis_type == 'vis_find_y':
+            tx, ty = trace_x, trace_y
+            fig.add_trace(go.Scatter(
+                x=[tx, tx, 0], y=[0, ty, ty], 
+                mode='lines+markers', line=dict(color='red', dash='dash', width=2), 
+                marker=dict(size=8, color='red'), showlegend=False, hoverinfo='skip'
+            ))
+        elif q_vis_type == 'vis_find_x':
+            ty = trace_y
+            ax_list = trace_alla_x
+            if ax_list:
+                min_ax, max_ax = min(ax_list + [0]), max(ax_list + [0])
+                fig.add_trace(go.Scatter(
+                    x=[min_ax, max_ax], y=[ty, ty], 
+                    mode='lines', line=dict(color='red', dash='dash', width=2), showlegend=False, hoverinfo='skip'
+                ))
+                for ax_v in ax_list:
+                    fig.add_trace(go.Scatter(
+                        x=[ax_v, ax_v], y=[ty, 0], 
+                        mode='lines+markers', line=dict(color='red', dash='dash', width=2), 
+                        marker=dict(size=8, color='red'), showlegend=False, hoverinfo='skip'
+                    ))
+
+    # Layout och utseende
+    fig.update_layout(
+        xaxis=dict(range=[-10, 10], dtick=1, zeroline=True, zerolinewidth=2, zerolinecolor='black', gridcolor='lightgray', title='x'),
+        yaxis=dict(range=[-10, 10], dtick=1, zeroline=True, zerolinewidth=2, zerolinecolor='black', gridcolor='lightgray', title='y'),
+        showlegend=False,
+        margin=dict(l=20, r=20, t=20, b=20),
+        height=550,
+        plot_bgcolor='white',
+        hovermode='x unified'
+    )
+    return fig
+
 # -- 2. Algebraisk Funktion --
 def skapa_alg_func_uppgift(niva):
     while True:
@@ -292,7 +343,7 @@ def skapa_ekv_uppgift(niva):
             break
 
 # -- 4. Algebra Uttryck --
-def skapa_alg_uttryck_uppgift(niva=1): # Nivå 2 dold för nu
+def skapa_alg_uttryck_uppgift(niva=1):
     def formatera_svar(k2, k, m):
         res = ""
         if k2 == 1: res += "x^2"
@@ -395,7 +446,6 @@ vald_kategori = st.sidebar.radio("Vad vill du träna på?", [
     "Blandat (Slumpas)"
 ])
 
-# Rensa minnet om man byter kategori i menyn (Håller allt fräscht!)
 if 'aktuell_kategori' not in st.session_state:
     st.session_state.aktuell_kategori = vald_kategori
 
@@ -428,50 +478,16 @@ if vald_kategori == "Funktioner: Grafisk lösning":
     col_graf, col_kontroller = st.columns([1.2, 1], gap="large")
 
     with col_graf:
-        fig, ax = plt.subplots(figsize=(5, 5))
-        x_plot = np.linspace(-10, 10, 400)
-        y_plot = st.session_state.graf_f(x_plot)
-        ax.plot(x_plot, y_plot, linewidth=1.5, color='blue')
-        ax.grid(True, which='both', linestyle='-', linewidth=0.5, color='gray', alpha=0.5)
-        ax.spines['left'].set_position('zero')
-        ax.spines['left'].set_linewidth(2.0) 
-        ax.spines['bottom'].set_position('zero')
-        ax.spines['bottom'].set_linewidth(2.0) 
-        ax.spines['right'].set_color('none')
-        ax.spines['top'].set_color('none')
-        ax.xaxis.set_ticks_position('bottom')
-        ax.yaxis.set_ticks_position('left')
-        ticks = np.arange(-10, 11, 1)
-        labels = [str(x) if x in [-10, -5, 5, 10] else '' for x in ticks]
-        ax.set_xticks(ticks)
-        ax.set_xticklabels(labels)
-        ax.set_yticks(ticks)
-        ax.set_yticklabels(labels)
-        ax.set_xlim(-10, 10)
-        ax.set_ylim(-10, 10)
-        ax.text(10.2, 0, 'x', va='center', ha='left', fontsize=12, fontweight='bold')
-        ax.text(0, 10.2, 'y', va='bottom', ha='center', fontsize=12, fontweight='bold')
-
-        if st.session_state.submitted_ans:
-            q_vis_type = st.session_state.get('q_type_vis', 'vis_none')
-            if q_vis_type == 'vis_find_y':
-                tx = st.session_state.trace_x
-                ty = st.session_state.trace_y
-                ax.plot([tx, tx], [0, ty], linestyle='--', color='red', linewidth=1.2, alpha=0.7)
-                ax.plot([tx, 0], [ty, ty], linestyle='--', color='red', linewidth=1.2, alpha=0.7)
-                ax.plot(tx, ty, 'ro', markersize=6)
-            elif q_vis_type == 'vis_find_x':
-                ty = st.session_state.trace_y
-                ax_list = st.session_state.trace_alla_x
-                if ax_list:
-                    min_ax = min(ax_list + [0])
-                    max_ax = max(ax_list + [0])
-                    ax.plot([min_ax, max_ax], [ty, ty], linestyle='--', color='red', linewidth=1.2, alpha=0.7)
-                    for ax_v in ax_list:
-                        ax.plot([ax_v, ax_v], [ty, 0], linestyle='--', color='red', linewidth=1.2, alpha=0.7)
-                        ax.plot(ax_v, ty, 'ro', markersize=6)
-        st.pyplot(fig)
-        plt.close(fig) 
+        # Använd Plotly istället för Matplotlib!
+        fig = rita_plotly_graf(
+            f = st.session_state.graf_f,
+            visa_facit = st.session_state.submitted_ans,
+            q_vis_type = st.session_state.get('q_type_vis', 'vis_none'),
+            trace_x = st.session_state.get('trace_x'),
+            trace_y = st.session_state.get('trace_y'),
+            trace_alla_x = st.session_state.get('trace_alla_x')
+        )
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
     with col_kontroller:
         st.subheader("Inställningar")
@@ -672,17 +688,13 @@ elif vald_kategori == "Blandat (Slumpas)":
     st.title("Blandade uppgifter - Träna på allt!")
 
     def ny_blandad_uppgift():
-        # Slumpa fram en kategori
         st.session_state.blandat_typ = random.choice(['graf', 'alg_func', 'ekv', 'alg_uttryck'])
         niva = st.session_state.get('blandat_niva', 1)
-        
-        # Sätt unika ID:n för att rensa inmatningsfält
         st.session_state.blandat_id = st.session_state.get('blandat_id', 0) + 1
         st.session_state.blandat_rattat = False
         st.session_state.blandat_status = None
-        st.session_state.submitted_ans = False # för graferna
+        st.session_state.submitted_ans = False 
         
-        # Anropa rätt hjärna!
         if st.session_state.blandat_typ == 'graf':
             skapa_graf_uppgift(niva)
         elif st.session_state.blandat_typ == 'alg_func':
@@ -690,7 +702,7 @@ elif vald_kategori == "Blandat (Slumpas)":
         elif st.session_state.blandat_typ == 'ekv':
             skapa_ekv_uppgift(niva)
         elif st.session_state.blandat_typ == 'alg_uttryck':
-            skapa_alg_uttryck_uppgift(1) # Algebra har bara nivå 1 just nu
+            skapa_alg_uttryck_uppgift(1)
 
     if 'blandat_typ' not in st.session_state:
         st.session_state.blandat_niva = 1
@@ -708,73 +720,37 @@ elif vald_kategori == "Blandat (Slumpas)":
             st.rerun()
 
     with col_uppgift:
-        
-        # ---- UI för GRAF ----
         if st.session_state.blandat_typ == 'graf':
             st.markdown(f"<div style='font-size: 24px; font-weight: bold; color: #0056b3; margin-bottom: 20px; text-align: center;'>{st.session_state.graf_fraga}</div>", unsafe_allow_html=True)
             
-            # Ändrat från (4.5, 4.5) till (6, 6) för en större och tydligare graf
-            fig, ax = plt.subplots(figsize=(6, 6)) 
-            x_plot = np.linspace(-10, 10, 400)
-            y_plot = st.session_state.graf_f(x_plot)
-            ax.plot(x_plot, y_plot, linewidth=1.5, color='blue')
-            ax.grid(True, which='both', linestyle='-', linewidth=0.5, color='gray', alpha=0.5)
-            ax.spines['left'].set_position('zero')
-            ax.spines['left'].set_linewidth(2.0) 
-            ax.spines['bottom'].set_position('zero')
-            ax.spines['bottom'].set_linewidth(2.0) 
-            ax.spines['right'].set_color('none')
-            ax.spines['top'].set_color('none')
-            ax.xaxis.set_ticks_position('bottom')
-            ax.yaxis.set_ticks_position('left')
-            ticks = np.arange(-10, 11, 1)
-            labels = [str(x) if x in [-10, -5, 5, 10] else '' for x in ticks]
-            ax.set_xticks(ticks)
-            ax.set_xticklabels(labels)
-            ax.set_yticks(ticks)
-            ax.set_yticklabels(labels)
-            ax.set_xlim(-10, 10)
-            ax.set_ylim(-10, 10)
-            
-            if st.session_state.get('blandat_rattat', False):
-                q_vis_type = st.session_state.get('q_type_vis', 'vis_none')
-                if q_vis_type == 'vis_find_y':
-                    tx, ty = st.session_state.trace_x, st.session_state.trace_y
-                    ax.plot([tx, tx], [0, ty], '--r')
-                    ax.plot([tx, 0], [ty, ty], '--r')
-                    ax.plot(tx, ty, 'ro')
-                elif q_vis_type == 'vis_find_x':
-                    ty, ax_list = st.session_state.trace_y, st.session_state.trace_alla_x
-                    if ax_list:
-                        ax.plot([min(ax_list+[0]), max(ax_list+[0])], [ty, ty], '--r')
-                        for ax_v in ax_list:
-                            ax.plot([ax_v, ax_v], [ty, 0], '--r')
-                            ax.plot(ax_v, ty, 'ro')
-            
-            # Vi ritar nu ut grafen direkt istället för att klämma in den i en mittkolumn
-            st.pyplot(fig)
-            plt.close(fig)
+            # Plotly istället för Matplotlib här också!
+            fig = rita_plotly_graf(
+                f = st.session_state.graf_f,
+                visa_facit = st.session_state.get('blandat_rattat', False),
+                q_vis_type = st.session_state.get('q_type_vis', 'vis_none'),
+                trace_x = st.session_state.get('trace_x'),
+                trace_y = st.session_state.get('trace_y'),
+                trace_alla_x = st.session_state.get('trace_alla_x')
+            )
+            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
             antal_svar = len(st.session_state.graf_ratt_svar)
             svar_lista = []
             for i in range(antal_svar):
                 svar = st.text_input(f"Svar {i+1}:" if antal_svar > 1 else "Svar:", key=f"blandat_graf_in_{st.session_state.blandat_id}_{i}")
                 svar_lista.append(svar)
-                
-        # ---- UI för ALGEBRAISK FUNKTION ----
+
         elif st.session_state.blandat_typ == 'alg_func':
             st.markdown("<div style='text-align: center; font-size: 20px; color: gray;'>Givet funktionen:</div>", unsafe_allow_html=True)
             st.latex(f"f(x) = {st.session_state.alg_funktion}")
             st.markdown(f"<div style='text-align: center; font-size: 32px; color: #0056b3; margin-bottom: 25px;'>{st.session_state.alg_fraga}</div>", unsafe_allow_html=True)
             svar = st.text_input("Svar (heltal):", key=f"blandat_algf_in_{st.session_state.blandat_id}")
 
-        # ---- UI för EKVATIONER ----
         elif st.session_state.blandat_typ == 'ekv':
             st.markdown("<div style='text-align: center; font-size: 20px; color: gray;'>Lös ekvationen:</div>", unsafe_allow_html=True)
             st.latex(st.session_state.ekv_str)
             svar = st.text_input("Vad är x? (Heltal):", key=f"blandat_ekv_in_{st.session_state.blandat_id}")
 
-        # ---- UI för ALGEBRA UTTRYCK ----
         elif st.session_state.blandat_typ == 'alg_uttryck':
             st.markdown(f"<div style='text-align: center; font-size: 20px; color: gray;'>{st.session_state.alg_rubrik}</div>", unsafe_allow_html=True)
             st.latex(st.session_state.alg_uttryck_str)
@@ -782,13 +758,10 @@ elif vald_kategori == "Blandat (Slumpas)":
 
         st.write("")
         
-        # ---- GEMENSAMMA KNAPPAR FÖR BLANDAT LÄGE ----
         k1, k2 = st.columns(2)
         with k1:
             if st.button("Rätta svar", type="primary", use_container_width=True, key=f"btn_ratt_{st.session_state.blandat_id}"):
                 st.session_state.blandat_rattat = True
-                
-                # Rätta Graf
                 if st.session_state.blandat_typ == 'graf':
                     if all(s.strip() != "" for s in svar_lista):
                         try:
@@ -796,8 +769,6 @@ elif vald_kategori == "Blandat (Slumpas)":
                             st.session_state.blandat_status = 'ratt' if anv_svar_float == st.session_state.graf_ratt_svar else 'fel'
                         except ValueError: st.session_state.blandat_status = 'format'
                     else: st.session_state.blandat_status = 'tom'
-                
-                # Rätta Alg_func och Ekv
                 elif st.session_state.blandat_typ in ['alg_func', 'ekv']:
                     if svar.strip() != "":
                         try:
@@ -805,8 +776,6 @@ elif vald_kategori == "Blandat (Slumpas)":
                             st.session_state.blandat_status = 'ratt' if int(svar.strip()) == ratt_svar else 'fel'
                         except ValueError: st.session_state.blandat_status = 'format'
                     else: st.session_state.blandat_status = 'tom'
-                    
-                # Rätta Alg_uttryck
                 elif st.session_state.blandat_typ == 'alg_uttryck':
                     if valt_svar is not None:
                         st.session_state.blandat_status = 'ratt' if valt_svar.strip() == st.session_state.alg_uttryck_svar.strip() else 'fel'
@@ -818,7 +787,6 @@ elif vald_kategori == "Blandat (Slumpas)":
                 ny_blandad_uppgift()
                 st.rerun()
 
-        # ---- GEMENSAM FEEDBACK ----
         if st.session_state.get('blandat_rattat', False):
             if st.session_state.blandat_status == 'ratt':
                 st.success("✅ Helt rätt! Grymt!")
