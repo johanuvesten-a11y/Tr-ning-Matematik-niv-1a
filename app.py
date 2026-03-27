@@ -4,6 +4,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import random
+import math
 
 # --- Ställ in sidans layout till bred ---
 st.set_page_config(layout="wide", page_title="Matematikträning")
@@ -362,7 +363,7 @@ if vald_kategori == "Funktioner: Grafisk lösning":
                 st.warning("Fyll i alla rutor innan du rättar.")
 
 # ==========================================
-# PLACEHOLDERS FÖR ÖVRIGA LÄGEN
+# MODUL 2: Funktioner algebraisk lösning
 # ==========================================
 elif vald_kategori == "Funktioner: Algebraisk lösning":
     st.title("Algebraisk lösning av funktioner")
@@ -525,6 +526,9 @@ elif vald_kategori == "Funktioner: Algebraisk lösning":
             elif st.session_state.alg_status == 'tom':
                 st.warning("Skriv in ett svar först.")
                 
+# ==========================================
+# MODUL 3: Ekvationer
+# ==========================================
 elif vald_kategori == "Ekvationer":
     st.title("Lös ekvationerna")
     
@@ -643,12 +647,14 @@ elif vald_kategori == "Ekvationer":
             elif st.session_state.ekv_status == 'tom':
                 st.warning("Skriv in ett svar först.")
 
+# ==========================================
+# MODUL 4: Algebra (Fixad)
+# ==========================================
 elif vald_kategori == "Algebra":
     st.title("Förenkla och faktorisera uttryck")
     
     # --- Funktion för att generera uppgifter ---
     def ny_algebra_uttryck():
-        import math
         niva = st.session_state.get('alg_uttryck_niva', 1)
         st.session_state.alg_uttryck_rattat = False
         st.session_state.alg_uttryck_status = None
@@ -745,79 +751,82 @@ elif vald_kategori == "Algebra":
                 st.session_state.alg_uttryck_str = f"(x {A_str})(x {B_str})"
                 
                 svar_ratt = formatera_svar(1, A + B, A * B)
-                d1 = formatera_svar(1, 0, A * B)
-                d2 = formatera_svar(1, A + B, A + B)
-                d3 = formatera_svar(1, A - B, A * B)
-
-            alternativ = list(set([svar_ratt, d1, d2, d3]))
-            while len(alternativ) < 4:
-                nytt_alt = formatera_svar(random.choice([0, 1]), random.randint(-5, 5), random.randint(-15, 15))
-                if nytt_alt not in alternativ:
-                    alternativ.append(nytt_alt)
-                    
+                d1 = formatera_svar(1, A - B, A * B)
+                d2 = formatera_svar(1, A + B, -(A * B))
+                d3 = formatera_svar(1, -A - B, A * B)
+                
         else:
             # Nivå 2: Faktorisering
-            st.session_state.alg_rubrik = "Faktorisera uttrycket (bryt ut största möjliga faktor):"
+            st.session_state.alg_rubrik = "Faktorisera uttrycket:"
+            typ = random.choice(['bryt_ut', 'konjugat', 'kvadrering'])
             
-            # Se till att B och C inte har någon mer gemensam faktor att bryta ut
-            while True:
-                B = random.randint(1, 6)
-                C = random.choice([-8, -7, -6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6, 7, 8])
-                if math.gcd(B, abs(C)) == 1:
-                    break
-            A = random.randint(2, 9)
+            if typ == 'bryt_ut':
+                k = random.randint(2, 6)
+                x_term = random.choice(['x', ''])
+                m = k * random.randint(2, 5)
+                op = random.choice(['+', '-'])
+                
+                if x_term == 'x':
+                    st.session_state.alg_uttryck_str = f"{k}x^2 {op} {m}x"
+                    inner_m = int(m/k)
+                    svar_ratt = f"{k}x(x {op} {inner_m})"
+                    d1 = f"{k}(x^2 {op} {inner_m}x)"
+                    d2 = f"{k}x(x {op} {inner_m+1})"
+                    d3 = f"x({k}x {op} {m})"
+                else:
+                    st.session_state.alg_uttryck_str = f"{k}x {op} {m}"
+                    inner_m = int(m/k)
+                    svar_ratt = f"{k}(x {op} {inner_m})"
+                    d1 = f"{k}x({op} {inner_m})"
+                    d2 = f"{k}(x {op} {inner_m+1})"
+                    d3 = f"{inner_m}({k}x {op} {m})"
             
-            term1 = A * B
-            term2 = A * C
-            term2_str = f"+ {term2}" if term2 > 0 else f"- {-term2}"
-            
-            st.session_state.alg_uttryck_str = f"{term1}x {term2_str}"
-            
-            C_in_str = f"+ {C}" if C > 0 else f"- {-C}"
-            svar_ratt = f"{A}({B}x {C_in_str})"
-            
-            # Vanliga fel vid faktorisering
-            d1 = f"{A}({B}x - {-C if C > 0 else C})" # Teckenfel inuti parentes
-            d2 = f"{B}({A}x {C_in_str})" # Bröt ut B istället för A
-            d3 = f"{A}(x {C_in_str})" if B != 1 else f"{A*2}({B}x {C_in_str})"
-            
-            alternativ = list(set([svar_ratt, d1, d2, d3]))
-            while len(alternativ) < 4:
-                rand_A = random.randint(2, 9)
-                rand_B = random.randint(1, 6)
-                rand_C = random.choice([-8, -7, -6, 5, 6, 7, 8])
-                C_str_rand = f"+ {rand_C}" if rand_C > 0 else f"- {-rand_C}"
-                nytt_alt = f"{rand_A}({rand_B}x {C_str_rand})"
-                if nytt_alt not in alternativ:
-                    alternativ.append(nytt_alt)
-
+            elif typ == 'konjugat':
+                a = random.randint(2, 9)
+                a2 = a**2
+                st.session_state.alg_uttryck_str = f"x^2 - {a2}"
+                svar_ratt = f"(x + {a})(x - {a})"
+                d1 = f"(x - {a})^2"
+                d2 = f"(x + {a})^2"
+                d3 = f"(x - {a2})(x + 1)"
+                
+            elif typ == 'kvadrering':
+                a = random.randint(2, 6)
+                op = random.choice(['+', '-'])
+                a2 = a**2
+                st.session_state.alg_uttryck_str = f"x^2 {op} {2*a}x + {a2}"
+                svar_ratt = f"(x {op} {a})^2"
+                if op == '+':
+                    d1 = f"(x - {a})^2"
+                    d2 = f"(x + {a})(x - {a})"
+                    d3 = f"(x + {2*a})^2"
+                else:
+                    d1 = f"(x + {a})^2"
+                    d2 = f"(x + {a})(x - {a})"
+                    d3 = f"(x - {2*a})^2"
+        
+        # Sammanställ svarsalternativen
+        alternativ = list(set([svar_ratt, d1, d2, d3]))
+        while len(alternativ) < 4:
+            alternativ.append(alternativ[0] + " ") 
+            alternativ = list(set(alternativ))
         random.shuffle(alternativ)
-        st.session_state.alg_uttryck_svar = svar_ratt
         st.session_state.alg_uttryck_alternativ = alternativ
+        st.session_state.alg_uttryck_svar = svar_ratt
 
     # --- Initiera variabler ---
     if 'alg_uttryck_niva' not in st.session_state:
         st.session_state.alg_uttryck_niva = 1
-    if 'alg_uttryck_uppgift_nr' not in st.session_state:
-        st.session_state.alg_uttryck_uppgift_nr = 0
     if 'alg_uttryck_str' not in st.session_state:
         ny_algebra_uttryck()
 
-    # --- UI för modulen ---
+    # --- UI för Algebramodulen ---
     col_uppgift, col_installningar = st.columns([1.5, 1], gap="large")
     
     with col_installningar:
         st.subheader("Inställningar")
-        aktuellt_index = 0 if st.session_state.alg_uttryck_niva == 1 else 1
-        
-        # Förklarande text på Nivå-valet
-        ny_niva = st.radio("Välj typ av uppgift:", 
-                           [1, 2], 
-                           format_func=lambda x: "Nivå 1 (Förenkling)" if x == 1 else "Nivå 2 (Faktorisering)",
-                           horizontal=False, 
-                           index=aktuellt_index, 
-                           key="alg_uttryck_niva_val")
-                           
+        index_val = 0 if st.session_state.alg_uttryck_niva == 1 else 1
+        ny_niva = st.radio("Välj nivå:", [1, 2], index=index_val, key="alg_uttryck_rad")
         if ny_niva != st.session_state.alg_uttryck_niva:
             st.session_state.alg_uttryck_niva = ny_niva
             ny_algebra_uttryck()
@@ -826,32 +835,32 @@ elif vald_kategori == "Algebra":
     with col_uppgift:
         st.markdown(f"<div style='text-align: center; font-size: 20px; color: gray;'>{st.session_state.alg_rubrik}</div>", unsafe_allow_html=True)
         st.latex(st.session_state.alg_uttryck_str)
-        st.write("")
-        
-        unik_key = f"alg_uttryck_input_{st.session_state.alg_uttryck_uppgift_nr}"
-        valt_svar = st.radio("Välj rätt svar:", st.session_state.alg_uttryck_alternativ, index=None, key=unik_key)
         
         st.write("")
+        valt_svar = st.radio("Välj rätt förenkling/faktorisering:", st.session_state.alg_uttryck_alternativ, key=f"alg_val_{st.session_state.alg_uttryck_uppgift_nr}")
+        
         k1, k2 = st.columns(2)
         with k1:
             if st.button("Rätta svar", type="primary", use_container_width=True, key="alg_uttryck_ratta"):
                 st.session_state.alg_uttryck_rattat = True
-                if valt_svar is not None:
-                    if valt_svar == st.session_state.alg_uttryck_svar:
-                        st.session_state.alg_uttryck_status = 'ratt'
-                    else:
-                        st.session_state.alg_uttryck_status = 'fel'
+                if valt_svar.strip() == st.session_state.alg_uttryck_svar.strip():
+                    st.session_state.alg_uttryck_status = 'ratt'
                 else:
-                    st.session_state.alg_uttryck_status = 'tom'
+                    st.session_state.alg_uttryck_status = 'fel'
         with k2:
-            if st.button("Nytt uttryck", use_container_width=True, key="alg_uttryck_ny"):
+            if st.button("Ny uppgift", use_container_width=True, key="alg_uttryck_ny"):
                 ny_algebra_uttryck()
                 st.rerun()
-
+                
         if st.session_state.get('alg_uttryck_rattat', False):
             if st.session_state.alg_uttryck_status == 'ratt':
-                st.success("✅ Helt rätt!")
-            elif st.session_state.alg_uttryck_status == 'fel':
+                st.success("✅ Helt rätt! Bra jobbat!")
+            else:
                 st.error(f"❌ Tyvärr fel. Rätt svar var: {st.session_state.alg_uttryck_svar}")
-            elif st.session_state.alg_uttryck_status == 'tom':
-                st.warning("Välj ett alternativ innan du klickar på Rätta.")
+
+# ==========================================
+# MODUL 5: Blandat (Slumpas)
+# ==========================================
+elif vald_kategori == "Blandat (Slumpas)":
+    st.title("Blandat läge")
+    st.info("Denna modul är under uppbyggnad! Välj en annan kategori i menyn till vänster så länge.")
