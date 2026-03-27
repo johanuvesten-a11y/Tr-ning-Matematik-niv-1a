@@ -373,9 +373,8 @@ elif vald_kategori == "Funktioner: Algebraisk lösning":
         st.session_state.alg_rattat = False
         st.session_state.alg_status = None
         
-        # Töm svarsrutan!
-        if 'alg_input' in st.session_state:
-            st.session_state.alg_input = ""
+        # Det smarta sättet att tömma rutan: Vi uppdaterar ett ID varje gång!
+        st.session_state.alg_uppgift_nr = st.session_state.get('alg_uppgift_nr', 0) + 1
             
         while True:
             if niva == 1:
@@ -468,7 +467,8 @@ elif vald_kategori == "Funktioner: Algebraisk lösning":
     # --- Initiera variabler ---
     if 'alg_niva' not in st.session_state:
         st.session_state.alg_niva = 1
-        ny_algebra_uppgift()
+    if 'alg_uppgift_nr' not in st.session_state:
+        st.session_state.alg_uppgift_nr = 0
     if 'alg_fraga' not in st.session_state:
         ny_algebra_uppgift()
 
@@ -491,7 +491,9 @@ elif vald_kategori == "Funktioner: Algebraisk lösning":
         
         st.markdown(f"<div style='text-align: center; font-size: 32px; color: #0056b3; margin-bottom: 25px;'>{st.session_state.alg_fraga}</div>", unsafe_allow_html=True)
         
-        svar = st.text_input("Skriv in ditt svar (heltal):", key="alg_input")
+        # Här använder vi det nya unika ID:t så att rutan alltid börjar tom för en ny uppgift!
+        unik_key = f"alg_input_{st.session_state.alg_uppgift_nr}"
+        svar = st.text_input("Skriv in ditt svar (heltal):", key=unik_key)
         
         k1, k2 = st.columns(2)
         with k1:
@@ -522,7 +524,6 @@ elif vald_kategori == "Funktioner: Algebraisk lösning":
                 st.warning("⚠️ Svaret ska vara ett heltal (t.ex. 5 eller -3).")
             elif st.session_state.alg_status == 'tom':
                 st.warning("Skriv in ett svar först.")
-
 elif vald_kategori == "Ekvationer":
     st.title("Ekvationer")
     st.info("Här kommer ekvationer med variabel på båda sidor att dyka upp.")
