@@ -644,82 +644,153 @@ elif vald_kategori == "Ekvationer":
                 st.warning("Skriv in ett svar först.")
 
 elif vald_kategori == "Algebra":
-    st.title("Förenkla algebraiska uttryck")
+    st.title("Förenkla och faktorisera uttryck")
     
     # --- Funktion för att generera uppgifter ---
     def ny_algebra_uttryck():
+        import math
         niva = st.session_state.get('alg_uttryck_niva', 1)
         st.session_state.alg_uttryck_rattat = False
         st.session_state.alg_uttryck_status = None
         st.session_state.alg_uttryck_uppgift_nr = st.session_state.get('alg_uttryck_uppgift_nr', 0) + 1
         
-        # Hjälpfunktion för att formatera kx + m snyggt i flervalsalternativen
-        def formatera_svar(k, m):
-            if k == 0 and m == 0: return "0"
-            if k == 0: return str(m)
+        # Superhjälpfunktion för att formatera k2*x^2 + k*x + m snyggt!
+        def formatera_svar(k2, k, m):
+            res = ""
+            if k2 == 1: res += "x^2"
+            elif k2 == -1: res += "-x^2"
+            elif k2 != 0: res += f"{k2}x^2"
             
-            if k == 1: k_str = "x"
-            elif k == -1: k_str = "-x"
-            else: k_str = f"{k}x"
-            
-            if m == 0: return k_str
-            if m > 0: return f"{k_str} + {m}"
-            return f"{k_str} - {-m}"
+            if k != 0:
+                if k == 1:
+                    if res: res += " + x"
+                    else: res += "x"
+                elif k == -1:
+                    if res: res += " - x"
+                    else: res += "-x"
+                elif k > 0:
+                    if res: res += f" + {k}x"
+                    else: res += f"{k}x"
+                elif k < 0:
+                    if res: res += f" - {-k}x"
+                    else: res += f"{k}x"
+                    
+            if m != 0:
+                if m > 0:
+                    if res: res += f" + {m}"
+                    else: res += f"{m}"
+                elif m < 0:
+                    if res: res += f" - {-m}"
+                    else: res += f"{m}"
+                    
+            if res == "": return "0"
+            return res
 
         if niva == 1:
-            # Nivå 1: Förenkla ax + b + cx + d
-            a = random.randint(1, 6)
-            b = random.randint(-10, 10)
-            c = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
-            d = random.randint(-10, 10)
+            # Nivå 1: Förenkling av olika slag
+            st.session_state.alg_rubrik = "Förenkla uttrycket:"
+            typ = random.choice(['minus_parentes', 'mult_parentes', 'konstant_parentes'])
             
-            # Bygg uppgiftssträngen (t.ex. 3x - 5 - 2x + 8)
-            a_str = f"{a}x" if a != 1 else "x"
-            b_str = f"+ {b}" if b >= 0 else f"- {-b}"
-            c_str = f"+ {c}x" if c > 0 else (f"+ x" if c==1 else (f"- x" if c==-1 else f"- {-c}x"))
-            d_str = f"+ {d}" if d >= 0 else f"- {-d}"
-            
-            st.session_state.alg_uttryck_str = f"{a_str} {b_str} {c_str} {d_str}"
-            
-            ratt_k = a + c
-            ratt_m = b + d
-            svar_ratt = formatera_svar(ratt_k, ratt_m)
-            
-            # Skapa felaktiga alternativ (distraktorer)
-            d1 = formatera_svar(a - c, b + d)
-            d2 = formatera_svar(a + c, b - d)
-            d3 = formatera_svar(a + c + 1, b + d - 2)
-            
-        else:
-            # Nivå 2: Multiplicera in och förenkla a(x + b) - c(x + d)
-            a = random.randint(2, 5)
-            b = random.choice([-5, -4, -3, -2, 2, 3, 4, 5])
-            c = random.randint(2, 5)
-            d = random.choice([-5, -4, -3, -2, 2, 3, 4, 5])
-            
-            b_str = f"+ {b}" if b > 0 else f"- {-b}"
-            d_str = f"+ {d}" if d > 0 else f"- {-d}"
-            
-            st.session_state.alg_uttryck_str = f"{a}(x {b_str}) - {c}(x {d_str})"
-            
-            ratt_k = a - c
-            ratt_m = a*b - c*d
-            svar_ratt = formatera_svar(ratt_k, ratt_m)
-            
-            # Skapa felaktiga alternativ utifrån vanliga teckenfel
-            d1 = formatera_svar(a - c, a*b - c)      # Glömde multiplicera in c i d
-            d2 = formatera_svar(a - c, a*b + c*d)    # Glömde byta tecken (minus framför parentes)
-            d3 = formatera_svar(a + c, a*b - c*d)    # Adderade x-termerna istället för subtraktion
-            
-        # Samla och blanda alternativen
-        alternativ = list(set([svar_ratt, d1, d2, d3]))
-        
-        # Säkerställ att vi har exakt 4 unika alternativ (ifall slumpen råkade skapa två likadana)
-        while len(alternativ) < 4:
-            nytt_alt = formatera_svar(random.randint(-5, 5), random.randint(-15, 15))
-            if nytt_alt not in alternativ:
-                alternativ.append(nytt_alt)
+            if typ == 'minus_parentes':
+                # Typ: (x + A) - (cx + B)
+                c = random.choice([2, 3, 4])
+                A = random.randint(-5, 5)
+                B = random.randint(-5, 5)
+                A_str = f"+ {A}" if A > 0 else (f"- {-A}" if A < 0 else "")
+                B_str = f"+ {B}" if B > 0 else (f"- {-B}" if B < 0 else "")
                 
+                st.session_state.alg_uttryck_str = f"(x {A_str}) - ({c}x {B_str})"
+                
+                ratt_k = 1 - c
+                ratt_m = A - B
+                svar_ratt = formatera_svar(0, ratt_k, ratt_m)
+                d1 = formatera_svar(0, 1 - c, A + B) # Teckenfel
+                d2 = formatera_svar(0, 1 + c, A - B) # Adderade x istället för minus
+                d3 = formatera_svar(0, 1 + c, A + B) # Plussade allt
+                
+            elif typ == 'konstant_parentes':
+                # Typ: a(x + A) - c(x + B)
+                a = random.randint(2, 5)
+                c = random.randint(2, 5)
+                A = random.choice([-4, -3, -2, 2, 3, 4])
+                B = random.choice([-4, -3, -2, 2, 3, 4])
+                A_str = f"+ {A}" if A > 0 else f"- {-A}"
+                B_str = f"+ {B}" if B > 0 else f"- {-B}"
+                
+                op = random.choice(['+', '-'])
+                if op == '-':
+                    st.session_state.alg_uttryck_str = f"{a}(x {A_str}) - {c}(x {B_str})"
+                    ratt_k = a - c
+                    ratt_m = a*A - c*B
+                    svar_ratt = formatera_svar(0, ratt_k, ratt_m)
+                    d1 = formatera_svar(0, a - c, a*A + c*B)
+                    d2 = formatera_svar(0, a - c, a*A - B)
+                    d3 = formatera_svar(0, a + c, a*A - c*B)
+                else:
+                    st.session_state.alg_uttryck_str = f"{a}(x {A_str}) + {c}(x {B_str})"
+                    ratt_k = a + c
+                    ratt_m = a*A + c*B
+                    svar_ratt = formatera_svar(0, ratt_k, ratt_m)
+                    d1 = formatera_svar(0, a + c, a*A - c*B)
+                    d2 = formatera_svar(0, a + c, a*A + B)
+                    d3 = formatera_svar(0, a - c, a*A + c*B)
+                    
+            elif typ == 'mult_parentes':
+                # Typ: (x + A)(x + B)
+                A = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
+                B = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
+                A_str = f"+ {A}" if A > 0 else f"- {-A}"
+                B_str = f"+ {B}" if B > 0 else f"- {-B}"
+                
+                st.session_state.alg_uttryck_str = f"(x {A_str})(x {B_str})"
+                
+                svar_ratt = formatera_svar(1, A + B, A * B)
+                d1 = formatera_svar(1, 0, A * B)
+                d2 = formatera_svar(1, A + B, A + B)
+                d3 = formatera_svar(1, A - B, A * B)
+
+            alternativ = list(set([svar_ratt, d1, d2, d3]))
+            while len(alternativ) < 4:
+                nytt_alt = formatera_svar(random.choice([0, 1]), random.randint(-5, 5), random.randint(-15, 15))
+                if nytt_alt not in alternativ:
+                    alternativ.append(nytt_alt)
+                    
+        else:
+            # Nivå 2: Faktorisering
+            st.session_state.alg_rubrik = "Faktorisera uttrycket (bryt ut största möjliga faktor):"
+            
+            # Se till att B och C inte har någon mer gemensam faktor att bryta ut
+            while True:
+                B = random.randint(1, 6)
+                C = random.choice([-8, -7, -6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6, 7, 8])
+                if math.gcd(B, abs(C)) == 1:
+                    break
+            A = random.randint(2, 9)
+            
+            term1 = A * B
+            term2 = A * C
+            term2_str = f"+ {term2}" if term2 > 0 else f"- {-term2}"
+            
+            st.session_state.alg_uttryck_str = f"{term1}x {term2_str}"
+            
+            C_in_str = f"+ {C}" if C > 0 else f"- {-C}"
+            svar_ratt = f"{A}({B}x {C_in_str})"
+            
+            # Vanliga fel vid faktorisering
+            d1 = f"{A}({B}x - {-C if C > 0 else C})" # Teckenfel inuti parentes
+            d2 = f"{B}({A}x {C_in_str})" # Bröt ut B istället för A
+            d3 = f"{A}(x {C_in_str})" if B != 1 else f"{A*2}({B}x {C_in_str})"
+            
+            alternativ = list(set([svar_ratt, d1, d2, d3]))
+            while len(alternativ) < 4:
+                rand_A = random.randint(2, 9)
+                rand_B = random.randint(1, 6)
+                rand_C = random.choice([-8, -7, -6, 5, 6, 7, 8])
+                C_str_rand = f"+ {rand_C}" if rand_C > 0 else f"- {-rand_C}"
+                nytt_alt = f"{rand_A}({rand_B}x {C_str_rand})"
+                if nytt_alt not in alternativ:
+                    alternativ.append(nytt_alt)
+
         random.shuffle(alternativ)
         st.session_state.alg_uttryck_svar = svar_ratt
         st.session_state.alg_uttryck_alternativ = alternativ
@@ -738,20 +809,27 @@ elif vald_kategori == "Algebra":
     with col_installningar:
         st.subheader("Inställningar")
         aktuellt_index = 0 if st.session_state.alg_uttryck_niva == 1 else 1
-        ny_niva = st.radio("Välj svårighetsgrad:", [1, 2], horizontal=True, index=aktuellt_index, key="alg_uttryck_niva_val")
+        
+        # Förklarande text på Nivå-valet
+        ny_niva = st.radio("Välj typ av uppgift:", 
+                           [1, 2], 
+                           format_func=lambda x: "Nivå 1 (Förenkling)" if x == 1 else "Nivå 2 (Faktorisering)",
+                           horizontal=False, 
+                           index=aktuellt_index, 
+                           key="alg_uttryck_niva_val")
+                           
         if ny_niva != st.session_state.alg_uttryck_niva:
             st.session_state.alg_uttryck_niva = ny_niva
             ny_algebra_uttryck()
             st.rerun()
             
     with col_uppgift:
-        st.markdown("<div style='text-align: center; font-size: 20px; color: gray;'>Förenkla uttrycket:</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='text-align: center; font-size: 20px; color: gray;'>{st.session_state.alg_rubrik}</div>", unsafe_allow_html=True)
         st.latex(st.session_state.alg_uttryck_str)
         st.write("")
         
-        # Flervalsfråga! index=None gör att ingen knapp är förvald.
         unik_key = f"alg_uttryck_input_{st.session_state.alg_uttryck_uppgift_nr}"
-        valt_svar = st.radio("Välj det korrekt förenklade uttrycket:", st.session_state.alg_uttryck_alternativ, index=None, key=unik_key)
+        valt_svar = st.radio("Välj rätt svar:", st.session_state.alg_uttryck_alternativ, index=None, key=unik_key)
         
         st.write("")
         k1, k2 = st.columns(2)
@@ -772,12 +850,8 @@ elif vald_kategori == "Algebra":
 
         if st.session_state.get('alg_uttryck_rattat', False):
             if st.session_state.alg_uttryck_status == 'ratt':
-                st.success("✅ Helt rätt! Bra förenklat.")
+                st.success("✅ Helt rätt!")
             elif st.session_state.alg_uttryck_status == 'fel':
                 st.error(f"❌ Tyvärr fel. Rätt svar var: {st.session_state.alg_uttryck_svar}")
             elif st.session_state.alg_uttryck_status == 'tom':
                 st.warning("Välj ett alternativ innan du klickar på Rätta.")
-
-elif vald_kategori == "Blandat (Slumpas)":
-    st.title("Blandat!")
-    st.info("Detta läge kommer att slumpa bland alla aktiverade delar ovan när de är färdiga.")
