@@ -708,11 +708,13 @@ elif vald_kategori == "Blandat (Slumpas)":
             st.rerun()
 
     with col_uppgift:
+        
         # ---- UI för GRAF ----
         if st.session_state.blandat_typ == 'graf':
             st.markdown(f"<div style='font-size: 24px; font-weight: bold; color: #0056b3; margin-bottom: 20px; text-align: center;'>{st.session_state.graf_fraga}</div>", unsafe_allow_html=True)
             
-            fig, ax = plt.subplots(figsize=(4.5, 4.5))
+            # Ändrat från (4.5, 4.5) till (6, 6) för en större och tydligare graf
+            fig, ax = plt.subplots(figsize=(6, 6)) 
             x_plot = np.linspace(-10, 10, 400)
             y_plot = st.session_state.graf_f(x_plot)
             ax.plot(x_plot, y_plot, linewidth=1.5, color='blue')
@@ -749,8 +751,8 @@ elif vald_kategori == "Blandat (Slumpas)":
                             ax.plot([ax_v, ax_v], [ty, 0], '--r')
                             ax.plot(ax_v, ty, 'ro')
             
-            c1, c2, c3 = st.columns([1, 2, 1])
-            with c2: st.pyplot(fig)
+            # Vi ritar nu ut grafen direkt istället för att klämma in den i en mittkolumn
+            st.pyplot(fig)
             plt.close(fig)
 
             antal_svar = len(st.session_state.graf_ratt_svar)
@@ -758,7 +760,7 @@ elif vald_kategori == "Blandat (Slumpas)":
             for i in range(antal_svar):
                 svar = st.text_input(f"Svar {i+1}:" if antal_svar > 1 else "Svar:", key=f"blandat_graf_in_{st.session_state.blandat_id}_{i}")
                 svar_lista.append(svar)
-
+                
         # ---- UI för ALGEBRAISK FUNKTION ----
         elif st.session_state.blandat_typ == 'alg_func':
             st.markdown("<div style='text-align: center; font-size: 20px; color: gray;'>Givet funktionen:</div>", unsafe_allow_html=True)
