@@ -751,22 +751,12 @@ elif vald_kategori == "Blandat (Slumpas)":
         st.session_state.blandat_niva = 1
         ny_blandad_uppgift()
 
-    col_uppgift, col_installningar = st.columns([1.5, 1], gap="large")
+    # Vi skapar en layout med vänster och höger spalt precis som i Modul 1
+    col_vanster, col_hoger = st.columns([1.2, 1], gap="large")
 
-    with col_installningar:
-        st.subheader("Inställningar")
-        aktuellt_index = 0 if st.session_state.blandat_niva == 1 else 1
-        ny_niva = st.radio("Välj svårighetsgrad:", [1, 2], horizontal=True, index=aktuellt_index, key="blandat_niva_val")
-        if ny_niva != st.session_state.blandat_niva:
-            st.session_state.blandat_niva = ny_niva
-            ny_blandad_uppgift()
-            st.rerun()
-
-    with col_uppgift:
+    with col_vanster:
+        # HÄR RITAR VI UT BILDEN/GRAFEN ELLER FORMLERNA
         if st.session_state.blandat_typ == 'graf':
-            st.markdown(f"<div style='font-size: 24px; font-weight: bold; color: #0056b3; margin-bottom: 20px; text-align: center;'>{st.session_state.graf_fraga}</div>", unsafe_allow_html=True)
-            
-            # Plotly istället för Matplotlib här också!
             fig = rita_plotly_graf(
                 f = st.session_state.graf_f,
                 visa_facit = st.session_state.get('blandat_rattat', False),
@@ -777,26 +767,52 @@ elif vald_kategori == "Blandat (Slumpas)":
             )
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
+        elif st.session_state.blandat_typ == 'alg_func':
+            st.markdown("<div style='text-align: center; font-size: 20px; color: gray; margin-top: 50px;'>Givet funktionen:</div>", unsafe_allow_html=True)
+            st.latex(f"f(x) = {st.session_state.alg_funktion}")
+
+        elif st.session_state.blandat_typ == 'ekv':
+            st.markdown("<div style='text-align: center; font-size: 20px; color: gray; margin-top: 50px;'>Lös ekvationen:</div>", unsafe_allow_html=True)
+            st.latex(st.session_state.ekv_str)
+
+        elif st.session_state.blandat_typ == 'alg_uttryck':
+            st.markdown(f"<div style='text-align: center; font-size: 20px; color: gray; margin-top: 50px;'>{st.session_state.alg_rubrik}</div>", unsafe_allow_html=True)
+            st.latex(st.session_state.alg_uttryck_str)
+
+    with col_hoger:
+        # HÄR LÄGGER VI FRÅGAN, SVARSRUTOR OCH KNAPPAR
+        st.subheader("Inställningar")
+        aktuellt_index = 0 if st.session_state.blandat_niva == 1 else 1
+        ny_niva = st.radio("Välj svårighetsgrad:", [1, 2], horizontal=True, index=aktuellt_index, key="blandat_niva_val")
+        if ny_niva != st.session_state.blandat_niva:
+            st.session_state.blandat_niva = ny_niva
+            ny_blandad_uppgift()
+            st.rerun()
+
+        st.divider()
+        st.subheader("Uppgift")
+        
+        # Variabler för att hålla reda på inmatningen
+        svar_lista = []
+        svar = ""
+        valt_svar = None
+
+        if st.session_state.blandat_typ == 'graf':
+            st.markdown(f"<div style='font-size: 32px; font-weight: bold; color: #0056b3; margin-bottom: 20px;'>{st.session_state.graf_fraga}</div>", unsafe_allow_html=True)
             antal_svar = len(st.session_state.graf_ratt_svar)
-            svar_lista = []
             for i in range(antal_svar):
-                svar = st.text_input(f"Svar {i+1}:" if antal_svar > 1 else "Svar:", key=f"blandat_graf_in_{st.session_state.blandat_id}_{i}")
-                svar_lista.append(svar)
+                tmp_svar = st.text_input(f"Svar {i+1}:" if antal_svar > 1 else "Ditt svar:", key=f"blandat_graf_in_{st.session_state.blandat_id}_{i}")
+                svar_lista.append(tmp_svar)
 
         elif st.session_state.blandat_typ == 'alg_func':
-            st.markdown("<div style='text-align: center; font-size: 20px; color: gray;'>Givet funktionen:</div>", unsafe_allow_html=True)
-            st.latex(f"f(x) = {st.session_state.alg_funktion}")
-            st.markdown(f"<div style='text-align: center; font-size: 32px; color: #0056b3; margin-bottom: 25px;'>{st.session_state.alg_fraga}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='font-size: 32px; font-weight: bold; color: #0056b3; margin-bottom: 25px;'>{st.session_state.alg_fraga}</div>", unsafe_allow_html=True)
             svar = st.text_input("Svar (heltal):", key=f"blandat_algf_in_{st.session_state.blandat_id}")
 
         elif st.session_state.blandat_typ == 'ekv':
-            st.markdown("<div style='text-align: center; font-size: 20px; color: gray;'>Lös ekvationen:</div>", unsafe_allow_html=True)
-            st.latex(st.session_state.ekv_str)
+            st.markdown("<div style='font-size: 32px; font-weight: bold; color: transparent; margin-bottom: 25px;'>&nbsp;</div>", unsafe_allow_html=True) # Fyllnad för layout
             svar = st.text_input("Vad är x? (Heltal):", key=f"blandat_ekv_in_{st.session_state.blandat_id}")
 
         elif st.session_state.blandat_typ == 'alg_uttryck':
-            st.markdown(f"<div style='text-align: center; font-size: 20px; color: gray;'>{st.session_state.alg_rubrik}</div>", unsafe_allow_html=True)
-            st.latex(st.session_state.alg_uttryck_str)
             valt_svar = st.radio("Välj rätt alternativ:", st.session_state.alg_uttryck_alternativ, index=None, key=f"blandat_algu_in_{st.session_state.blandat_id}")
 
         st.write("")
@@ -805,6 +821,7 @@ elif vald_kategori == "Blandat (Slumpas)":
         with k1:
             if st.button("Rätta svar", type="primary", use_container_width=True, key=f"btn_ratt_{st.session_state.blandat_id}"):
                 st.session_state.blandat_rattat = True
+                
                 if st.session_state.blandat_typ == 'graf':
                     if all(s.strip() != "" for s in svar_lista):
                         try:
@@ -812,6 +829,7 @@ elif vald_kategori == "Blandat (Slumpas)":
                             st.session_state.blandat_status = 'ratt' if anv_svar_float == st.session_state.graf_ratt_svar else 'fel'
                         except ValueError: st.session_state.blandat_status = 'format'
                     else: st.session_state.blandat_status = 'tom'
+                        
                 elif st.session_state.blandat_typ in ['alg_func', 'ekv']:
                     if svar.strip() != "":
                         try:
@@ -819,6 +837,7 @@ elif vald_kategori == "Blandat (Slumpas)":
                             st.session_state.blandat_status = 'ratt' if int(svar.strip()) == ratt_svar else 'fel'
                         except ValueError: st.session_state.blandat_status = 'format'
                     else: st.session_state.blandat_status = 'tom'
+                        
                 elif st.session_state.blandat_typ == 'alg_uttryck':
                     if valt_svar is not None:
                         st.session_state.blandat_status = 'ratt' if valt_svar.strip() == st.session_state.alg_uttryck_svar.strip() else 'fel'
