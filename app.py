@@ -165,22 +165,19 @@ def skapa_graf_uppgift(niva):
     st.session_state.graf_fraga = fraga.replace('.', ',')
     st.session_state.graf_ratt_svar = [round(ans, 4) + 0.0 for ans in ratt_svar]
 
-# -- PLOTLY RIT-FUNKTION (Pilar exakt i spetsen!) --
+# -- PLOTLY RIT-FUNKTION --
 def rita_plotly_graf(f, visa_facit=False, q_vis_type='vis_none', trace_x=None, trace_y=None, trace_alla_x=None):
     fig = go.Figure()
     
-    # Skapa x och y värden
     x_plot = np.linspace(-10, 10, 400)
     y_plot = f(x_plot)
     
-    # Huvudgrafen (blå linje). hoverinfo='skip' stänger av muspekaren här.
     fig.add_trace(go.Scatter(
         x=x_plot, y=y_plot, mode='lines', 
         line=dict(color='blue', width=2), 
         hoverinfo='skip'
     ))
     
-    # Rita in facit-linjerna om man har svarat
     if visa_facit:
         if q_vis_type == 'vis_find_y':
             tx, ty = trace_x, trace_y
@@ -205,40 +202,29 @@ def rita_plotly_graf(f, visa_facit=False, q_vis_type='vis_none', trace_x=None, t
                         marker=dict(size=8, color='red'), showlegend=False, hoverinfo='skip'
                     ))
 
-    # ==========================================
-    # MANUELLA SIFFROR LÄNGS MED AXLARNA
-    # ==========================================
     tick_vals = [-10, -5, 5, 10]
-    
-    # Siffror för x-axeln
     fig.add_trace(go.Scatter(
         x=tick_vals, y=[-0.6]*4, mode='text', text=[str(v) for v in tick_vals],
         textposition='bottom center', showlegend=False, hoverinfo='skip', textfont=dict(color='black', size=14)
     ))
-    # Siffror för y-axeln
     fig.add_trace(go.Scatter(
         x=[-0.6]*4, y=tick_vals, mode='text', text=[str(v) for v in tick_vals],
         textposition='middle left', showlegend=False, hoverinfo='skip', textfont=dict(color='black', size=14)
     ))
-    # Origo (0)
     fig.add_trace(go.Scatter(
         x=[-0.4], y=[-0.6], mode='text', text=['0'],
         textposition='bottom left', showlegend=False, hoverinfo='skip', textfont=dict(color='black', size=14)
     ))
 
-   # Gemensamma inställningar (rutnät)
     axis_layout = dict(
         range=[-10.8, 10.8], 
-        zeroline=True, zerolinewidth=3, zerolinecolor='black',  # Fetare axlar (ökad från 2 till 3)
-        showgrid=True, gridwidth=2, gridcolor='#cccccc',        # Fetare huvudrutnät (ökad från 1 till 2)
-        minor=dict(dtick=1, gridwidth=2, gridcolor='#e0e0e0'),  # Fetare under-rutnät (ökad från 1 till 2)
+        zeroline=True, zerolinewidth=3, zerolinecolor='black', 
+        showgrid=True, gridwidth=2, gridcolor='#cccccc', 
+        minor=dict(dtick=1, gridwidth=2, gridcolor='#e0e0e0'), 
         showticklabels=False, 
         fixedrange=True 
     )
 
-    # ==========================================
-    # PILAR OCH AXLARNAS NAMN (Nu i spetsen!)
-    # ==========================================
     pil_inst = dict(showarrow=True, arrowhead=2, arrowsize=1, arrowwidth=2, arrowcolor='black')
     
     fig.update_layout(
@@ -251,16 +237,14 @@ def rita_plotly_graf(f, visa_facit=False, q_vis_type='vis_none', trace_x=None, t
         hovermode=False,
         dragmode=False,
         annotations=[
-            # Pil och namn för x-axeln (Spetsen flyttad ut till 10.8)
             dict(x=10.8, y=0, ax=9.8, ay=0, xref='x', yref='y', axref='x', ayref='y', **pil_inst),
             dict(x=10.8, y=-0.5, text="x", showarrow=False, xref='x', yref='y', font=dict(size=16, color='black')),
-            
-            # Pil och namn för y-axeln (Spetsen flyttad ut till 10.8)
             dict(x=0, y=10.8, ax=0, ay=9.8, xref='x', yref='y', axref='x', ayref='y', **pil_inst),
             dict(x=-0.5, y=10.8, text="y", showarrow=False, xref='x', yref='y', font=dict(size=16, color='black'))
         ]
     )
     return fig
+
 # -- 2. Algebraisk Funktion --
 def skapa_alg_func_uppgift(niva):
     while True:
@@ -500,7 +484,7 @@ if st.session_state.aktuell_kategori != vald_kategori:
     st.rerun()
 
 st.sidebar.divider()
-st.sidebar.info("Välj ett område ovan för att starta!")
+
 
 # ==========================================
 # MODUL 1: Funktioner grafisk lösning
@@ -508,20 +492,29 @@ st.sidebar.info("Välj ett område ovan för att starta!")
 if vald_kategori == "Funktioner: Grafisk lösning":
     st.title("Grafisk avläsning av funktioner")
 
-    if 'niva' not in st.session_state:
-        st.session_state.niva = 1
+    if 'niva' not in st.session_state: st.session_state.niva = 1
     if 'graf_fraga' not in st.session_state:
         skapa_graf_uppgift(st.session_state.niva)
         st.session_state.graf_uppgift_nr = 1
-    if 'submitted_ans' not in st.session_state:
-        st.session_state.submitted_ans = False
-    if 'svar_status' not in st.session_state:
-        st.session_state.svar_status = None
+    if 'submitted_ans' not in st.session_state: st.session_state.submitted_ans = False
+    if 'svar_status' not in st.session_state: st.session_state.svar_status = None
 
-    col_graf, col_kontroller = st.columns([1.2, 1], gap="large")
+    # INSTÄLLNINGAR I SIDOFÄLTET
+    with st.sidebar:
+        st.subheader("Inställningar")
+        aktuellt_index = 0 if st.session_state.niva == 1 else 1
+        ny_niva = st.radio("Välj svårighetsgrad:", [1, 2], horizontal=True, index=aktuellt_index, key="graf_niva_val")
+        if ny_niva != st.session_state.niva:
+            st.session_state.niva = ny_niva
+            st.session_state.submitted_ans = False
+            skapa_graf_uppgift(st.session_state.niva)
+            st.session_state.graf_uppgift_nr += 1
+            st.rerun()
 
-    with col_graf:
-        # Använd Plotly istället för Matplotlib!
+    # LAYOUT
+    col_vanster, col_hoger = st.columns([1.2, 1], gap="large")
+
+    with col_vanster:
         fig = rita_plotly_graf(
             f = st.session_state.graf_f,
             visa_facit = st.session_state.submitted_ans,
@@ -532,18 +525,7 @@ if vald_kategori == "Funktioner: Grafisk lösning":
         )
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
-    with col_kontroller:
-        st.subheader("Inställningar")
-        aktuellt_index = 0 if st.session_state.niva == 1 else 1
-        ny_niva = st.radio("Välj svårighetsgrad:", [1, 2], horizontal=True, index=aktuellt_index, key="graf_niva_val")
-        if ny_niva != st.session_state.niva:
-            st.session_state.niva = ny_niva
-            st.session_state.submitted_ans = False
-            skapa_graf_uppgift(st.session_state.niva)
-            st.session_state.graf_uppgift_nr += 1
-            st.rerun()
-            
-        st.divider() 
+    with col_hoger:
         st.subheader("Uppgift")
         st.markdown(f"<div style='font-size: 32px; font-weight: bold; color: #0056b3; margin-bottom: 20px;'>{st.session_state.graf_fraga}</div>", unsafe_allow_html=True)
         
@@ -592,12 +574,13 @@ if vald_kategori == "Funktioner: Grafisk lösning":
 # ==========================================
 elif vald_kategori == "Funktioner: Algebraisk lösning":
     st.title("Algebraisk lösning av funktioner")
+    
     if 'alg_niva' not in st.session_state: st.session_state.alg_niva = 1
     if 'alg_uppgift_nr' not in st.session_state: st.session_state.alg_uppgift_nr = 0
     if 'alg_fraga' not in st.session_state: skapa_alg_func_uppgift(st.session_state.alg_niva)
 
-    col_uppgift, col_installningar = st.columns([1.5, 1], gap="large")
-    with col_installningar:
+    # INSTÄLLNINGAR I SIDOFÄLTET
+    with st.sidebar:
         st.subheader("Inställningar")
         ny_niva = st.radio("Välj svårighetsgrad:", [1, 2], horizontal=True, index=0 if st.session_state.alg_niva==1 else 1, key="alg_niva_val")
         if ny_niva != st.session_state.alg_niva:
@@ -606,13 +589,20 @@ elif vald_kategori == "Funktioner: Algebraisk lösning":
             st.session_state.alg_uppgift_nr += 1
             skapa_alg_func_uppgift(st.session_state.alg_niva)
             st.rerun()
+
+    # LAYOUT
+    col_vanster, col_hoger = st.columns([1.2, 1], gap="large")
             
-    with col_uppgift:
-        st.markdown("<div style='text-align: center; font-size: 20px; color: gray;'>Givet funktionen:</div>", unsafe_allow_html=True)
+    with col_vanster:
+        st.markdown("<div style='text-align: center; font-size: 20px; color: gray; margin-top: 50px;'>Givet funktionen:</div>", unsafe_allow_html=True)
         st.latex(f"f(x) = {st.session_state.alg_funktion}")
-        st.markdown(f"<div style='text-align: center; font-size: 32px; color: #0056b3; margin-bottom: 25px;'>{st.session_state.alg_fraga}</div>", unsafe_allow_html=True)
+        
+    with col_hoger:
+        st.subheader("Uppgift")
+        st.markdown(f"<div style='font-size: 32px; font-weight: bold; color: #0056b3; margin-bottom: 25px;'>{st.session_state.alg_fraga}</div>", unsafe_allow_html=True)
         svar = st.text_input("Skriv in ditt svar (heltal):", key=f"alg_input_{st.session_state.alg_uppgift_nr}")
         
+        st.write("")
         k1, k2 = st.columns(2)
         with k1:
             if st.button("Rätta svar", type="primary", use_container_width=True):
@@ -623,6 +613,7 @@ elif vald_kategori == "Funktioner: Algebraisk lösning":
                         else: st.session_state.alg_status = 'fel'
                     except ValueError: st.session_state.alg_status = 'format'
                 else: st.session_state.alg_status = 'tom'
+                st.rerun()
         with k2:
             if st.button("Ny uppgift", use_container_width=True):
                 st.session_state.alg_rattat = False
@@ -641,12 +632,13 @@ elif vald_kategori == "Funktioner: Algebraisk lösning":
 # ==========================================
 elif vald_kategori == "Ekvationer":
     st.title("Lös ekvationerna")
+    
     if 'ekv_niva' not in st.session_state: st.session_state.ekv_niva = 1
     if 'ekv_uppgift_nr' not in st.session_state: st.session_state.ekv_uppgift_nr = 0
     if 'ekv_str' not in st.session_state: skapa_ekv_uppgift(st.session_state.ekv_niva)
 
-    col_uppgift, col_installningar = st.columns([1.5, 1], gap="large")
-    with col_installningar:
+    # INSTÄLLNINGAR I SIDOFÄLTET
+    with st.sidebar:
         st.subheader("Inställningar")
         ny_niva = st.radio("Välj svårighetsgrad:", [1, 2], horizontal=True, index=0 if st.session_state.ekv_niva==1 else 1, key="ekv_niva_val")
         if ny_niva != st.session_state.ekv_niva:
@@ -655,13 +647,19 @@ elif vald_kategori == "Ekvationer":
             st.session_state.ekv_uppgift_nr += 1
             skapa_ekv_uppgift(st.session_state.ekv_niva)
             st.rerun()
+
+    # LAYOUT
+    col_vanster, col_hoger = st.columns([1.2, 1], gap="large")
             
-    with col_uppgift:
-        st.markdown("<div style='text-align: center; font-size: 20px; color: gray;'>Lös ekvationen:</div>", unsafe_allow_html=True)
+    with col_vanster:
+        st.markdown("<div style='text-align: center; font-size: 20px; color: gray; margin-top: 50px;'>Lös ekvationen:</div>", unsafe_allow_html=True)
         st.latex(st.session_state.ekv_str)
-        st.write("")
+        
+    with col_hoger:
+        st.subheader("Uppgift")
         svar = st.text_input("Vad är x? (Svara med ett heltal):", key=f"ekv_input_{st.session_state.ekv_uppgift_nr}")
         
+        st.write("")
         k1, k2 = st.columns(2)
         with k1:
             if st.button("Rätta svar", type="primary", use_container_width=True):
@@ -672,6 +670,7 @@ elif vald_kategori == "Ekvationer":
                         else: st.session_state.ekv_status = 'fel'
                     except ValueError: st.session_state.ekv_status = 'format'
                 else: st.session_state.ekv_status = 'tom'
+                st.rerun()
         with k2:
             if st.button("Ny ekvation", use_container_width=True):
                 st.session_state.ekv_rattat = False
@@ -690,45 +689,58 @@ elif vald_kategori == "Ekvationer":
 # ==========================================
 elif vald_kategori == "Algebra":
     st.title("Förenkla och faktorisera uttryck")
+    
     if 'alg_uttryck_uppgift_nr' not in st.session_state: st.session_state.alg_uttryck_uppgift_nr = 0
     if 'alg_uttryck_str' not in st.session_state: skapa_alg_uttryck_uppgift(1)
 
-    col_uppgift, col_installningar = st.columns([1.5, 1], gap="large")
-    with col_installningar:
+    # INSTÄLLNINGAR I SIDOFÄLTET
+    with st.sidebar:
         st.subheader("Inställningar")
         st.info("Nivå 2 är tillfälligt dold.")
+
+    # LAYOUT
+    col_vanster, col_hoger = st.columns([1.2, 1], gap="large")
             
-    with col_uppgift:
-        st.markdown(f"<div style='text-align: center; font-size: 20px; color: gray;'>{st.session_state.alg_rubrik}</div>", unsafe_allow_html=True)
+    with col_vanster:
+        st.markdown(f"<div style='text-align: center; font-size: 20px; color: gray; margin-top: 50px;'>{st.session_state.alg_rubrik}</div>", unsafe_allow_html=True)
         st.latex(st.session_state.alg_uttryck_str)
-        st.write("")
+        
+    with col_hoger:
+        st.subheader("Uppgift")
         valt_svar = st.radio("Välj rätt alternativ:", st.session_state.alg_uttryck_alternativ, index=None, key=f"alg_uttryck_val_{st.session_state.alg_uttryck_uppgift_nr}")
         
+        st.write("")
         k1, k2 = st.columns(2)
         with k1:
             if st.button("Rätta svar", type="primary", use_container_width=True):
                 st.session_state.alg_uttryck_rattat = True
                 if valt_svar is not None:
-                    if valt_svar.strip() == st.session_state.alg_uttryck_svar.strip(): st.session_state.alg_uttryck_status = 'ratt'
-                    else: st.session_state.alg_uttryck_status = 'fel'
-                else: st.session_state.alg_uttryck_status = 'tom'
+                    if valt_svar.strip() == st.session_state.alg_uttryck_svar.strip():
+                        st.session_state.alg_uttryck_status = 'ratt'
+                    else:
+                        st.session_state.alg_uttryck_status = 'fel'
+                else:
+                    st.session_state.alg_uttryck_status = 'tom'
+                st.rerun()
         with k2:
-            if st.button("Ny uppgift", use_container_width=True):
+            if st.button("Nytt uttryck", use_container_width=True):
                 st.session_state.alg_uttryck_rattat = False
                 st.session_state.alg_uttryck_uppgift_nr += 1
                 skapa_alg_uttryck_uppgift(1)
                 st.rerun()
-                
+
         if st.session_state.get('alg_uttryck_rattat', False):
-            if st.session_state.alg_uttryck_status == 'ratt': st.success("✅ Helt rätt! Bra jobbat!")
+            if st.session_state.alg_uttryck_status == 'ratt': st.success("✅ Helt rätt! Grymt jobbat.")
             elif st.session_state.alg_uttryck_status == 'fel': st.error(f"❌ Tyvärr fel. Rätt svar var: {st.session_state.alg_uttryck_svar}")
-            elif st.session_state.alg_uttryck_status == 'tom': st.warning("Välj ett alternativ innan du klickar på Rätta.")
+            elif st.session_state.alg_uttryck_status == 'tom': st.warning("Välj ett alternativ först.")
 
 # ==========================================
 # MODUL 5: Blandat (Slumpas)
 # ==========================================
 elif vald_kategori == "Blandat (Slumpas)":
     st.title("Blandade uppgifter - Träna på allt!")
+
+    if 'blandat_niva' not in st.session_state: st.session_state.blandat_niva = 1
 
     def ny_blandad_uppgift():
         st.session_state.blandat_typ = random.choice(['graf', 'alg_func', 'ekv', 'alg_uttryck'])
@@ -747,15 +759,23 @@ elif vald_kategori == "Blandat (Slumpas)":
         elif st.session_state.blandat_typ == 'alg_uttryck':
             skapa_alg_uttryck_uppgift(1)
 
+    # INSTÄLLNINGAR I SIDOFÄLTET
+    with st.sidebar:
+        st.subheader("Inställningar")
+        aktuellt_index = 0 if st.session_state.blandat_niva == 1 else 1
+        ny_niva = st.radio("Välj svårighetsgrad:", [1, 2], horizontal=True, index=aktuellt_index, key="blandat_niva_val")
+        if ny_niva != st.session_state.blandat_niva:
+            st.session_state.blandat_niva = ny_niva
+            ny_blandad_uppgift()
+            st.rerun()
+
     if 'blandat_typ' not in st.session_state:
-        st.session_state.blandat_niva = 1
         ny_blandad_uppgift()
 
-    # Vi skapar en layout med vänster och höger spalt precis som i Modul 1
+    # LAYOUT
     col_vanster, col_hoger = st.columns([1.2, 1], gap="large")
 
     with col_vanster:
-        # HÄR RITAR VI UT BILDEN/GRAFEN ELLER FORMLERNA
         if st.session_state.blandat_typ == 'graf':
             fig = rita_plotly_graf(
                 f = st.session_state.graf_f,
@@ -780,19 +800,8 @@ elif vald_kategori == "Blandat (Slumpas)":
             st.latex(st.session_state.alg_uttryck_str)
 
     with col_hoger:
-        # HÄR LÄGGER VI FRÅGAN, SVARSRUTOR OCH KNAPPAR
-        st.subheader("Inställningar")
-        aktuellt_index = 0 if st.session_state.blandat_niva == 1 else 1
-        ny_niva = st.radio("Välj svårighetsgrad:", [1, 2], horizontal=True, index=aktuellt_index, key="blandat_niva_val")
-        if ny_niva != st.session_state.blandat_niva:
-            st.session_state.blandat_niva = ny_niva
-            ny_blandad_uppgift()
-            st.rerun()
-
-        st.divider()
         st.subheader("Uppgift")
         
-        # Variabler för att hålla reda på inmatningen
         svar_lista = []
         svar = ""
         valt_svar = None
@@ -809,7 +818,7 @@ elif vald_kategori == "Blandat (Slumpas)":
             svar = st.text_input("Svar (heltal):", key=f"blandat_algf_in_{st.session_state.blandat_id}")
 
         elif st.session_state.blandat_typ == 'ekv':
-            st.markdown("<div style='font-size: 32px; font-weight: bold; color: transparent; margin-bottom: 25px;'>&nbsp;</div>", unsafe_allow_html=True) # Fyllnad för layout
+            st.markdown("<div style='font-size: 32px; font-weight: bold; color: transparent; margin-bottom: 25px;'>&nbsp;</div>", unsafe_allow_html=True) 
             svar = st.text_input("Vad är x? (Heltal):", key=f"blandat_ekv_in_{st.session_state.blandat_id}")
 
         elif st.session_state.blandat_typ == 'alg_uttryck':
@@ -859,6 +868,6 @@ elif vald_kategori == "Blandat (Slumpas)":
                 elif st.session_state.blandat_typ == 'alg_uttryck': ratt_txt = st.session_state.alg_uttryck_svar
                 st.error(f"❌ Tyvärr fel. Rätt svar var: {ratt_txt}")
             elif st.session_state.blandat_status == 'format':
-                st.warning("⚠️ Svaret är i fel format (se till att använda siffror, och inte 'x=').")
+                st.warning("⚠️ Svaret är i fel format.")
             elif st.session_state.blandat_status == 'tom':
                 st.warning("Vänligen fyll i ett svar innan du rättar.")
