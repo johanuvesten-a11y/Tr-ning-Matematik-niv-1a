@@ -226,12 +226,12 @@ def rita_plotly_graf(f, visa_facit=False, q_vis_type='vis_none', trace_x=None, t
         textposition='bottom left', showlegend=False, hoverinfo='skip', textfont=dict(color='black', size=14)
     ))
 
-    # Gemensamma inställningar (rutnät)
+   # Gemensamma inställningar (rutnät)
     axis_layout = dict(
-        range=[-10.8, 10.8], # Axeln går exakt till 10.8
-        zeroline=True, zerolinewidth=2, zerolinecolor='black', 
-        showgrid=True, gridwidth=1, gridcolor='#e5e5e5', 
-        minor=dict(dtick=1, gridwidth=1, gridcolor='#f0f0f0'), 
+        range=[-10.8, 10.8], 
+        zeroline=True, zerolinewidth=3, zerolinecolor='black',  # Fetare axlar (ökad från 2 till 3)
+        showgrid=True, gridwidth=2, gridcolor='#cccccc',        # Fetare huvudrutnät (ökad från 1 till 2)
+        minor=dict(dtick=1, gridwidth=2, gridcolor='#e0e0e0'),  # Fetare under-rutnät (ökad från 1 till 2)
         showticklabels=False, 
         fixedrange=True 
     )
