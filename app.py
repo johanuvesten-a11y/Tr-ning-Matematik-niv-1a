@@ -313,7 +313,7 @@ def skapa_alg_func_uppgift(niva):
                     st.session_state.alg_svar = x
                     break
                     
-        else: # Niva 2
+        else: # Niva 2 
             typ = random.choice(['f_f_a', 'f_f_x_C'])
             k = random.choice([-3, -2, -1, 2, 3])
             m = random.randint(-10, 10)
@@ -363,15 +363,53 @@ def skapa_ekv_uppgift(niva):
             st.session_state.ekv_str = f"{VL} = {HL}"
             st.session_state.ekv_svar = x
             break
-        else:
-            a = random.choice([-4, -3, -2, 2, 3, 4])
-            c = random.choice([-5, -4, -3, -2, 2, 3, 4, 5])
-            if a == c: continue
-            b = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
-            d = a*(x + b) - c*x
-            b_str = f"+ {b}" if b > 0 else f"- {-b}"
-            VL = f"{a}(x {b_str})"
-            HL = formatera_sida(c, d)
+        else: # Niva 2 (Med division och parenteser)
+            A = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
+            C = random.choice([2, 3, 4, 5])
+            val_VL = random.randint(-10, 10)
+            
+            # Räkna ut B så att vänsterledet (Ax+B)/C = val_VL blir ett jämnt heltal
+            B = C * val_VL - A * x
+            
+            # Spärr så att bråket inte kan förkortas bort direkt (t.ex. 4x/2 eller (4x+6)/2)
+            if abs(A) % C == 0 and abs(B) % C == 0:
+                continue
+                
+            E = random.choice([1, 2, 3, 4, 5])
+            F = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
+            op = random.choice(['+', '-'])
+            
+            # Räkna ut D så att högerledet D +/- E(x+F) också blir val_VL
+            if op == '+':
+                D = val_VL - E * (x + F)
+            else:
+                D = val_VL + E * (x + F)
+                
+            # Formatera A
+            if A == 1: A_str = "x"
+            elif A == -1: A_str = "-x"
+            else: A_str = f"{A}x"
+            
+            # Formatera B
+            if B > 0: B_str = f" + {B}"
+            elif B < 0: B_str = f" - {-B}"
+            else: B_str = ""
+            
+            # Vänsterledet
+            taeljare = f"{A_str}{B_str}"
+            VL = f"\\frac{{{taeljare}}}{{{C}}}"
+            
+            # Formatera E
+            if E == 1: E_str = ""
+            else: E_str = str(E)
+            
+            # Formatera F
+            if F > 0: F_str = f"+ {F}"
+            else: F_str = f"- {-F}"
+            
+            # Högerledet
+            HL = f"{D} {op} {E_str}(x {F_str})"
+            
             st.session_state.ekv_str = f"{VL} = {HL}"
             st.session_state.ekv_svar = x
             break
@@ -611,6 +649,7 @@ elif vald_kategori == "Funktioner: Algebraisk lösning":
         
     with col_hoger:
         st.subheader("Uppgift")
+        st.markdown("<p style='font-size: 14px; font-style: italic; color: #666; margin-bottom: 5px;'>Lös gärna på papper och skriv in ditt svar.</p>", unsafe_allow_html=True)
         st.markdown(f"<div style='font-size: 32px; font-weight: bold; color: #0056b3; margin-bottom: 25px;'>{st.session_state.alg_fraga}</div>", unsafe_allow_html=True)
         svar = st.text_input("Skriv in ditt svar (heltal):", key=f"alg_input_{st.session_state.alg_uppgift_nr}")
         
@@ -667,6 +706,7 @@ elif vald_kategori == "Ekvationer":
         
     with col_hoger:
         st.subheader("Uppgift")
+        st.markdown("<p style='font-size: 14px; font-style: italic; color: #666; margin-bottom: 5px;'>Lös gärna på papper och skriv in ditt svar.</p>", unsafe_allow_html=True)
         svar = st.text_input("Vad är x? (Svara med ett heltal):", key=f"ekv_input_{st.session_state.ekv_uppgift_nr}")
         
         st.write("")
@@ -720,6 +760,7 @@ elif vald_kategori == "Algebra":
         
     with col_hoger:
         st.subheader("Välj rätt alternativ")
+        st.markdown("<p style='font-size: 14px; font-style: italic; color: #666; margin-bottom: 5px;'>Lös gärna på papper och välj ditt svar.</p>", unsafe_allow_html=True)
         valt_svar = st.radio("Alternativ:", st.session_state.alg_uttryck_alternativ, key=f"alg_radio_{st.session_state.alg_utt_nr}")
         
         st.write("")
@@ -813,6 +854,12 @@ elif vald_kategori == "Blandat (Slumpas)":
     with col_hoger:
         st.subheader("Uppgift")
         
+        # Visar instruktionstexten för alla förutom grafer där det kanske inte är ett måste med papper
+        if st.session_state.blandat_typ in ['alg_func', 'ekv']:
+            st.markdown("<p style='font-size: 14px; font-style: italic; color: #666; margin-bottom: 5px;'>Lös gärna på papper och skriv in ditt svar.</p>", unsafe_allow_html=True)
+        elif st.session_state.blandat_typ == 'alg_uttryck':
+            st.markdown("<p style='font-size: 14px; font-style: italic; color: #666; margin-bottom: 5px;'>Lös gärna på papper och välj ditt svar.</p>", unsafe_allow_html=True)
+            
         svar_lista = []
         svar = ""
         valt_svar = None
