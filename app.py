@@ -287,12 +287,10 @@ def skapa_alg_func_uppgift(niva):
                 b = random.choice([1, 1, 2, 3, 4]) 
                 a_coeff = random.choice([-4, -3, -2, -1, 1, 2, 3, 4])
                 
-                # --- NY SPÄRR HÄR ---
-                # Om vi har ett bråk (b > 1), se till att koefficienten inte går att dela jämnt med nämnaren.
-                # Detta hindrar menlösa uttryck som 3x/3, 2x/2, 4x/2 etc.
+                # --- SPÄRR HÄR: Undvik 3x/3, 4x/2 osv ---
                 if b > 1 and abs(a_coeff) % b == 0:
                     continue
-                # --------------------
+                # ----------------------------------------
 
                 m = random.randint(-15, 15)
                 x = random.randint(-20, 20) * b 
@@ -301,7 +299,6 @@ def skapa_alg_func_uppgift(niva):
                     C = a_coeff*x + m
                     term_x = k_str
                 else:
-                    # Fixade buggen där siffervärdet x råkade skrivas in i formeln istället för bokstaven 'x'
                     if a_coeff == 1: term_x = f"\\frac{{x}}{{{b}}}"
                     elif a_coeff == -1: term_x = f"-\\frac{{x}}{{{b}}}"
                     else: term_x = f"\\frac{{{a_coeff}x}}{{{b}}}"
@@ -316,6 +313,32 @@ def skapa_alg_func_uppgift(niva):
                     st.session_state.alg_svar = x
                     break
                     
+        else: # Niva 2
+            typ = random.choice(['f_f_a', 'f_f_x_C'])
+            k = random.choice([-3, -2, -1, 2, 3])
+            m = random.randint(-10, 10)
+            k_str = "x" if k == 1 else ("-x" if k == -1 else f"{k}x")
+            m_str = f" + {m}" if m > 0 else (f" - {-m}" if m < 0 else "")
+            f_str = f"{k_str}{m_str}"
+            
+            if typ == 'f_f_a':
+                a = random.randint(-8, 8)
+                inner = k*a + m
+                svar = k*inner + m
+                if abs(svar) <= 100:
+                    st.session_state.alg_fraga = f"Bestäm f(f({a}))"
+                    st.session_state.alg_funktion = f"{f_str}"
+                    st.session_state.alg_svar = svar
+                    break
+            else:
+                x = random.randint(-12, 12)
+                inner = k*x + m
+                C = k*inner + m
+                if abs(x) <= 100 and abs(C) <= 100:
+                    st.session_state.alg_fraga = f"Bestäm x om f(f(x)) = {C}"
+                    st.session_state.alg_funktion = f"{f_str}"
+                    st.session_state.alg_svar = x
+                    break                    
         else: # Niva 2
             typ = random.choice(['f_f_a', 'f_f_x_C'])
             k = random.choice([-3, -2, -1, 2, 3])
