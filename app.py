@@ -393,10 +393,20 @@ def skapa_alg_uttryck_uppgift(niva=1):
         st.session_state.alg_rubrik = "Förenkla uttrycket:"
         c = random.choice([2, 3, 4])
         A = random.randint(-5, 5)
-        B = random.randint(-5, 5)
-        A_str = f"+ {A}" if A > 0 else (f"- {-A}" if A < 0 else "")
-        B_str = f"+ {B}" if B > 0 else (f"- {-B}" if B < 0 else "")
-        st.session_state.alg_uttryck_str = f"(x {A_str}) - ({c}x {B_str})"
+        
+        # Vi ser till att B aldrig är 0 så att den andra parentesen alltid har två termer
+        B = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
+        
+        # Om A är 0 skriver vi bara "x", annars "(x + A)"
+        if A == 0:
+            del_1 = "x"
+        else:
+            A_str = f"+ {A}" if A > 0 else f"- {-A}"
+            del_1 = f"(x {A_str})"
+            
+        B_str = f"+ {B}" if B > 0 else f"- {-B}"
+        st.session_state.alg_uttryck_str = f"{del_1} - ({c}x {B_str})"
+        
         svar_ratt = formatera_svar(0, 1 - c, A - B)
         d1 = formatera_svar(0, 1 - c, A + B) 
         d2 = formatera_svar(0, 1 + c, A - B) 
@@ -461,7 +471,6 @@ def skapa_alg_uttryck_uppgift(niva=1):
     random.shuffle(alternativ)
     st.session_state.alg_uttryck_alternativ = alternativ
     st.session_state.alg_uttryck_svar = svar_ratt_latex
-
 
 # --- MENYSYSTEM ---
 st.sidebar.title("Välj Träningsläge")
