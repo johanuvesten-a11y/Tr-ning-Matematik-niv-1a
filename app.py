@@ -313,7 +313,7 @@ def skapa_alg_func_uppgift(niva):
                     st.session_state.alg_svar = x
                     break
                     
-        else: # Niva 2 (Här hade du trippla block förut, nu är det städat!)
+        else: # Niva 2
             typ = random.choice(['f_f_a', 'f_f_x_C'])
             k = random.choice([-3, -2, -1, 2, 3])
             m = random.randint(-10, 10)
@@ -498,7 +498,6 @@ if st.session_state.aktuell_kategori != vald_kategori:
 
 st.sidebar.divider()
 
-
 # ==========================================
 # MODUL 1: Funktioner grafisk lösning
 # ==========================================
@@ -641,7 +640,7 @@ elif vald_kategori == "Funktioner: Algebraisk lösning":
             elif st.session_state.alg_status == 'tom': st.warning("Skriv in ett svar först.")
 
 # ==========================================
-# MODUL 3: Ekvationer (Härifrån och nedåt byggde jag klart åt dig)
+# MODUL 3: Ekvationer
 # ==========================================
 elif vald_kategori == "Ekvationer":
     st.title("Lös ekvationerna")
@@ -728,10 +727,13 @@ elif vald_kategori == "Algebra":
         with k1:
             if st.button("Rätta svar", type="primary", use_container_width=True):
                 st.session_state.alg_utt_rattat = True
-                if valt_svar.strip() == st.session_state.alg_uttryck_svar.strip():
-                    st.session_state.alg_utt_status = 'ratt'
+                if valt_svar is not None:
+                    if valt_svar.strip() == st.session_state.alg_uttryck_svar.strip():
+                        st.session_state.alg_utt_status = 'ratt'
+                    else:
+                        st.session_state.alg_utt_status = 'fel'
                 else:
-                    st.session_state.alg_utt_status = 'fel'
+                    st.session_state.alg_utt_status = 'tom'
                 st.rerun()
         with k2:
             if st.button("Ny uppgift", use_container_width=True):
@@ -743,10 +745,140 @@ elif vald_kategori == "Algebra":
         if st.session_state.get('alg_utt_rattat', False):
             if st.session_state.alg_utt_status == 'ratt': st.success("✅ Helt rätt! Bra jobbat.")
             elif st.session_state.alg_utt_status == 'fel': st.error(f"❌ Tyvärr fel. Rätt svar var uttrycket som är exakt {st.session_state.alg_uttryck_svar}")
+            elif st.session_state.alg_utt_status == 'tom': st.warning("Vänligen välj ett alternativ först.")
 
 # ==========================================
-# BLANDAT (SLUMPAS)
+# MODUL 5: Blandat (Slumpas)
 # ==========================================
 elif vald_kategori == "Blandat (Slumpas)":
-    st.title("Blandade uppgifter")
-    st.info("För att köra blandat, välj någon av de specifika kategorierna i menyn till vänster först. En funktion för att slumpa fram alla typer av uppgifter i följd kan byggas in här!")
+    st.title("Blandade uppgifter - Träna på allt!")
+
+    if 'blandat_niva' not in st.session_state: st.session_state.blandat_niva = 1
+
+    def ny_blandad_uppgift():
+        st.session_state.blandat_typ = random.choice(['graf', 'alg_func', 'ekv', 'alg_uttryck'])
+        niva = st.session_state.get('blandat_niva', 1)
+        st.session_state.blandat_id = st.session_state.get('blandat_id', 0) + 1
+        st.session_state.blandat_rattat = False
+        st.session_state.blandat_status = None
+        st.session_state.submitted_ans = False 
+        
+        if st.session_state.blandat_typ == 'graf':
+            skapa_graf_uppgift(niva)
+        elif st.session_state.blandat_typ == 'alg_func':
+            skapa_alg_func_uppgift(niva)
+        elif st.session_state.blandat_typ == 'ekv':
+            skapa_ekv_uppgift(niva)
+        elif st.session_state.blandat_typ == 'alg_uttryck':
+            skapa_alg_uttryck_uppgift(1)
+
+    with st.sidebar:
+        st.subheader("Inställningar")
+        aktuellt_index = 0 if st.session_state.blandat_niva == 1 else 1
+        ny_niva = st.radio("Välj svårighetsgrad:", [1, 2], horizontal=True, index=aktuellt_index, key="blandat_niva_val")
+        if ny_niva != st.session_state.blandat_niva:
+            st.session_state.blandat_niva = ny_niva
+            ny_blandad_uppgift()
+            st.rerun()
+
+    if 'blandat_typ' not in st.session_state:
+        ny_blandad_uppgift()
+
+    col_vanster, col_hoger = st.columns([1.2, 1], gap="large")
+
+    with col_vanster:
+        if st.session_state.blandat_typ == 'graf':
+            fig = rita_plotly_graf(
+                f = st.session_state.graf_f,
+                visa_facit = st.session_state.get('blandat_rattat', False),
+                q_vis_type = st.session_state.get('q_type_vis', 'vis_none'),
+                trace_x = st.session_state.get('trace_x'),
+                trace_y = st.session_state.get('trace_y'),
+                trace_alla_x = st.session_state.get('trace_alla_x')
+            )
+            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+
+        elif st.session_state.blandat_typ == 'alg_func':
+            st.markdown("<div style='text-align: center; font-size: 20px; color: gray; margin-top: 50px;'>Givet funktionen:</div>", unsafe_allow_html=True)
+            st.latex(f"f(x) = {st.session_state.alg_funktion}")
+
+        elif st.session_state.blandat_typ == 'ekv':
+            st.markdown("<div style='text-align: center; font-size: 20px; color: gray; margin-top: 50px;'>Lös ekvationen:</div>", unsafe_allow_html=True)
+            st.latex(st.session_state.ekv_str)
+
+        elif st.session_state.blandat_typ == 'alg_uttryck':
+            st.markdown(f"<div style='text-align: center; font-size: 20px; color: gray; margin-top: 50px;'>{st.session_state.alg_rubrik}</div>", unsafe_allow_html=True)
+            st.latex(st.session_state.alg_uttryck_str)
+
+    with col_hoger:
+        st.subheader("Uppgift")
+        
+        svar_lista = []
+        svar = ""
+        valt_svar = None
+
+        if st.session_state.blandat_typ == 'graf':
+            st.markdown(f"<div style='font-size: 32px; font-weight: bold; color: #0056b3; margin-bottom: 20px;'>{st.session_state.graf_fraga}</div>", unsafe_allow_html=True)
+            antal_svar = len(st.session_state.graf_ratt_svar)
+            for i in range(antal_svar):
+                tmp_svar = st.text_input(f"Svar {i+1}:" if antal_svar > 1 else "Ditt svar:", key=f"blandat_graf_in_{st.session_state.blandat_id}_{i}")
+                svar_lista.append(tmp_svar)
+
+        elif st.session_state.blandat_typ == 'alg_func':
+            st.markdown(f"<div style='font-size: 32px; font-weight: bold; color: #0056b3; margin-bottom: 25px;'>{st.session_state.alg_fraga}</div>", unsafe_allow_html=True)
+            svar = st.text_input("Svar (heltal):", key=f"blandat_algf_in_{st.session_state.blandat_id}")
+
+        elif st.session_state.blandat_typ == 'ekv':
+            st.markdown("<div style='font-size: 32px; font-weight: bold; color: transparent; margin-bottom: 25px;'>&nbsp;</div>", unsafe_allow_html=True) 
+            svar = st.text_input("Vad är x? (Heltal):", key=f"blandat_ekv_in_{st.session_state.blandat_id}")
+
+        elif st.session_state.blandat_typ == 'alg_uttryck':
+            valt_svar = st.radio("Välj rätt alternativ:", st.session_state.alg_uttryck_alternativ, index=None, key=f"blandat_algu_in_{st.session_state.blandat_id}")
+
+        st.write("")
+        
+        k1, k2 = st.columns(2)
+        with k1:
+            if st.button("Rätta svar", type="primary", use_container_width=True, key=f"btn_ratt_{st.session_state.blandat_id}"):
+                st.session_state.blandat_rattat = True
+                
+                if st.session_state.blandat_typ == 'graf':
+                    if all(s.strip() != "" for s in svar_lista):
+                        try:
+                            anv_svar_float = sorted([round(float(s.strip().replace(',', '.')), 4) for s in svar_lista])
+                            st.session_state.blandat_status = 'ratt' if anv_svar_float == st.session_state.graf_ratt_svar else 'fel'
+                        except ValueError: st.session_state.blandat_status = 'format'
+                    else: st.session_state.blandat_status = 'tom'
+                        
+                elif st.session_state.blandat_typ in ['alg_func', 'ekv']:
+                    if svar.strip() != "":
+                        try:
+                            ratt_svar = st.session_state.alg_svar if st.session_state.blandat_typ == 'alg_func' else st.session_state.ekv_svar
+                            st.session_state.blandat_status = 'ratt' if int(svar.strip()) == ratt_svar else 'fel'
+                        except ValueError: st.session_state.blandat_status = 'format'
+                    else: st.session_state.blandat_status = 'tom'
+                        
+                elif st.session_state.blandat_typ == 'alg_uttryck':
+                    if valt_svar is not None:
+                        st.session_state.blandat_status = 'ratt' if valt_svar.strip() == st.session_state.alg_uttryck_svar.strip() else 'fel'
+                    else: st.session_state.blandat_status = 'tom'
+                st.rerun()
+
+        with k2:
+            if st.button("Nästa uppgift", use_container_width=True, key=f"btn_ny_{st.session_state.blandat_id}"):
+                ny_blandad_uppgift()
+                st.rerun()
+
+        if st.session_state.get('blandat_rattat', False):
+            if st.session_state.blandat_status == 'ratt':
+                st.success("✅ Helt rätt! Grymt!")
+            elif st.session_state.blandat_status == 'fel':
+                if st.session_state.blandat_typ == 'graf': ratt_txt = ' och '.join([f"{a:g}".replace('.', ',') for a in st.session_state.graf_ratt_svar])
+                elif st.session_state.blandat_typ == 'alg_func': ratt_txt = st.session_state.alg_svar
+                elif st.session_state.blandat_typ == 'ekv': ratt_txt = st.session_state.ekv_svar
+                elif st.session_state.blandat_typ == 'alg_uttryck': ratt_txt = f"uttrycket som är exakt {st.session_state.alg_uttryck_svar}"
+                st.error(f"❌ Tyvärr fel. Rätt svar var: {ratt_txt}")
+            elif st.session_state.blandat_status == 'format':
+                st.warning("⚠️ Svaret är i fel format (ange bara siffror).")
+            elif st.session_state.blandat_status == 'tom':
+                st.warning("Vänligen fyll i ett svar innan du rättar.")
