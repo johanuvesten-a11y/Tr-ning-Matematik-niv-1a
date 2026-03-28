@@ -165,7 +165,7 @@ def skapa_graf_uppgift(niva):
     st.session_state.graf_fraga = fraga.replace('.', ',')
     st.session_state.graf_ratt_svar = [round(ans, 4) + 0.0 for ans in ratt_svar]
 
-# -- PLOTLY RIT-FUNKTION (Uppdaterad för matte-look!) --
+# -- PLOTLY RIT-FUNKTION (Specialbyggd med kors och pilar!) --
 def rita_plotly_graf(f, visa_facit=False, q_vis_type='vis_none', trace_x=None, trace_y=None, trace_alla_x=None):
     fig = go.Figure()
     
@@ -205,19 +205,42 @@ def rita_plotly_graf(f, visa_facit=False, q_vis_type='vis_none', trace_x=None, t
                         marker=dict(size=8, color='red'), showlegend=False, hoverinfo='skip'
                     ))
 
-    # Gemensamma inställningar för både X- och Y-axeln för att få till "matte-pappret"
+    # ==========================================
+    # MANUELLA SIFFROR LÄNGS MED AXLARNA
+    # ==========================================
+    tick_vals = [-10, -5, 5, 10]
+    
+    # Siffror för x-axeln (läggs strax under linjen)
+    fig.add_trace(go.Scatter(
+        x=tick_vals, y=[-0.6]*4, mode='text', text=[str(v) for v in tick_vals],
+        textposition='bottom center', showlegend=False, hoverinfo='skip', textfont=dict(color='black', size=14)
+    ))
+    # Siffror för y-axeln (läggs strax till vänster om linjen)
+    fig.add_trace(go.Scatter(
+        x=[-0.6]*4, y=tick_vals, mode='text', text=[str(v) for v in tick_vals],
+        textposition='middle left', showlegend=False, hoverinfo='skip', textfont=dict(color='black', size=14)
+    ))
+    # Origo (0)
+    fig.add_trace(go.Scatter(
+        x=[-0.4], y=[-0.6], mode='text', text=['0'],
+        textposition='bottom left', showlegend=False, hoverinfo='skip', textfont=dict(color='black', size=14)
+    ))
+
+    # Gemensamma inställningar (rutnät)
     axis_layout = dict(
-        range=[-10, 10],
-        zeroline=True, zerolinewidth=2, zerolinecolor='black', # Tydliga svarta axlar i mitten
-        showgrid=True, gridwidth=1, gridcolor='#e5e5e5', # Ljusgrått rutnät
-        minor=dict(dtick=1, gridwidth=1, gridcolor='#f0f0f0'), # Svagare linjer för varje steg (1-hopp)
-        tickmode='array',
-        tickvals=[-10, -5, 5, 10], # Siffror visas BARA på femhoppen (och -10/10)
-        ticktext=['-10', '-5', '5', '10'],
-        fixedrange=True # Låser grafen så man inte kan zooma/panorera bort sig av misstag
+        range=[-10.5, 10.5], # Lite extra utrymme i kanterna för pilarna
+        zeroline=True, zerolinewidth=2, zerolinecolor='black', 
+        showgrid=True, gridwidth=1, gridcolor='#e5e5e5', 
+        minor=dict(dtick=1, gridwidth=1, gridcolor='#f0f0f0'), 
+        showticklabels=False, # VI STÄNGER AV de vanliga kant-siffrorna!
+        fixedrange=True 
     )
 
-    # Layout och utseende
+    # ==========================================
+    # PILAR OCH AXLARNAS NAMN (x och y)
+    # ==========================================
+    pil_inst = dict(showarrow=True, arrowhead=2, arrowsize=1, arrowwidth=2, arrowcolor='black')
+    
     fig.update_layout(
         xaxis=axis_layout,
         yaxis=axis_layout,
@@ -225,8 +248,17 @@ def rita_plotly_graf(f, visa_facit=False, q_vis_type='vis_none', trace_x=None, t
         margin=dict(l=20, r=20, t=20, b=20),
         height=550,
         plot_bgcolor='white',
-        hovermode=False, # Stänger av all interaktivitet med muspekaren i bakgrunden
-        dragmode=False   # Tar bort möjligheten att dra i grafen
+        hovermode=False,
+        dragmode=False,
+        annotations=[
+            # Pil och namn för x-axeln
+            dict(x=10.5, y=0, ax=9.5, ay=0, xref='x', yref='y', axref='x', ayref='y', **pil_inst),
+            dict(x=10.5, y=-0.8, text="x", showarrow=False, xref='x', yref='y', font=dict(size=16, color='black')),
+            
+            # Pil och namn för y-axeln
+            dict(x=0, y=10.5, ax=0, ay=9.5, xref='x', yref='y', axref='x', ayref='y', **pil_inst),
+            dict(x=-0.8, y=10.5, text="y", showarrow=False, xref='x', yref='y', font=dict(size=16, color='black'))
+        ]
     )
     return fig
 
