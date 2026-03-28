@@ -165,7 +165,7 @@ def skapa_graf_uppgift(niva):
     st.session_state.graf_fraga = fraga.replace('.', ',')
     st.session_state.graf_ratt_svar = [round(ans, 4) + 0.0 for ans in ratt_svar]
 
-# -- PLOTLY RIT-FUNKTION (Ny!) --
+# -- PLOTLY RIT-FUNKTION (Uppdaterad för matte-look!) --
 def rita_plotly_graf(f, visa_facit=False, q_vis_type='vis_none', trace_x=None, trace_y=None, trace_alla_x=None):
     fig = go.Figure()
     
@@ -173,12 +173,11 @@ def rita_plotly_graf(f, visa_facit=False, q_vis_type='vis_none', trace_x=None, t
     x_plot = np.linspace(-10, 10, 400)
     y_plot = f(x_plot)
     
-    # Huvudgrafen (blå linje)
+    # Huvudgrafen (blå linje). hoverinfo='skip' stänger av muspekaren här.
     fig.add_trace(go.Scatter(
         x=x_plot, y=y_plot, mode='lines', 
         line=dict(color='blue', width=2), 
-        name="f(x)",
-        hovertemplate="x: %{x:.2f}<br>y: %{y:.2f}<extra></extra>"
+        hoverinfo='skip'
     ))
     
     # Rita in facit-linjerna om man har svarat
@@ -206,15 +205,28 @@ def rita_plotly_graf(f, visa_facit=False, q_vis_type='vis_none', trace_x=None, t
                         marker=dict(size=8, color='red'), showlegend=False, hoverinfo='skip'
                     ))
 
+    # Gemensamma inställningar för både X- och Y-axeln för att få till "matte-pappret"
+    axis_layout = dict(
+        range=[-10, 10],
+        zeroline=True, zerolinewidth=2, zerolinecolor='black', # Tydliga svarta axlar i mitten
+        showgrid=True, gridwidth=1, gridcolor='#e5e5e5', # Ljusgrått rutnät
+        minor=dict(dtick=1, gridwidth=1, gridcolor='#f0f0f0'), # Svagare linjer för varje steg (1-hopp)
+        tickmode='array',
+        tickvals=[-10, -5, 5, 10], # Siffror visas BARA på femhoppen (och -10/10)
+        ticktext=['-10', '-5', '5', '10'],
+        fixedrange=True # Låser grafen så man inte kan zooma/panorera bort sig av misstag
+    )
+
     # Layout och utseende
     fig.update_layout(
-        xaxis=dict(range=[-10, 10], dtick=1, zeroline=True, zerolinewidth=2, zerolinecolor='black', gridcolor='lightgray', title='x'),
-        yaxis=dict(range=[-10, 10], dtick=1, zeroline=True, zerolinewidth=2, zerolinecolor='black', gridcolor='lightgray', title='y'),
+        xaxis=axis_layout,
+        yaxis=axis_layout,
         showlegend=False,
         margin=dict(l=20, r=20, t=20, b=20),
         height=550,
         plot_bgcolor='white',
-        hovermode='x unified'
+        hovermode=False, # Stänger av all interaktivitet med muspekaren i bakgrunden
+        dragmode=False   # Tar bort möjligheten att dra i grafen
     )
     return fig
 
