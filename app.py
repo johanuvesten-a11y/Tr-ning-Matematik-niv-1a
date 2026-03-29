@@ -249,7 +249,9 @@ def rita_plotly_graf(f, visa_facit=False, q_vis_type='vis_none', trace_x=None, t
 def skapa_alg_func_uppgift(niva):
     while True:
         if niva == 1:
-            typ = random.choice(['f_a', 'f_x_C'])
+            # Ny typ tillagd: 'f_x_C_kvadrat'
+            typ = random.choice(['f_a', 'f_x_C', 'f_x_C_kvadrat'])
+            
             if typ == 'f_a':
                 func_type = random.choice(['linjar', 'kvadratisk', 'exponential'])
                 a = random.randint(-10, 10)
@@ -279,18 +281,32 @@ def skapa_alg_func_uppgift(niva):
                 
                 if abs(svar) <= 100:
                     st.session_state.alg_fraga = f"Bestäm f({a})"
-                    st.session_state.alg_funktion = f"{f_str}"
+                    st.session_state.alg_funktion = f"f(x) = {f_str}"
                     st.session_state.alg_svar = svar
                     break
                     
-            else: # f(x) = C
+            elif typ == 'f_x_C_kvadrat':
+                # NY: Lös f(x) = C för andragradsfunktioner (endast positivt x för att få ett unikt svar)
+                x = random.randint(1, 10) # Bara positiva x
+                k = random.choice([-3, -2, -1, 1, 2, 3])
+                m = random.randint(-15, 15)
+                C = k*(x**2) + m
+                k_str = "x^2" if k == 1 else ("-x^2" if k == -1 else f"{k}x^2")
+                m_str = f" + {m}" if m > 0 else (f" - {-m}" if m < 0 else "")
+                f_str = f"{k_str}{m_str}"
+                
+                if abs(C) <= 300:
+                    st.session_state.alg_fraga = f"Bestäm det positiva värdet på x om f(x) = {C}"
+                    st.session_state.alg_funktion = f"f(x) = {f_str}"
+                    st.session_state.alg_svar = x
+                    break
+                    
+            else: # f(x) = C (Linjär)
                 b = random.choice([1, 1, 2, 3, 4]) 
                 a_coeff = random.choice([-4, -3, -2, -1, 1, 2, 3, 4])
                 
-                # --- SPÄRR HÄR: Undvik 3x/3, 4x/2 osv ---
                 if b > 1 and abs(a_coeff) % b == 0:
                     continue
-                # ----------------------------------------
 
                 m = random.randint(-15, 15)
                 x = random.randint(-20, 20) * b 
@@ -309,37 +325,82 @@ def skapa_alg_func_uppgift(niva):
                 
                 if abs(x) <= 100 and abs(C) <= 100:
                     st.session_state.alg_fraga = f"Bestäm x om f(x) = {C}"
-                    st.session_state.alg_funktion = f"{f_str}"
+                    st.session_state.alg_funktion = f"f(x) = {f_str}"
                     st.session_state.alg_svar = x
                     break
                     
         else: # Niva 2 
-            typ = random.choice(['f_f_a', 'f_f_x_C'])
-            k = random.choice([-3, -2, -1, 2, 3])
-            m = random.randint(-10, 10)
-            k_str = "x" if k == 1 else ("-x" if k == -1 else f"{k}x")
-            m_str = f" + {m}" if m > 0 else (f" - {-m}" if m < 0 else "")
-            f_str = f"{k_str}{m_str}"
+            typ = random.choice(['f_f_a', 'f_f_x_C', 'f_g_a', 'f_likamed_g'])
             
-            if typ == 'f_f_a':
-                a = random.randint(-8, 8)
-                inner = k*a + m
-                svar = k*inner + m
-                if abs(svar) <= 100:
-                    st.session_state.alg_fraga = f"Bestäm f(f({a}))"
-                    st.session_state.alg_funktion = f"{f_str}"
-                    st.session_state.alg_svar = svar
-                    break
-            else:
-                x = random.randint(-12, 12)
-                inner = k*x + m
-                C = k*inner + m
-                if abs(x) <= 100 and abs(C) <= 100:
-                    st.session_state.alg_fraga = f"Bestäm x om f(f(x)) = {C}"
-                    st.session_state.alg_funktion = f"{f_str}"
-                    st.session_state.alg_svar = x
-                    break
+            # Hjälpfunktion för att formatera kx + m snyggt
+            def formatera_linjar(k, m):
+                k_str = "x" if k == 1 else ("-x" if k == -1 else f"{k}x")
+                if m == 0: return k_str
+                m_str = f" + {m}" if m > 0 else f" - {-m}"
+                return f"{k_str}{m_str}"
 
+            if typ in ['f_f_a', 'f_f_x_C']:
+                # Din ursprungliga logik för f(f(x))
+                k = random.choice([-3, -2, -1, 2, 3])
+                m = random.randint(-10, 10)
+                f_str = formatera_linjar(k, m)
+                
+                if typ == 'f_f_a':
+                    a = random.randint(-8, 8)
+                    inner = k*a + m
+                    svar = k*inner + m
+                    if abs(svar) <= 150:
+                        st.session_state.alg_fraga = f"Bestäm f(f({a}))"
+                        st.session_state.alg_funktion = f"f(x) = {f_str}"
+                        st.session_state.alg_svar = svar
+                        break
+                else: # f_f_x_C
+                    x = random.randint(-12, 12)
+                    inner = k*x + m
+                    C = k*inner + m
+                    if abs(x) <= 100 and abs(C) <= 150:
+                        st.session_state.alg_fraga = f"Bestäm x om f(f(x)) = {C}"
+                        st.session_state.alg_funktion = f"f(x) = {f_str}"
+                        st.session_state.alg_svar = x
+                        break
+                        
+            elif typ == 'f_g_a':
+                # NY: Två funktioner, bestäm f(g(a))
+                k1 = random.choice([-4, -3, -2, -1, 2, 3, 4])
+                m1 = random.randint(-10, 10)
+                k2 = random.choice([-4, -3, -2, -1, 2, 3, 4])
+                m2 = random.randint(-10, 10)
+                
+                a = random.randint(-5, 5)
+                g_a = k2*a + m2
+                svar = k1*g_a + m1
+                
+                f_str = formatera_linjar(k1, m1)
+                g_str = formatera_linjar(k2, m2)
+                
+                st.session_state.alg_fraga = f"Bestäm f(g({a}))"
+                st.session_state.alg_funktion = f"f(x) = {f_str} \quad \text{{och}} \quad g(x) = {g_str}"
+                st.session_state.alg_svar = svar
+                break
+                
+            elif typ == 'f_likamed_g':
+                # NY: Lös ekvationen f(x) = g(x)
+                x = random.randint(-10, 10)
+                k1 = random.choice([-5, -4, -3, -2, 2, 3, 4, 5])
+                k2 = random.choice([-5, -4, -3, -2, 2, 3, 4, 5])
+                if k1 == k2: continue # Måste ha olika lutning för att få ett unikt x
+                
+                m1 = random.randint(-15, 15)
+                # Anpassar m2 så att ekvationen går jämnt upp med vårt slumpade x
+                m2 = (k1 - k2)*x + m1 
+                
+                f_str = formatera_linjar(k1, m1)
+                g_str = formatera_linjar(k2, m2)
+                
+                st.session_state.alg_fraga = "Bestäm x om f(x) = g(x)"
+                st.session_state.alg_funktion = f"f(x) = {f_str} \quad \text{{och}} \quad g(x) = {g_str}"
+                st.session_state.alg_svar = x
+                break
 # -- 3. Ekvationer --
 def formatera_sida(k, m):
     if k == 1: k_str = "x"
