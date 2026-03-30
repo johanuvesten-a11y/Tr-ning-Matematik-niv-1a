@@ -257,7 +257,7 @@ def skapa_alg_func_uppgift(niva):
                 
                 if abs(svar) <= 100:
                     st.session_state.alg_fraga = f"Bestäm f({a})"
-                    st.session_state.alg_funktion = f"{f_str}"
+                    st.session_state.alg_funktion = f"f(x) = {f_str}"
                     st.session_state.alg_svar = svar
                     break
                     
@@ -272,7 +272,7 @@ def skapa_alg_func_uppgift(niva):
                 
                 if abs(C) <= 300:
                     st.session_state.alg_fraga = f"Bestäm det positiva värdet på x om f(x) = {C}"
-                    st.session_state.alg_funktion = f"{f_str}"
+                    st.session_state.alg_funktion = f"f(x) = {f_str}"
                     st.session_state.alg_svar = x
                     break
                     
@@ -300,7 +300,7 @@ def skapa_alg_func_uppgift(niva):
                 
                 if abs(x) <= 100 and abs(C) <= 100:
                     st.session_state.alg_fraga = f"Bestäm x om f(x) = {C}"
-                    st.session_state.alg_funktion = f"{f_str}"
+                    st.session_state.alg_funktion = f"f(x) = {f_str}"
                     st.session_state.alg_svar = x
                     break
                     
@@ -324,7 +324,7 @@ def skapa_alg_func_uppgift(niva):
                     svar = k*inner + m
                     if abs(svar) <= 150:
                         st.session_state.alg_fraga = f"Bestäm f(f({a}))"
-                        st.session_state.alg_funktion = f"{f_str}"
+                        st.session_state.alg_funktion = f"f(x) = {f_str}"
                         st.session_state.alg_svar = svar
                         break
                 else: # f_f_x_C
@@ -333,7 +333,7 @@ def skapa_alg_func_uppgift(niva):
                     C = k*inner + m
                     if abs(x) <= 100 and abs(C) <= 150:
                         st.session_state.alg_fraga = f"Bestäm x om f(f(x)) = {C}"
-                        st.session_state.alg_funktion = f"{f_str}"
+                        st.session_state.alg_funktion = f"f(x) = {f_str}"
                         st.session_state.alg_svar = x
                         break
                         
@@ -351,7 +351,7 @@ def skapa_alg_func_uppgift(niva):
                 g_str = formatera_linjar(k2, m2)
                 
                 st.session_state.alg_fraga = f"Bestäm f(g({a}))"
-                st.session_state.alg_funktion = f"{f_str} \\quad \\text{{och}} \\quad g(x) = {g_str}"
+                st.session_state.alg_funktion = f"f(x) = {f_str} \\quad \\text{{och}} \\quad g(x) = {g_str}"
                 st.session_state.alg_svar = svar
                 break
                 
@@ -368,7 +368,7 @@ def skapa_alg_func_uppgift(niva):
                 g_str = formatera_linjar(k2, m2)
                 
                 st.session_state.alg_fraga = "Bestäm x om f(x) = g(x)"
-                st.session_state.alg_funktion = f"{f_str} \\quad \\text{{och}} \\quad g(x) = {g_str}"
+                st.session_state.alg_funktion = f"f(x) = {f_str} \\quad \\text{{och}} \\quad g(x) = {g_str}"
                 st.session_state.alg_svar = x
                 break
 
