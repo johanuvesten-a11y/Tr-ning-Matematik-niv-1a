@@ -3,6 +3,7 @@ import numpy as np
 import random
 import math
 import plotly.graph_objects as go
+from fractions import Fraction
 
 # --- Ställ in sidans layout till bred ---
 st.set_page_config(layout="wide", page_title="Matematikträning")
@@ -886,6 +887,73 @@ def skapa_ff_uppgift(niva=1):
                 st.session_state.ff_svarstyp = 'float'
                 break
 
+# ==========================================
+# -- 7. SANNOLIKHET --
+# ==========================================
+def skapa_slump_uppgift(niva=1):
+    while True:
+        if niva == 1:
+            typ = random.choice(['flerval_uppstallning', 'berakna_enkla'])
+            
+            if typ == 'flerval_uppstallning':
+                A = random.randint(3, 7)
+                B = random.randint(3, 7)
+                tot = A + B
+                
+                st.session_state.slump_info = f"I en påse finns {A} röda och {B} gröna godisbitar. Du drar två godisbitar slumpmässigt utan att titta."
+                st.session_state.slump_fraga = "Vilken beräkning ger sannolikheten att du får två röda godisbitar?"
+                
+                ratt = f"\\frac{{{A}}}{{{tot}}} \\cdot \\frac{{{A-1}}}{{{tot-1}}}"
+                d1 = f"\\frac{{{A}}}{{{tot}}} \\cdot \\frac{{{A}}}{{{tot}}}"
+                d2 = f"\\frac{{{A}}}{{{tot}}} + \\frac{{{A-1}}}{{{tot-1}}}"
+                d3 = f"\\frac{{{A}}}{{{tot}}} \\cdot \\frac{{{A-1}}}{{{tot}}}"
+                
+                alt = [ratt, d1, d2, d3]
+                random.shuffle(alt)
+                
+                st.session_state.slump_alternativ = [f"${a}$" for a in alt]
+                st.session_state.slump_svar = f"${ratt}$"
+                st.session_state.slump_svarstyp = 'flerval'
+                break
+                
+            elif typ == 'berakna_enkla':
+                vinst = random.randint(2, 5)
+                nit = random.randint(3, 8)
+                tot = vinst + nit
+                
+                st.session_state.slump_info = f"Ett lyckohjul har {tot} lika stora fält. {vinst} av fälten ger vinst och {nit} ger nit. Du snurrar hjulet två gånger."
+                st.session_state.slump_fraga = "Vad är sannolikheten att du vinner på båda snurren?"
+                
+                st.session_state.slump_svar_frac = Fraction(vinst, tot) * Fraction(vinst, tot)
+                st.session_state.slump_svarstyp = 'brak'
+                break
+
+        else: # Nivå 2
+            typ = random.choice(['komplement_oberoende', 'komplement_beroende'])
+            
+            if typ == 'komplement_oberoende':
+                kast = random.choice([3, 4])
+                
+                st.session_state.slump_info = f"Du kastar en vanlig sexsidig tärning {kast} gånger i rad."
+                st.session_state.slump_fraga = "Vad är sannolikheten att du slår minst en sexa?"
+                
+                st.session_state.slump_svar_frac = Fraction(1, 1) - (Fraction(5, 6) ** kast)
+                st.session_state.slump_svarstyp = 'brak'
+                break
+                
+            elif typ == 'komplement_beroende':
+                vinst = random.randint(2, 4)
+                nit = random.randint(8, 15)
+                tot = vinst + nit
+                
+                st.session_state.slump_info = f"I en skål ligger {tot} lotter. {vinst} är vinstlotter och {nit} är nitlotter. Du drar två lotter utan att titta."
+                st.session_state.slump_fraga = "Vad är sannolikheten att du får minst en vinstlott?"
+                
+                # 1 - P(två nitlotter)
+                st.session_state.slump_svar_frac = Fraction(1, 1) - (Fraction(nit, tot) * Fraction(nit-1, tot-1))
+                st.session_state.slump_svarstyp = 'brak'
+                break
+
 # --- MENYSYSTEM ---
 st.sidebar.title("Välj Träningsläge")
 vald_kategori = st.sidebar.radio("Vad vill du träna på?", [
@@ -895,6 +963,7 @@ vald_kategori = st.sidebar.radio("Vad vill du träna på?", [
     "Algebra",
     "Lån och ränta",
     "Förändringsfaktor",
+    "Sannolikhet",
     "Blandat (Slumpas)"
 ])
 
@@ -1269,12 +1338,9 @@ elif vald_kategori == "Förändringsfaktor":
                 st.session_state.ff_rattat = True
                 if svar.strip() != "":
                     try:
-                        # Rensa bort %, mellanslag och hantera komma/punkt
                         svar_clean = svar.strip().replace(",", ".").replace(" ", "").replace("%", "")
                         anv_svar = float(svar_clean)
                         ratt_svar = float(st.session_state.ff_svar)
-                        
-                        # Tillåter en liten marginal för decimalfel
                         if abs(anv_svar - ratt_svar) < 0.001: 
                             st.session_state.ff_status = 'ratt'
                         else: 
@@ -1308,6 +1374,97 @@ elif vald_kategori == "Förändringsfaktor":
                 st.warning("Skriv in ett svar först.")
 
 # ==========================================
+# UI: Sannolikhet
+# ==========================================
+elif vald_kategori == "Sannolikhet":
+    st.title("Träna på Sannolikhet")
+    
+    if 'slump_niva' not in st.session_state: st.session_state.slump_niva = 1
+    if 'slump_uppgift_nr' not in st.session_state: st.session_state.slump_uppgift_nr = 0
+    if 'slump_info' not in st.session_state: skapa_slump_uppgift(st.session_state.slump_niva)
+
+    with st.sidebar:
+        st.subheader("Inställningar")
+        ny_niva = st.radio("Välj svårighetsgrad:", [1, 2], horizontal=True, index=0 if st.session_state.slump_niva==1 else 1, key="slump_niva_val")
+        if ny_niva != st.session_state.slump_niva:
+            st.session_state.slump_niva = ny_niva
+            st.session_state.slump_rattat = False
+            st.session_state.slump_uppgift_nr += 1
+            skapa_slump_uppgift(st.session_state.slump_niva)
+            st.rerun()
+
+    col_vanster, col_hoger = st.columns([1.2, 1], gap="large")
+            
+    with col_vanster:
+        st.markdown(f"<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: #fce4ec; padding: 25px; border-radius: 10px; border-left: 6px solid #e83e8c;'>{st.session_state.slump_info}</div>", unsafe_allow_html=True)
+        
+    with col_hoger:
+        st.subheader("Uppgift")
+        st.markdown(f"<div style='font-size: 26px; font-weight: bold; color: #e83e8c; margin-bottom: 5px;'>{st.session_state.slump_fraga}</div>", unsafe_allow_html=True)
+        
+        valt_svar = None
+        svar = ""
+        
+        if st.session_state.slump_svarstyp == 'flerval':
+            st.markdown("<p style='font-size: 14px; font-style: italic; color: #666; margin-bottom: 25px;'>Välj det alternativ som visar rätt uträkning.</p>", unsafe_allow_html=True)
+            valt_svar = st.radio("Alternativ:", st.session_state.slump_alternativ, key=f"slump_radio_{st.session_state.slump_uppgift_nr}", label_visibility="collapsed")
+        else:
+            st.markdown("<p style='font-size: 14px; font-style: italic; color: #666; margin-bottom: 25px;'>Svara i bråkform med ett snedstreck (t.ex. 3/8). Bråket behöver inte vara förkortat maximalt.</p>", unsafe_allow_html=True)
+            svar = st.text_input("Ditt svar:", key=f"slump_input_{st.session_state.slump_uppgift_nr}")
+        
+        st.write("")
+        k1, k2 = st.columns(2)
+        with k1:
+            if st.button("Rätta svar", type="primary", use_container_width=True):
+                st.session_state.slump_rattat = True
+                
+                if st.session_state.slump_svarstyp == 'flerval':
+                    if valt_svar is not None:
+                        if valt_svar == st.session_state.slump_svar:
+                            st.session_state.slump_status = 'ratt'
+                        else:
+                            st.session_state.slump_status = 'fel'
+                    else:
+                        st.session_state.slump_status = 'tom'
+                else:
+                    if svar.strip() != "":
+                        try:
+                            # Kontrollerar bråket
+                            svar_clean = svar.strip().replace(" ", "").replace(",", ".")
+                            anv_frac = Fraction(svar_clean)
+                            if anv_frac == st.session_state.slump_svar_frac:
+                                st.session_state.slump_status = 'ratt'
+                            else:
+                                st.session_state.slump_status = 'fel'
+                        except ValueError:
+                            st.session_state.slump_status = 'format'
+                    else:
+                        st.session_state.slump_status = 'tom'
+                st.rerun()
+                
+        with k2:
+            if st.button("Ny uppgift", use_container_width=True):
+                st.session_state.slump_rattat = False
+                st.session_state.slump_uppgift_nr += 1
+                skapa_slump_uppgift(st.session_state.slump_niva)
+                st.rerun()
+
+        if st.session_state.get('slump_rattat', False):
+            if st.session_state.slump_status == 'ratt': 
+                st.success("✅ Helt rätt! Snyggt jobbat.")
+            elif st.session_state.slump_status == 'fel': 
+                if st.session_state.slump_svarstyp == 'flerval':
+                    st.error(f"❌ Tyvärr fel. Rätt uträkning var: {st.session_state.slump_svar}")
+                else:
+                    # Visa rätt svar för bråk
+                    ratt_frac = st.session_state.slump_svar_frac
+                    st.error(f"❌ Tyvärr fel. Rätt svar var: {ratt_frac.numerator}/{ratt_frac.denominator}")
+            elif st.session_state.slump_status == 'format': 
+                st.warning("⚠️ Skriv svaret som ett bråk, till exempel 3/8.")
+            elif st.session_state.slump_status == 'tom': 
+                st.warning("Vänligen ange ett svar först.")
+
+# ==========================================
 # UI: Blandat (Slumpas)
 # ==========================================
 elif vald_kategori == "Blandat (Slumpas)":
@@ -1316,7 +1473,8 @@ elif vald_kategori == "Blandat (Slumpas)":
     if 'blandat_niva' not in st.session_state: st.session_state.blandat_niva = 1
 
     def ny_blandad_uppgift():
-        st.session_state.blandat_typ = random.choice(['graf', 'alg_func', 'ekv', 'alg_uttryck', 'lan', 'ff'])
+        # Lade till 'slump' (Sannolikhet) i listan
+        st.session_state.blandat_typ = random.choice(['graf', 'alg_func', 'ekv', 'alg_uttryck', 'lan', 'ff', 'slump'])
         niva = st.session_state.get('blandat_niva', 1)
         st.session_state.blandat_id = st.session_state.get('blandat_id', 0) + 1
         st.session_state.blandat_rattat = False
@@ -1335,6 +1493,8 @@ elif vald_kategori == "Blandat (Slumpas)":
             skapa_lan_uppgift(niva)
         elif st.session_state.blandat_typ == 'ff':
             skapa_ff_uppgift(niva)
+        elif st.session_state.blandat_typ == 'slump':
+            skapa_slump_uppgift(niva)
 
     with st.sidebar:
         st.subheader("Inställningar")
@@ -1379,6 +1539,9 @@ elif vald_kategori == "Blandat (Slumpas)":
             
         elif st.session_state.blandat_typ == 'ff':
             st.markdown(f"<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: #e9ecef; padding: 25px; border-radius: 10px; border-left: 6px solid #28a745;'>{st.session_state.ff_info}</div>", unsafe_allow_html=True)
+            
+        elif st.session_state.blandat_typ == 'slump':
+            st.markdown(f"<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: #fce4ec; padding: 25px; border-radius: 10px; border-left: 6px solid #e83e8c;'>{st.session_state.slump_info}</div>", unsafe_allow_html=True)
 
     with col_hoger:
         st.subheader("Uppgift")
@@ -1387,6 +1550,11 @@ elif vald_kategori == "Blandat (Slumpas)":
             st.markdown("<p style='font-size: 14px; font-style: italic; color: #666; margin-bottom: 5px;'>Lös gärna på papper och skriv in ditt svar.</p>", unsafe_allow_html=True)
         elif st.session_state.blandat_typ == 'alg_uttryck':
             st.markdown("<p style='font-size: 14px; font-style: italic; color: #666; margin-bottom: 5px;'>Lös gärna på papper och välj ditt svar.</p>", unsafe_allow_html=True)
+        elif st.session_state.blandat_typ == 'slump':
+            if st.session_state.slump_svarstyp == 'flerval':
+                st.markdown("<p style='font-size: 14px; font-style: italic; color: #666; margin-bottom: 25px;'>Välj det alternativ som visar rätt uträkning.</p>", unsafe_allow_html=True)
+            else:
+                st.markdown("<p style='font-size: 14px; font-style: italic; color: #666; margin-bottom: 25px;'>Svara i bråkform med ett snedstreck (t.ex. 3/8). Bråket behöver inte vara förkortat maximalt.</p>", unsafe_allow_html=True)
             
         svar_lista = []
         svar = ""
@@ -1417,6 +1585,13 @@ elif vald_kategori == "Blandat (Slumpas)":
         elif st.session_state.blandat_typ == 'ff':
             st.markdown(f"<div style='font-size: 26px; font-weight: bold; color: #28a745; margin-bottom: 25px;'>{st.session_state.ff_fraga}</div>", unsafe_allow_html=True)
             svar = st.text_input("Ditt svar:", key=f"blandat_ff_in_{st.session_state.blandat_id}")
+            
+        elif st.session_state.blandat_typ == 'slump':
+            st.markdown(f"<div style='font-size: 26px; font-weight: bold; color: #e83e8c; margin-bottom: 25px;'>{st.session_state.slump_fraga}</div>", unsafe_allow_html=True)
+            if st.session_state.slump_svarstyp == 'flerval':
+                valt_svar = st.radio("Alternativ:", st.session_state.slump_alternativ, key=f"blandat_slump_radio_{st.session_state.blandat_id}", label_visibility="collapsed")
+            else:
+                svar = st.text_input("Ditt svar:", key=f"blandat_slump_in_{st.session_state.blandat_id}")
 
         st.write("")
         
@@ -1468,6 +1643,20 @@ elif vald_kategori == "Blandat (Slumpas)":
                                 st.session_state.blandat_status = 'fel'
                         except ValueError: st.session_state.blandat_status = 'format'
                     else: st.session_state.blandat_status = 'tom'
+                    
+                elif st.session_state.blandat_typ == 'slump':
+                    if st.session_state.slump_svarstyp == 'flerval':
+                        if valt_svar is not None:
+                            st.session_state.blandat_status = 'ratt' if valt_svar == st.session_state.slump_svar else 'fel'
+                        else: st.session_state.blandat_status = 'tom'
+                    else:
+                        if svar.strip() != "":
+                            try:
+                                svar_clean = svar.strip().replace(" ", "").replace(",", ".")
+                                anv_frac = Fraction(svar_clean)
+                                st.session_state.blandat_status = 'ratt' if anv_frac == st.session_state.slump_svar_frac else 'fel'
+                            except ValueError: st.session_state.blandat_status = 'format'
+                        else: st.session_state.blandat_status = 'tom'
                         
                 st.rerun()
 
@@ -1489,8 +1678,15 @@ elif vald_kategori == "Blandat (Slumpas)":
                     ratt_txt = str(st.session_state.ff_svar).replace(".", ",")
                     if st.session_state.ff_svarstyp == 'int': ratt_txt += " kr"
                     elif st.session_state.ff_svarstyp == 'procent': ratt_txt += " %"
+                elif st.session_state.blandat_typ == 'slump':
+                    if st.session_state.slump_svarstyp == 'flerval':
+                        ratt_txt = st.session_state.slump_svar
+                    else:
+                        ratt_frac = st.session_state.slump_svar_frac
+                        ratt_txt = f"{ratt_frac.numerator}/{ratt_frac.denominator}"
+                        
                 st.error(f"❌ Tyvärr fel. Rätt svar var: {ratt_txt}")
             elif st.session_state.blandat_status == 'format':
-                st.warning("⚠️ Svaret är i fel format (skriv bara siffror/decimaltal).")
+                st.warning("⚠️ Svaret är i fel format.")
             elif st.session_state.blandat_status == 'tom':
                 st.warning("Vänligen fyll i ett svar innan du rättar.")
