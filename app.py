@@ -1008,6 +1008,63 @@ def skapa_slump_uppgift(niva=1):
                 st.session_state.slump_svarstyp = 'brak'
                 break
 
+# ==========================================
+# -- 8. STATISTIK --
+# ==========================================
+def rita_stat_graf(x, y):
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=x, y=y, mode='markers', 
+        marker=dict(size=10, color='#8B008B', opacity=0.7), 
+        hoverinfo='skip'
+    ))
+    fig.update_layout(
+        xaxis=dict(showticklabels=False, showgrid=False, zeroline=True, zerolinewidth=2, zerolinecolor='black'),
+        yaxis=dict(showticklabels=False, showgrid=False, zeroline=True, zerolinewidth=2, zerolinecolor='black'),
+        margin=dict(l=20, r=20, t=20, b=20),
+        height=450,
+        plot_bgcolor='white',
+        hovermode=False,
+        dragmode=False
+    )
+    fig.update_xaxes(showline=True, linewidth=2, linecolor='black')
+    fig.update_yaxes(showline=True, linewidth=2, linecolor='black')
+    return fig
+
+def skapa_stat_uppgift(niva=1):
+    num_points = random.randint(40, 60)
+    x = np.random.uniform(10, 90, num_points)
+    
+    if niva == 1:
+        korr = random.choice(['Positiv korrelation', 'Negativ korrelation', 'Ingen korrelation'])
+        if korr == 'Positiv korrelation':
+            y = 1.5 * x + np.random.normal(0, 15, num_points)
+        elif korr == 'Negativ korrelation':
+            y = -1.5 * x + 150 + np.random.normal(0, 15, num_points)
+        else:
+            y = np.random.uniform(10, 90, num_points)
+            
+        st.session_state.stat_alternativ = ['Välj svar...', 'Positiv korrelation', 'Negativ korrelation', 'Ingen korrelation']
+    else:
+        korr = random.choice(['Stark positiv', 'Svag positiv', 'Stark negativ', 'Svag negativ', 'Ingen korrelation'])
+        if korr == 'Stark positiv':
+            y = 1.5 * x + np.random.normal(0, 6, num_points)
+        elif korr == 'Svag positiv':
+            y = 1.5 * x + np.random.normal(0, 25, num_points)
+        elif korr == 'Stark negativ':
+            y = -1.5 * x + 150 + np.random.normal(0, 6, num_points)
+        elif korr == 'Svag negativ':
+            y = -1.5 * x + 150 + np.random.normal(0, 25, num_points)
+        else:
+            y = np.random.uniform(10, 90, num_points)
+            
+        st.session_state.stat_alternativ = ['Välj svar...', 'Stark positiv', 'Svag positiv', 'Stark negativ', 'Svag negativ', 'Ingen korrelation']
+        
+    st.session_state.stat_x = x
+    st.session_state.stat_y = y
+    st.session_state.stat_svar = korr
+    st.session_state.stat_fraga = "Vilken typ av korrelation visar diagrammet?"
+
 # --- MENYSYSTEM ---
 st.sidebar.title("Välj Träningsläge")
 vald_kategori = st.sidebar.radio("Vad vill du träna på?", [
@@ -1018,6 +1075,7 @@ vald_kategori = st.sidebar.radio("Vad vill du träna på?", [
     "Lån och ränta",
     "Förändringsfaktor",
     "Sannolikhet",
+    "Statistik",
     "Blandat (Slumpas)"
 ])
 
@@ -1485,7 +1543,6 @@ elif vald_kategori == "Sannolikhet":
                 else:
                     if svar.strip() != "":
                         try:
-                            # Kontrollerar bråket
                             svar_clean = svar.strip().replace(" ", "").replace(",", ".")
                             anv_frac = Fraction(svar_clean)
                             if anv_frac == st.session_state.slump_svar_frac:
@@ -1512,13 +1569,74 @@ elif vald_kategori == "Sannolikhet":
                 if st.session_state.slump_svarstyp == 'flerval':
                     st.error(f"❌ Tyvärr fel. Rätt uträkning var: {st.session_state.slump_svar}")
                 else:
-                    # Visa rätt svar för bråk
                     ratt_frac = st.session_state.slump_svar_frac
                     st.error(f"❌ Tyvärr fel. Rätt svar var: {ratt_frac.numerator}/{ratt_frac.denominator}")
             elif st.session_state.slump_status == 'format': 
                 st.warning("⚠️ Skriv svaret som ett bråk, till exempel 3/8.")
             elif st.session_state.slump_status == 'tom': 
                 st.warning("Vänligen ange ett svar först.")
+
+# ==========================================
+# UI: Statistik
+# ==========================================
+elif vald_kategori == "Statistik":
+    st.title("Tolka Spridningsdiagram (Statistik)")
+    
+    if 'stat_niva' not in st.session_state: st.session_state.stat_niva = 1
+    if 'stat_uppgift_nr' not in st.session_state: st.session_state.stat_uppgift_nr = 0
+    if 'stat_x' not in st.session_state: skapa_stat_uppgift(st.session_state.stat_niva)
+
+    with st.sidebar:
+        st.subheader("Inställningar")
+        ny_niva = st.radio("Välj svårighetsgrad:", [1, 2], horizontal=True, index=0 if st.session_state.stat_niva==1 else 1, key="stat_niva_val")
+        if ny_niva != st.session_state.stat_niva:
+            st.session_state.stat_niva = ny_niva
+            st.session_state.stat_rattat = False
+            st.session_state.stat_uppgift_nr += 1
+            skapa_stat_uppgift(st.session_state.stat_niva)
+            st.rerun()
+
+    col_vanster, col_hoger = st.columns([1.2, 1], gap="large")
+            
+    with col_vanster:
+        fig = rita_stat_graf(st.session_state.stat_x, st.session_state.stat_y)
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+        
+    with col_hoger:
+        st.subheader("Uppgift")
+        st.markdown(f"<div style='font-size: 26px; font-weight: bold; color: #8B008B; margin-bottom: 25px;'>{st.session_state.stat_fraga}</div>", unsafe_allow_html=True)
+        
+        valt_svar = st.selectbox("Välj ett alternativ:", st.session_state.stat_alternativ, key=f"stat_box_{st.session_state.stat_uppgift_nr}", label_visibility="collapsed")
+        
+        st.write("")
+        k1, k2 = st.columns(2)
+        with k1:
+            if st.button("Rätta svar", type="primary", use_container_width=True):
+                st.session_state.stat_rattat = True
+                
+                if valt_svar != 'Välj svar...':
+                    if valt_svar == st.session_state.stat_svar:
+                        st.session_state.stat_status = 'ratt'
+                    else:
+                        st.session_state.stat_status = 'fel'
+                else:
+                    st.session_state.stat_status = 'tom'
+                st.rerun()
+                
+        with k2:
+            if st.button("Nytt diagram", use_container_width=True):
+                st.session_state.stat_rattat = False
+                st.session_state.stat_uppgift_nr += 1
+                skapa_stat_uppgift(st.session_state.stat_niva)
+                st.rerun()
+
+        if st.session_state.get('stat_rattat', False):
+            if st.session_state.stat_status == 'ratt': 
+                st.success("✅ Helt rätt! Snyggt tolkat.")
+            elif st.session_state.stat_status == 'fel': 
+                st.error(f"❌ Tyvärr fel. Rätt svar var: {st.session_state.stat_svar}")
+            elif st.session_state.stat_status == 'tom': 
+                st.warning("Vänligen välj ett alternativ i menyn.")
 
 # ==========================================
 # UI: Blandat (Slumpas)
@@ -1529,8 +1647,8 @@ elif vald_kategori == "Blandat (Slumpas)":
     if 'blandat_niva' not in st.session_state: st.session_state.blandat_niva = 1
 
     def ny_blandad_uppgift():
-        # Lade till 'slump' (Sannolikhet) i listan
-        st.session_state.blandat_typ = random.choice(['graf', 'alg_func', 'ekv', 'alg_uttryck', 'lan', 'ff', 'slump'])
+        # Lade till 'stat' i listan
+        st.session_state.blandat_typ = random.choice(['graf', 'alg_func', 'ekv', 'alg_uttryck', 'lan', 'ff', 'slump', 'stat'])
         niva = st.session_state.get('blandat_niva', 1)
         st.session_state.blandat_id = st.session_state.get('blandat_id', 0) + 1
         st.session_state.blandat_rattat = False
@@ -1551,6 +1669,8 @@ elif vald_kategori == "Blandat (Slumpas)":
             skapa_ff_uppgift(niva)
         elif st.session_state.blandat_typ == 'slump':
             skapa_slump_uppgift(niva)
+        elif st.session_state.blandat_typ == 'stat':
+            skapa_stat_uppgift(niva)
 
     with st.sidebar:
         st.subheader("Inställningar")
@@ -1598,6 +1718,10 @@ elif vald_kategori == "Blandat (Slumpas)":
             
         elif st.session_state.blandat_typ == 'slump':
             st.markdown(f"<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: #fce4ec; padding: 25px; border-radius: 10px; border-left: 6px solid #e83e8c;'>{st.session_state.slump_info}</div>", unsafe_allow_html=True)
+
+        elif st.session_state.blandat_typ == 'stat':
+            fig = rita_stat_graf(st.session_state.stat_x, st.session_state.stat_y)
+            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
     with col_hoger:
         st.subheader("Uppgift")
@@ -1648,6 +1772,10 @@ elif vald_kategori == "Blandat (Slumpas)":
                 valt_svar = st.radio("Alternativ:", st.session_state.slump_alternativ, key=f"blandat_slump_radio_{st.session_state.blandat_id}", label_visibility="collapsed")
             else:
                 svar = st.text_input("Ditt svar:", key=f"blandat_slump_in_{st.session_state.blandat_id}")
+
+        elif st.session_state.blandat_typ == 'stat':
+            st.markdown(f"<div style='font-size: 26px; font-weight: bold; color: #8B008B; margin-bottom: 25px;'>{st.session_state.stat_fraga}</div>", unsafe_allow_html=True)
+            valt_svar = st.selectbox("Välj ett alternativ:", st.session_state.stat_alternativ, key=f"blandat_stat_box_{st.session_state.blandat_id}", label_visibility="collapsed")
 
         st.write("")
         
@@ -1713,7 +1841,13 @@ elif vald_kategori == "Blandat (Slumpas)":
                                 st.session_state.blandat_status = 'ratt' if anv_frac == st.session_state.slump_svar_frac else 'fel'
                             except ValueError: st.session_state.blandat_status = 'format'
                         else: st.session_state.blandat_status = 'tom'
-                        
+                
+                elif st.session_state.blandat_typ == 'stat':
+                    if valt_svar != 'Välj svar...':
+                        st.session_state.blandat_status = 'ratt' if valt_svar == st.session_state.stat_svar else 'fel'
+                    else:
+                        st.session_state.blandat_status = 'tom'
+
                 st.rerun()
 
         with k2:
@@ -1730,6 +1864,7 @@ elif vald_kategori == "Blandat (Slumpas)":
                 elif st.session_state.blandat_typ == 'ekv': ratt_txt = st.session_state.ekv_svar
                 elif st.session_state.blandat_typ == 'lan': ratt_txt = f"{st.session_state.lan_svar} kr"
                 elif st.session_state.blandat_typ == 'alg_uttryck': ratt_txt = f"uttrycket som är exakt {st.session_state.alg_uttryck_svar}"
+                elif st.session_state.blandat_typ == 'stat': ratt_txt = st.session_state.stat_svar
                 elif st.session_state.blandat_typ == 'ff': 
                     ratt_txt = str(st.session_state.ff_svar).replace(".", ",")
                     if st.session_state.ff_svarstyp == 'int': ratt_txt += " kr"
@@ -1743,6 +1878,9 @@ elif vald_kategori == "Blandat (Slumpas)":
                         
                 st.error(f"❌ Tyvärr fel. Rätt svar var: {ratt_txt}")
             elif st.session_state.blandat_status == 'format':
-                st.warning("⚠️ Svaret är i fel format.")
+                st.warning("⚠️ Svaret är i fel format (skriv bara siffror/decimaltal/bråk).")
             elif st.session_state.blandat_status == 'tom':
-                st.warning("Vänligen fyll i ett svar innan du rättar.")
+                if st.session_state.blandat_typ == 'stat':
+                    st.warning("Vänligen välj ett alternativ i menyn.")
+                else:
+                    st.warning("Vänligen fyll i/välj ett svar innan du rättar.")
