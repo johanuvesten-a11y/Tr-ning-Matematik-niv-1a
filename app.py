@@ -1019,30 +1019,25 @@ def rita_stat_graf(x, y):
         hoverinfo='skip'
     ))
     
-    # Uppdaterar layouten: vi döljer ALLA inbyggda ram- och axellinjer
-    # för att undvika överlappningar med våra nya pil-axlar.
+    # Använder samma metod som för de vanliga graferna
+    # Stänger av showline (boxen) och slår på zeroline (matematiska axlarna)
     fig.update_layout(
-        xaxis=dict(range=[0, 100], showticklabels=False, showgrid=False, zeroline=False, showline=True, linewidth=2, linecolor='black', mirror=False),
-        yaxis=dict(range=[0, 160], showticklabels=False, showgrid=False, zeroline=False, showline=True, linewidth=2, linecolor='black', mirror=False),
+        xaxis=dict(range=[-5, 105], showticklabels=False, showgrid=False, zeroline=True, zerolinewidth=3, zerolinecolor='black', showline=False, fixedrange=True),
+        yaxis=dict(range=[-10, 170], showticklabels=False, showgrid=False, zeroline=True, zerolinewidth=3, zerolinecolor='black', showline=False, fixedrange=True),
         margin=dict(l=20, r=20, t=20, b=20),
         height=450,
         plot_bgcolor='white',
         hovermode=False,
-        dragmode=False
-    )
-    
-    # Pil för x-axeln
-    fig.add_annotation(
-        x=1, y=0, xref='paper', yref='paper',
-        ax=-20, ay=0,
-        showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=2, arrowcolor='black'
-    )
-    
-    # Pil för y-axeln
-    fig.add_annotation(
-        x=0, y=1, xref='paper', yref='paper',
-        ax=0, ay=20,
-        showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=2, arrowcolor='black'
+        dragmode=False,
+        annotations=[
+            # Pil för x-axeln, fäst till koordinatsystemet
+            dict(x=105, y=0, ax=95, ay=0, xref='x', yref='y', axref='x', ayref='y', showarrow=True, arrowhead=2, arrowsize=1, arrowwidth=2, arrowcolor='black'),
+            # Pil för y-axeln, fäst till koordinatsystemet
+            dict(x=0, y=170, ax=0, ay=155, xref='x', yref='y', axref='x', ayref='y', showarrow=True, arrowhead=2, arrowsize=1, arrowwidth=2, arrowcolor='black'),
+            # Etiketter
+            dict(x=105, y=-5, text="x", showarrow=False, xref='x', yref='y', font=dict(size=16, color='black')),
+            dict(x=-3, y=170, text="y", showarrow=False, xref='x', yref='y', font=dict(size=16, color='black'))
+        ]
     )
     
     return fig
@@ -1458,7 +1453,6 @@ elif vald_kategori == "Förändringsfaktor":
                         anv_svar = float(svar_clean)
                         ratt_svar = float(st.session_state.ff_svar)
                         
-                        # Tillåter en liten marginal för decimalfel
                         if abs(anv_svar - ratt_svar) < 0.001: 
                             st.session_state.ff_status = 'ratt'
                         else: 
