@@ -893,7 +893,7 @@ def skapa_ff_uppgift(niva=1):
 def skapa_slump_uppgift(niva=1):
     while True:
         if niva == 1:
-            typ = random.choice(['flerval_uppstallning', 'berakna_enkla'])
+            typ = random.choice(['flerval_uppstallning', 'berakna_enkla', 'enkel_dragning', 'tarning_mynt'])
             
             if typ == 'flerval_uppstallning':
                 A = random.randint(3, 7)
@@ -927,9 +927,33 @@ def skapa_slump_uppgift(niva=1):
                 st.session_state.slump_svar_frac = Fraction(vinst, tot) * Fraction(vinst, tot)
                 st.session_state.slump_svarstyp = 'brak'
                 break
+                
+            elif typ == 'enkel_dragning':
+                farg1_plur, farg1_sing = random.choice([('röda', 'röd'), ('gröna', 'grön'), ('blåa', 'blå')])
+                farg2_plur, farg2_sing = random.choice([('gula', 'gul'), ('svarta', 'svart'), ('vita', 'vit')])
+                A = random.randint(3, 8)
+                B = random.randint(3, 8)
+                tot = A + B
+                
+                st.session_state.slump_info = f"I en påse finns {A} {farg1_plur} och {B} {farg2_plur} kulor. Du drar en kula utan att titta."
+                st.session_state.slump_fraga = f"Vad är sannolikheten att du drar en {farg1_sing} kula?"
+                
+                st.session_state.slump_svar_frac = Fraction(A, tot)
+                st.session_state.slump_svarstyp = 'brak'
+                break
+                
+            elif typ == 'tarning_mynt':
+                st.session_state.slump_info = "Du kastar en vanlig sexsidig tärning och singlar ett mynt."
+                target_tarning = random.randint(1, 6)
+                target_mynt = random.choice(['krona', 'klave'])
+                
+                st.session_state.slump_fraga = f"Vad är sannolikheten att du får en {target_tarning}:a och {target_mynt}?"
+                st.session_state.slump_svar_frac = Fraction(1, 6) * Fraction(1, 2)
+                st.session_state.slump_svarstyp = 'brak'
+                break
 
         else: # Nivå 2
-            typ = random.choice(['komplement_oberoende', 'komplement_beroende'])
+            typ = random.choice(['komplement_oberoende', 'komplement_beroende', 'flera_vagar', 'tarning_summa'])
             
             if typ == 'komplement_oberoende':
                 kast = random.choice([3, 4])
@@ -949,8 +973,38 @@ def skapa_slump_uppgift(niva=1):
                 st.session_state.slump_info = f"I en skål ligger {tot} lotter. {vinst} är vinstlotter och {nit} är nitlotter. Du drar två lotter utan att titta."
                 st.session_state.slump_fraga = "Vad är sannolikheten att du får minst en vinstlott?"
                 
-                # 1 - P(två nitlotter)
                 st.session_state.slump_svar_frac = Fraction(1, 1) - (Fraction(nit, tot) * Fraction(nit-1, tot-1))
+                st.session_state.slump_svarstyp = 'brak'
+                break
+                
+            elif typ == 'flera_vagar':
+                A = random.randint(3, 6)
+                B = random.randint(3, 6)
+                tot = A + B
+                
+                st.session_state.slump_info = f"I en ask finns {A} röda och {B} blå bollar. Du drar två bollar slumpmässigt utan återläggning."
+                st.session_state.slump_fraga = "Vad är sannolikheten att du får exakt en av varje färg?"
+                
+                gynsamma_utfall = 2 * A * B
+                totala_utfall = tot * (tot - 1)
+                
+                st.session_state.slump_svar_frac = Fraction(gynsamma_utfall, totala_utfall)
+                st.session_state.slump_svarstyp = 'brak'
+                break
+                
+            elif typ == 'tarning_summa':
+                summan = random.randint(4, 10)
+                
+                st.session_state.slump_info = "Du kastar två vanliga sexsidiga tärningar."
+                st.session_state.slump_fraga = f"Vad är sannolikheten att tärningarnas summa blir exakt {summan}?"
+                
+                gynsamma = 0
+                for i in range(1, 7):
+                    for j in range(1, 7):
+                        if i + j == summan:
+                            gynsamma += 1
+                            
+                st.session_state.slump_svar_frac = Fraction(gynsamma, 36)
                 st.session_state.slump_svarstyp = 'brak'
                 break
 
@@ -1341,6 +1395,8 @@ elif vald_kategori == "Förändringsfaktor":
                         svar_clean = svar.strip().replace(",", ".").replace(" ", "").replace("%", "")
                         anv_svar = float(svar_clean)
                         ratt_svar = float(st.session_state.ff_svar)
+                        
+                        # Tillåter en liten marginal för decimalfel
                         if abs(anv_svar - ratt_svar) < 0.001: 
                             st.session_state.ff_status = 'ratt'
                         else: 
