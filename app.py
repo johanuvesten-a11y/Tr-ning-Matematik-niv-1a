@@ -1100,9 +1100,7 @@ elif vald_kategori == "Lån och ränta":
     col_vanster, col_hoger = st.columns([1.2, 1], gap="large")
             
     with col_vanster:
-        st.markdown("<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: #f8f9fa; padding: 25px; border-radius: 10px; border-left: 6px solid #0056b3;'>", unsafe_allow_html=True)
-        st.write(st.session_state.lan_info)
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: #f8f9fa; padding: 25px; border-radius: 10px; border-left: 6px solid #0056b3;'>{st.session_state.lan_info}</div>", unsafe_allow_html=True)
         
     with col_hoger:
         st.subheader("Uppgift")
@@ -1205,9 +1203,7 @@ elif vald_kategori == "Blandat (Slumpas)":
             st.latex(st.session_state.alg_uttryck_str)
             
         elif st.session_state.blandat_typ == 'lan':
-            st.markdown("<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: #f8f9fa; padding: 25px; border-radius: 10px; border-left: 6px solid #0056b3;'>", unsafe_allow_html=True)
-            st.write(st.session_state.lan_info)
-            st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: #f8f9fa; padding: 25px; border-radius: 10px; border-left: 6px solid #0056b3;'>{st.session_state.lan_info}</div>", unsafe_allow_html=True)
 
     with col_hoger:
         st.subheader("Uppgift")
