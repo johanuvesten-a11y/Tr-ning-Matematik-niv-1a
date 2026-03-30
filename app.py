@@ -1018,48 +1018,51 @@ def rita_stat_graf(x, y):
         marker=dict(size=10, color='#8B008B', opacity=0.7), 
         hoverinfo='skip'
     ))
+    
+    # Uppdaterar layouten för att dölja "zeroline" och endast visa kantlinjerna
     fig.update_layout(
-        xaxis=dict(showticklabels=False, showgrid=False, zeroline=True, zerolinewidth=2, zerolinecolor='black'),
-        yaxis=dict(showticklabels=False, showgrid=False, zeroline=True, zerolinewidth=2, zerolinecolor='black'),
+        xaxis=dict(showticklabels=False, showgrid=False, zeroline=False, showline=True, linewidth=2, linecolor='black', mirror=False),
+        yaxis=dict(showticklabels=False, showgrid=False, zeroline=False, showline=True, linewidth=2, linecolor='black', mirror=False),
         margin=dict(l=20, r=20, t=20, b=20),
         height=450,
         plot_bgcolor='white',
         hovermode=False,
         dragmode=False
     )
-    fig.update_xaxes(showline=True, linewidth=2, linecolor='black')
-    fig.update_yaxes(showline=True, linewidth=2, linecolor='black')
+    
+    # Pil för x-axeln
+    fig.add_annotation(
+        x=1.02, y=0, xref='paper', yref='paper',
+        ax=0.98, ay=0, axref='paper', ayref='paper',
+        showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=2, arrowcolor='black'
+    )
+    # Pil för y-axeln
+    fig.add_annotation(
+        x=0, y=1.02, xref='paper', yref='paper',
+        ax=0, ay=0.98, axref='paper', ayref='paper',
+        showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=2, arrowcolor='black'
+    )
+    
     return fig
 
 def skapa_stat_uppgift(niva=1):
+    # niva används inte längre här, det är alltid "Nivå 2" svårighetsgrad
     num_points = random.randint(40, 60)
     x = np.random.uniform(10, 90, num_points)
     
-    if niva == 1:
-        korr = random.choice(['Positiv korrelation', 'Negativ korrelation', 'Ingen korrelation'])
-        if korr == 'Positiv korrelation':
-            y = 1.5 * x + np.random.normal(0, 15, num_points)
-        elif korr == 'Negativ korrelation':
-            y = -1.5 * x + 150 + np.random.normal(0, 15, num_points)
-        else:
-            y = np.random.uniform(10, 90, num_points)
-            
-        st.session_state.stat_alternativ = ['Välj svar...', 'Positiv korrelation', 'Negativ korrelation', 'Ingen korrelation']
+    korr = random.choice(['Stark positiv', 'Svag positiv', 'Stark negativ', 'Svag negativ', 'Ingen korrelation'])
+    if korr == 'Stark positiv':
+        y = 1.5 * x + np.random.normal(0, 6, num_points)
+    elif korr == 'Svag positiv':
+        y = 1.5 * x + np.random.normal(0, 25, num_points)
+    elif korr == 'Stark negativ':
+        y = -1.5 * x + 150 + np.random.normal(0, 6, num_points)
+    elif korr == 'Svag negativ':
+        y = -1.5 * x + 150 + np.random.normal(0, 25, num_points)
     else:
-        korr = random.choice(['Stark positiv', 'Svag positiv', 'Stark negativ', 'Svag negativ', 'Ingen korrelation'])
-        if korr == 'Stark positiv':
-            y = 1.5 * x + np.random.normal(0, 6, num_points)
-        elif korr == 'Svag positiv':
-            y = 1.5 * x + np.random.normal(0, 25, num_points)
-        elif korr == 'Stark negativ':
-            y = -1.5 * x + 150 + np.random.normal(0, 6, num_points)
-        elif korr == 'Svag negativ':
-            y = -1.5 * x + 150 + np.random.normal(0, 25, num_points)
-        else:
-            y = np.random.uniform(10, 90, num_points)
-            
-        st.session_state.stat_alternativ = ['Välj svar...', 'Stark positiv', 'Svag positiv', 'Stark negativ', 'Svag negativ', 'Ingen korrelation']
+        y = np.random.uniform(10, 90, num_points)
         
+    st.session_state.stat_alternativ = ['Välj svar...', 'Stark positiv', 'Svag positiv', 'Stark negativ', 'Svag negativ', 'Ingen korrelation']
     st.session_state.stat_x = x
     st.session_state.stat_y = y
     st.session_state.stat_svar = korr
@@ -1454,7 +1457,6 @@ elif vald_kategori == "Förändringsfaktor":
                         anv_svar = float(svar_clean)
                         ratt_svar = float(st.session_state.ff_svar)
                         
-                        # Tillåter en liten marginal för decimalfel
                         if abs(anv_svar - ratt_svar) < 0.001: 
                             st.session_state.ff_status = 'ratt'
                         else: 
@@ -1582,19 +1584,12 @@ elif vald_kategori == "Sannolikhet":
 elif vald_kategori == "Statistik":
     st.title("Tolka Spridningsdiagram (Statistik)")
     
-    if 'stat_niva' not in st.session_state: st.session_state.stat_niva = 1
     if 'stat_uppgift_nr' not in st.session_state: st.session_state.stat_uppgift_nr = 0
-    if 'stat_x' not in st.session_state: skapa_stat_uppgift(st.session_state.stat_niva)
+    if 'stat_x' not in st.session_state: skapa_stat_uppgift()
 
     with st.sidebar:
         st.subheader("Inställningar")
-        ny_niva = st.radio("Välj svårighetsgrad:", [1, 2], horizontal=True, index=0 if st.session_state.stat_niva==1 else 1, key="stat_niva_val")
-        if ny_niva != st.session_state.stat_niva:
-            st.session_state.stat_niva = ny_niva
-            st.session_state.stat_rattat = False
-            st.session_state.stat_uppgift_nr += 1
-            skapa_stat_uppgift(st.session_state.stat_niva)
-            st.rerun()
+        st.write("Endast en nivå tillgänglig.")
 
     col_vanster, col_hoger = st.columns([1.2, 1], gap="large")
             
@@ -1627,7 +1622,7 @@ elif vald_kategori == "Statistik":
             if st.button("Nytt diagram", use_container_width=True):
                 st.session_state.stat_rattat = False
                 st.session_state.stat_uppgift_nr += 1
-                skapa_stat_uppgift(st.session_state.stat_niva)
+                skapa_stat_uppgift()
                 st.rerun()
 
         if st.session_state.get('stat_rattat', False):
@@ -1647,7 +1642,6 @@ elif vald_kategori == "Blandat (Slumpas)":
     if 'blandat_niva' not in st.session_state: st.session_state.blandat_niva = 1
 
     def ny_blandad_uppgift():
-        # Lade till 'stat' i listan
         st.session_state.blandat_typ = random.choice(['graf', 'alg_func', 'ekv', 'alg_uttryck', 'lan', 'ff', 'slump', 'stat'])
         niva = st.session_state.get('blandat_niva', 1)
         st.session_state.blandat_id = st.session_state.get('blandat_id', 0) + 1
@@ -1670,7 +1664,7 @@ elif vald_kategori == "Blandat (Slumpas)":
         elif st.session_state.blandat_typ == 'slump':
             skapa_slump_uppgift(niva)
         elif st.session_state.blandat_typ == 'stat':
-            skapa_stat_uppgift(niva)
+            skapa_stat_uppgift() # Tar inte in nivå längre
 
     with st.sidebar:
         st.subheader("Inställningar")
