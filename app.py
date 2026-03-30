@@ -1019,10 +1019,11 @@ def rita_stat_graf(x, y):
         hoverinfo='skip'
     ))
     
-    # Uppdaterar layouten för att dölja "zeroline" och endast visa kantlinjerna
+    # Uppdaterar layouten: vi döljer ALLA inbyggda ram- och axellinjer
+    # för att undvika överlappningar med våra nya pil-axlar.
     fig.update_layout(
-        xaxis=dict(showticklabels=False, showgrid=False, zeroline=False, showline=True, linewidth=2, linecolor='black', mirror=False),
-        yaxis=dict(showticklabels=False, showgrid=False, zeroline=False, showline=True, linewidth=2, linecolor='black', mirror=False),
+        xaxis=dict(range=[0, 100], showticklabels=False, showgrid=False, zeroline=False, showline=False),
+        yaxis=dict(range=[0, 160], showticklabels=False, showgrid=False, zeroline=False, showline=False),
         margin=dict(l=20, r=20, t=20, b=20),
         height=450,
         plot_bgcolor='white',
@@ -1030,16 +1031,17 @@ def rita_stat_graf(x, y):
         dragmode=False
     )
     
-    # Pil för x-axeln (pekandes åt höger)
+    # Ritar x-axeln genom att dra en linje från x=0 till x=1 i grafens "pappersutrymme"
     fig.add_annotation(
         x=1, y=0, xref='paper', yref='paper',
-        ax=-25, ay=0,  # Pixel-offset: svansen är 25 pixlar till vänster
+        ax=0, ay=0, axref='paper', ayref='paper',
         showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=2, arrowcolor='black'
     )
-    # Pil för y-axeln (pekandes uppåt)
+    
+    # Ritar y-axeln genom att dra en linje från y=0 till y=1 i grafens "pappersutrymme"
     fig.add_annotation(
         x=0, y=1, xref='paper', yref='paper',
-        ax=0, ay=25,   # Pixel-offset: svansen är 25 pixlar nedanför
+        ax=0, ay=0, axref='paper', ayref='paper',
         showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=2, arrowcolor='black'
     )
     
@@ -1856,7 +1858,7 @@ elif vald_kategori == "Blandat (Slumpas)":
                 elif st.session_state.blandat_typ == 'alg_func': ratt_txt = st.session_state.alg_svar
                 elif st.session_state.blandat_typ == 'ekv': ratt_txt = st.session_state.ekv_svar
                 elif st.session_state.blandat_typ == 'lan': ratt_txt = f"{st.session_state.lan_svar} kr"
-                elif st.session_state.blandat_typ == 'alg_uttryck': ratt_txt = f"uttrycket som är exakt {st.session_state.alg_uttryck_svar}"
+                elif st.session_state.blandat_typ == 'alg_uttryck': ratt_txt = st.session_state.alg_uttryck_svar
                 elif st.session_state.blandat_typ == 'stat': ratt_txt = st.session_state.stat_svar
                 elif st.session_state.blandat_typ == 'ff': 
                     ratt_txt = str(st.session_state.ff_svar).replace(".", ",")
