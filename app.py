@@ -797,33 +797,54 @@ def skapa_lan_uppgift(niva=1):
 def skapa_ff_uppgift(niva=1):
     while True:
         if niva == 1:
-            typ = random.choice(['berakna_ff', 'nytt_pris'])
+            typ = random.choice(['berakna_ff', 'nytt_pris', 'hitta_procent'])
             
             if typ == 'berakna_ff':
                 riktning = random.choice(['ökar', 'minskar'])
-                procent = random.randint(5, 75)
+                procent = round(random.uniform(1.5, 80.5), 1) if random.choice([True, False]) else random.randint(5, 80)
+                
                 if riktning == 'ökar':
                     svar = 1 + (procent / 100)
                 else:
                     svar = 1 - (procent / 100)
                 
-                st.session_state.ff_info = f"Ett pris **{riktning}** med {procent} %."
+                p_str = f"{procent:g}".replace('.', ',')
+                st.session_state.ff_info = f"Ett pris {riktning} med {p_str} %."
                 st.session_state.ff_fraga = "Vad blir förändringsfaktorn? (Svara med decimaltal)"
-                st.session_state.ff_svar = round(svar, 2)
+                st.session_state.ff_svar = round(svar, 4)
                 st.session_state.ff_svarstyp = 'float'
+                break
+                
+            elif typ == 'hitta_procent':
+                riktning = random.choice(['ökar', 'minskar'])
+                procent = round(random.uniform(1.5, 95.5), 1) if random.choice([True, False]) else random.randint(5, 95)
+                
+                if riktning == 'ökar':
+                    ff = 1 + (procent / 100)
+                    svar = procent
+                else:
+                    ff = 1 - (procent / 100)
+                    svar = -procent
+                    
+                ff_str = f"{round(ff, 4):g}".replace('.', ',')
+                st.session_state.ff_info = f"En förändringsfaktor är {ff_str}."
+                st.session_state.ff_fraga = "Vilken procentuell förändring motsvarar detta? (En sänkning svaras med minus, t.ex. -12,5)"
+                st.session_state.ff_svar = svar
+                st.session_state.ff_svarstyp = 'procent'
                 break
                 
             elif typ == 'nytt_pris':
                 startpris = random.choice([100, 200, 250, 400, 500, 800, 1000, 1500])
                 riktning = random.choice(['höjs', 'sänks'])
-                procent = random.choice([10, 15, 20, 25, 30, 40, 50])
+                procent = random.choice([10, 15, 20, 25, 30, 40, 50, 12.5])
                 
                 if riktning == 'höjs':
                     svar = int(startpris * (1 + procent / 100))
                 else:
                     svar = int(startpris * (1 - procent / 100))
                     
-                st.session_state.ff_info = f"En vara kostar {startpris} kr. Priset **{riktning}** med {procent} %."
+                p_str = f"{procent:g}".replace('.', ',')
+                st.session_state.ff_info = f"En vara kostar {startpris} kr. Priset {riktning} med {p_str} %."
                 st.session_state.ff_fraga = "Vad blir det nya priset? (Svara i hela kronor)"
                 st.session_state.ff_svar = svar
                 st.session_state.ff_svarstyp = 'int'
@@ -842,7 +863,7 @@ def skapa_ff_uppgift(niva=1):
                 else:
                     nytt_pris = int(gammalt_pris * (1 - procent / 100))
                     
-                st.session_state.ff_info = f"Efter att priset på en vara **{riktning}** med {procent} % kostar den nu {nytt_pris} kr."
+                st.session_state.ff_info = f"Efter att priset på en vara {riktning} med {procent} % kostar den nu {nytt_pris} kr."
                 st.session_state.ff_fraga = "Vad kostade varan från början? (Svara i hela kronor)"
                 st.session_state.ff_svar = gammalt_pris
                 st.session_state.ff_svarstyp = 'int'
@@ -859,7 +880,7 @@ def skapa_ff_uppgift(niva=1):
                 
                 total_ff = round(f1 * f2, 4)
                 
-                st.session_state.ff_info = f"Priset på en produkt **{r1}** först med {p1} % och **{r2}** därefter med {p2} %."
+                st.session_state.ff_info = f"Priset på en produkt {r1} först med {p1} % och {r2} därefter med {p2} %."
                 st.session_state.ff_fraga = "Vad är den totala förändringsfaktorn för båda ändringarna tillsammans? (Svara med decimaltal)"
                 st.session_state.ff_svar = total_ff
                 st.session_state.ff_svarstyp = 'float'
@@ -1248,7 +1269,9 @@ elif vald_kategori == "Förändringsfaktor":
                 st.session_state.ff_rattat = True
                 if svar.strip() != "":
                     try:
-                        anv_svar = float(svar.strip().replace(",", ".").replace(" ", ""))
+                        # Rensa bort %, mellanslag och hantera komma/punkt
+                        svar_clean = svar.strip().replace(",", ".").replace(" ", "").replace("%", "")
+                        anv_svar = float(svar_clean)
                         ratt_svar = float(st.session_state.ff_svar)
                         
                         # Tillåter en liten marginal för decimalfel
@@ -1275,10 +1298,12 @@ elif vald_kategori == "Förändringsfaktor":
                 svar_str = str(st.session_state.ff_svar).replace(".", ",")
                 if st.session_state.ff_svarstyp == 'int':
                     st.error(f"❌ Tyvärr fel. Rätt svar var: {svar_str} kr")
+                elif st.session_state.ff_svarstyp == 'procent':
+                    st.error(f"❌ Tyvärr fel. Rätt svar var: {svar_str} %")
                 else:
                     st.error(f"❌ Tyvärr fel. Rätt svar var: {svar_str}")
             elif st.session_state.ff_status == 'format': 
-                st.warning("⚠️ Skriv svaret som siffror, t.ex. 1,25 eller 400.")
+                st.warning("⚠️ Skriv svaret som siffror, t.ex. 1,25 eller -23.")
             elif st.session_state.ff_status == 'tom': 
                 st.warning("Skriv in ett svar först.")
 
@@ -1291,7 +1316,6 @@ elif vald_kategori == "Blandat (Slumpas)":
     if 'blandat_niva' not in st.session_state: st.session_state.blandat_niva = 1
 
     def ny_blandad_uppgift():
-        # Lade till 'ff' i listan
         st.session_state.blandat_typ = random.choice(['graf', 'alg_func', 'ekv', 'alg_uttryck', 'lan', 'ff'])
         niva = st.session_state.get('blandat_niva', 1)
         st.session_state.blandat_id = st.session_state.get('blandat_id', 0) + 1
@@ -1435,7 +1459,8 @@ elif vald_kategori == "Blandat (Slumpas)":
                 elif st.session_state.blandat_typ == 'ff':
                     if svar.strip() != "":
                         try:
-                            anv_svar = float(svar.strip().replace(",", ".").replace(" ", ""))
+                            svar_clean = svar.strip().replace(",", ".").replace(" ", "").replace("%", "")
+                            anv_svar = float(svar_clean)
                             ratt_svar = float(st.session_state.ff_svar)
                             if abs(anv_svar - ratt_svar) < 0.001: 
                                 st.session_state.blandat_status = 'ratt'
@@ -1463,6 +1488,7 @@ elif vald_kategori == "Blandat (Slumpas)":
                 elif st.session_state.blandat_typ == 'ff': 
                     ratt_txt = str(st.session_state.ff_svar).replace(".", ",")
                     if st.session_state.ff_svarstyp == 'int': ratt_txt += " kr"
+                    elif st.session_state.ff_svarstyp == 'procent': ratt_txt += " %"
                 st.error(f"❌ Tyvärr fel. Rätt svar var: {ratt_txt}")
             elif st.session_state.blandat_status == 'format':
                 st.warning("⚠️ Svaret är i fel format (skriv bara siffror/decimaltal).")
