@@ -791,6 +791,80 @@ def skapa_lan_uppgift(niva=1):
                 st.session_state.lan_svar = svar
                 break
 
+# ==========================================
+# -- 6. FÖRÄNDRINGSFAKTOR --
+# ==========================================
+def skapa_ff_uppgift(niva=1):
+    while True:
+        if niva == 1:
+            typ = random.choice(['berakna_ff', 'nytt_pris'])
+            
+            if typ == 'berakna_ff':
+                riktning = random.choice(['ökar', 'minskar'])
+                procent = random.randint(5, 75)
+                if riktning == 'ökar':
+                    svar = 1 + (procent / 100)
+                else:
+                    svar = 1 - (procent / 100)
+                
+                st.session_state.ff_info = f"Ett pris **{riktning}** med {procent} %."
+                st.session_state.ff_fraga = "Vad blir förändringsfaktorn? (Svara med decimaltal)"
+                st.session_state.ff_svar = round(svar, 2)
+                st.session_state.ff_svarstyp = 'float'
+                break
+                
+            elif typ == 'nytt_pris':
+                startpris = random.choice([100, 200, 250, 400, 500, 800, 1000, 1500])
+                riktning = random.choice(['höjs', 'sänks'])
+                procent = random.choice([10, 15, 20, 25, 30, 40, 50])
+                
+                if riktning == 'höjs':
+                    svar = int(startpris * (1 + procent / 100))
+                else:
+                    svar = int(startpris * (1 - procent / 100))
+                    
+                st.session_state.ff_info = f"En vara kostar {startpris} kr. Priset **{riktning}** med {procent} %."
+                st.session_state.ff_fraga = "Vad blir det nya priset? (Svara i hela kronor)"
+                st.session_state.ff_svar = svar
+                st.session_state.ff_svarstyp = 'int'
+                break
+                
+        else: # Nivå 2
+            typ = random.choice(['hitta_gammalt', 'upprepad_procent'])
+            
+            if typ == 'hitta_gammalt':
+                gammalt_pris = random.choice([400, 500, 800, 1000, 1200, 1500, 2000])
+                procent = random.choice([10, 20, 25, 30, 40, 50])
+                riktning = random.choice(['höjs', 'sänks'])
+                
+                if riktning == 'höjs':
+                    nytt_pris = int(gammalt_pris * (1 + procent / 100))
+                else:
+                    nytt_pris = int(gammalt_pris * (1 - procent / 100))
+                    
+                st.session_state.ff_info = f"Efter att priset på en vara **{riktning}** med {procent} % kostar den nu {nytt_pris} kr."
+                st.session_state.ff_fraga = "Vad kostade varan från början? (Svara i hela kronor)"
+                st.session_state.ff_svar = gammalt_pris
+                st.session_state.ff_svarstyp = 'int'
+                break
+                
+            elif typ == 'upprepad_procent':
+                p1 = random.choice([10, 20, 25, 30])
+                p2 = random.choice([10, 20, 25, 30])
+                r1 = random.choice(['ökar', 'minskar'])
+                r2 = random.choice(['ökar', 'minskar'])
+                
+                f1 = (1 + p1/100) if r1 == 'ökar' else (1 - p1/100)
+                f2 = (1 + p2/100) if r2 == 'ökar' else (1 - p2/100)
+                
+                total_ff = round(f1 * f2, 4)
+                
+                st.session_state.ff_info = f"Priset på en produkt **{r1}** först med {p1} % och **{r2}** därefter med {p2} %."
+                st.session_state.ff_fraga = "Vad är den totala förändringsfaktorn för båda ändringarna tillsammans? (Svara med decimaltal)"
+                st.session_state.ff_svar = total_ff
+                st.session_state.ff_svarstyp = 'float'
+                break
+
 # --- MENYSYSTEM ---
 st.sidebar.title("Välj Träningsläge")
 vald_kategori = st.sidebar.radio("Vad vill du träna på?", [
@@ -799,6 +873,7 @@ vald_kategori = st.sidebar.radio("Vad vill du träna på?", [
     "Ekvationer",
     "Algebra",
     "Lån och ränta",
+    "Förändringsfaktor",
     "Blandat (Slumpas)"
 ])
 
@@ -1137,6 +1212,77 @@ elif vald_kategori == "Lån och ränta":
             elif st.session_state.lan_status == 'tom': st.warning("Skriv in ett svar först.")
 
 # ==========================================
+# UI: Förändringsfaktor
+# ==========================================
+elif vald_kategori == "Förändringsfaktor":
+    st.title("Träna på Förändringsfaktor")
+    
+    if 'ff_niva' not in st.session_state: st.session_state.ff_niva = 1
+    if 'ff_uppgift_nr' not in st.session_state: st.session_state.ff_uppgift_nr = 0
+    if 'ff_info' not in st.session_state: skapa_ff_uppgift(st.session_state.ff_niva)
+
+    with st.sidebar:
+        st.subheader("Inställningar")
+        ny_niva = st.radio("Välj svårighetsgrad:", [1, 2], horizontal=True, index=0 if st.session_state.ff_niva==1 else 1, key="ff_niva_val")
+        if ny_niva != st.session_state.ff_niva:
+            st.session_state.ff_niva = ny_niva
+            st.session_state.ff_rattat = False
+            st.session_state.ff_uppgift_nr += 1
+            skapa_ff_uppgift(st.session_state.ff_niva)
+            st.rerun()
+
+    col_vanster, col_hoger = st.columns([1.2, 1], gap="large")
+            
+    with col_vanster:
+        st.markdown(f"<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: #e9ecef; padding: 25px; border-radius: 10px; border-left: 6px solid #28a745;'>{st.session_state.ff_info}</div>", unsafe_allow_html=True)
+        
+    with col_hoger:
+        st.subheader("Uppgift")
+        st.markdown(f"<div style='font-size: 26px; font-weight: bold; color: #28a745; margin-bottom: 25px;'>{st.session_state.ff_fraga}</div>", unsafe_allow_html=True)
+        svar = st.text_input("Ditt svar:", key=f"ff_input_{st.session_state.ff_uppgift_nr}")
+        
+        st.write("")
+        k1, k2 = st.columns(2)
+        with k1:
+            if st.button("Rätta svar", type="primary", use_container_width=True):
+                st.session_state.ff_rattat = True
+                if svar.strip() != "":
+                    try:
+                        anv_svar = float(svar.strip().replace(",", ".").replace(" ", ""))
+                        ratt_svar = float(st.session_state.ff_svar)
+                        
+                        # Tillåter en liten marginal för decimalfel
+                        if abs(anv_svar - ratt_svar) < 0.001: 
+                            st.session_state.ff_status = 'ratt'
+                        else: 
+                            st.session_state.ff_status = 'fel'
+                    except ValueError: 
+                        st.session_state.ff_status = 'format'
+                else: 
+                    st.session_state.ff_status = 'tom'
+                st.rerun()
+        with k2:
+            if st.button("Ny uppgift", use_container_width=True):
+                st.session_state.ff_rattat = False
+                st.session_state.ff_uppgift_nr += 1
+                skapa_ff_uppgift(st.session_state.ff_niva)
+                st.rerun()
+
+        if st.session_state.get('ff_rattat', False):
+            if st.session_state.ff_status == 'ratt': 
+                st.success("✅ Helt rätt! Snyggt jobbat.")
+            elif st.session_state.ff_status == 'fel': 
+                svar_str = str(st.session_state.ff_svar).replace(".", ",")
+                if st.session_state.ff_svarstyp == 'int':
+                    st.error(f"❌ Tyvärr fel. Rätt svar var: {svar_str} kr")
+                else:
+                    st.error(f"❌ Tyvärr fel. Rätt svar var: {svar_str}")
+            elif st.session_state.ff_status == 'format': 
+                st.warning("⚠️ Skriv svaret som siffror, t.ex. 1,25 eller 400.")
+            elif st.session_state.ff_status == 'tom': 
+                st.warning("Skriv in ett svar först.")
+
+# ==========================================
 # UI: Blandat (Slumpas)
 # ==========================================
 elif vald_kategori == "Blandat (Slumpas)":
@@ -1145,8 +1291,8 @@ elif vald_kategori == "Blandat (Slumpas)":
     if 'blandat_niva' not in st.session_state: st.session_state.blandat_niva = 1
 
     def ny_blandad_uppgift():
-        # Nu inklusive lån och ränta i slumpningen
-        st.session_state.blandat_typ = random.choice(['graf', 'alg_func', 'ekv', 'alg_uttryck', 'lan'])
+        # Lade till 'ff' i listan
+        st.session_state.blandat_typ = random.choice(['graf', 'alg_func', 'ekv', 'alg_uttryck', 'lan', 'ff'])
         niva = st.session_state.get('blandat_niva', 1)
         st.session_state.blandat_id = st.session_state.get('blandat_id', 0) + 1
         st.session_state.blandat_rattat = False
@@ -1163,6 +1309,8 @@ elif vald_kategori == "Blandat (Slumpas)":
             skapa_alg_uttryck_uppgift(niva)
         elif st.session_state.blandat_typ == 'lan':
             skapa_lan_uppgift(niva)
+        elif st.session_state.blandat_typ == 'ff':
+            skapa_ff_uppgift(niva)
 
     with st.sidebar:
         st.subheader("Inställningar")
@@ -1204,6 +1352,9 @@ elif vald_kategori == "Blandat (Slumpas)":
             
         elif st.session_state.blandat_typ == 'lan':
             st.markdown(f"<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: #f8f9fa; padding: 25px; border-radius: 10px; border-left: 6px solid #0056b3;'>{st.session_state.lan_info}</div>", unsafe_allow_html=True)
+            
+        elif st.session_state.blandat_typ == 'ff':
+            st.markdown(f"<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: #e9ecef; padding: 25px; border-radius: 10px; border-left: 6px solid #28a745;'>{st.session_state.ff_info}</div>", unsafe_allow_html=True)
 
     with col_hoger:
         st.subheader("Uppgift")
@@ -1238,6 +1389,10 @@ elif vald_kategori == "Blandat (Slumpas)":
         elif st.session_state.blandat_typ == 'lan':
             st.markdown(f"<div style='font-size: 26px; font-weight: bold; color: #0056b3; margin-bottom: 25px;'>{st.session_state.lan_fraga}</div>", unsafe_allow_html=True)
             svar = st.text_input("Ditt svar (heltal kr):", key=f"blandat_lan_in_{st.session_state.blandat_id}")
+            
+        elif st.session_state.blandat_typ == 'ff':
+            st.markdown(f"<div style='font-size: 26px; font-weight: bold; color: #28a745; margin-bottom: 25px;'>{st.session_state.ff_fraga}</div>", unsafe_allow_html=True)
+            svar = st.text_input("Ditt svar:", key=f"blandat_ff_in_{st.session_state.blandat_id}")
 
         st.write("")
         
@@ -1276,6 +1431,18 @@ elif vald_kategori == "Blandat (Slumpas)":
                                 st.session_state.blandat_status = 'fel'
                         except ValueError: st.session_state.blandat_status = 'format'
                     else: st.session_state.blandat_status = 'tom'
+                    
+                elif st.session_state.blandat_typ == 'ff':
+                    if svar.strip() != "":
+                        try:
+                            anv_svar = float(svar.strip().replace(",", ".").replace(" ", ""))
+                            ratt_svar = float(st.session_state.ff_svar)
+                            if abs(anv_svar - ratt_svar) < 0.001: 
+                                st.session_state.blandat_status = 'ratt'
+                            else: 
+                                st.session_state.blandat_status = 'fel'
+                        except ValueError: st.session_state.blandat_status = 'format'
+                    else: st.session_state.blandat_status = 'tom'
                         
                 st.rerun()
 
@@ -1293,8 +1460,11 @@ elif vald_kategori == "Blandat (Slumpas)":
                 elif st.session_state.blandat_typ == 'ekv': ratt_txt = st.session_state.ekv_svar
                 elif st.session_state.blandat_typ == 'lan': ratt_txt = f"{st.session_state.lan_svar} kr"
                 elif st.session_state.blandat_typ == 'alg_uttryck': ratt_txt = f"uttrycket som är exakt {st.session_state.alg_uttryck_svar}"
+                elif st.session_state.blandat_typ == 'ff': 
+                    ratt_txt = str(st.session_state.ff_svar).replace(".", ",")
+                    if st.session_state.ff_svarstyp == 'int': ratt_txt += " kr"
                 st.error(f"❌ Tyvärr fel. Rätt svar var: {ratt_txt}")
             elif st.session_state.blandat_status == 'format':
-                st.warning("⚠️ Svaret är i fel format (skriv bara siffror).")
+                st.warning("⚠️ Svaret är i fel format (skriv bara siffror/decimaltal).")
             elif st.session_state.blandat_status == 'tom':
                 st.warning("Vänligen fyll i ett svar innan du rättar.")
