@@ -165,25 +165,18 @@ def skapa_graf_uppgift(niva):
     st.session_state.graf_fraga = fraga.replace('.', ',')
     st.session_state.graf_ratt_svar = [round(ans, 4) + 0.0 for ans in ratt_svar]
 
-# -- PLOTLY RIT-FUNKTION --
 def rita_plotly_graf(f, visa_facit=False, q_vis_type='vis_none', trace_x=None, trace_y=None, trace_alla_x=None):
     fig = go.Figure()
-    
     x_plot = np.linspace(-10, 10, 400)
     y_plot = f(x_plot)
-    
     fig.add_trace(go.Scatter(
-        x=x_plot, y=y_plot, mode='lines', 
-        line=dict(color='blue', width=2), 
-        hoverinfo='skip'
+        x=x_plot, y=y_plot, mode='lines', line=dict(color='blue', width=2), hoverinfo='skip'
     ))
-    
     if visa_facit:
         if q_vis_type == 'vis_find_y':
             tx, ty = trace_x, trace_y
             fig.add_trace(go.Scatter(
-                x=[tx, tx, 0], y=[0, ty, ty], 
-                mode='lines+markers', line=dict(color='red', dash='dash', width=2), 
+                x=[tx, tx, 0], y=[0, ty, ty], mode='lines+markers', line=dict(color='red', dash='dash', width=2), 
                 marker=dict(size=8, color='red'), showlegend=False, hoverinfo='skip'
             ))
         elif q_vis_type == 'vis_find_x':
@@ -192,50 +185,33 @@ def rita_plotly_graf(f, visa_facit=False, q_vis_type='vis_none', trace_x=None, t
             if ax_list:
                 min_ax, max_ax = min(ax_list + [0]), max(ax_list + [0])
                 fig.add_trace(go.Scatter(
-                    x=[min_ax, max_ax], y=[ty, ty], 
-                    mode='lines', line=dict(color='red', dash='dash', width=2), showlegend=False, hoverinfo='skip'
+                    x=[min_ax, max_ax], y=[ty, ty], mode='lines', line=dict(color='red', dash='dash', width=2), showlegend=False, hoverinfo='skip'
                 ))
                 for ax_v in ax_list:
                     fig.add_trace(go.Scatter(
-                        x=[ax_v, ax_v], y=[ty, 0], 
-                        mode='lines+markers', line=dict(color='red', dash='dash', width=2), 
+                        x=[ax_v, ax_v], y=[ty, 0], mode='lines+markers', line=dict(color='red', dash='dash', width=2), 
                         marker=dict(size=8, color='red'), showlegend=False, hoverinfo='skip'
                     ))
 
     tick_vals = [-10, -5, 5, 10]
     fig.add_trace(go.Scatter(
-        x=tick_vals, y=[-0.6]*4, mode='text', text=[str(v) for v in tick_vals],
-        textposition='bottom center', showlegend=False, hoverinfo='skip', textfont=dict(color='black', size=14)
+        x=tick_vals, y=[-0.6]*4, mode='text', text=[str(v) for v in tick_vals], textposition='bottom center', showlegend=False, hoverinfo='skip', textfont=dict(color='black', size=14)
     ))
     fig.add_trace(go.Scatter(
-        x=[-0.6]*4, y=tick_vals, mode='text', text=[str(v) for v in tick_vals],
-        textposition='middle left', showlegend=False, hoverinfo='skip', textfont=dict(color='black', size=14)
+        x=[-0.6]*4, y=tick_vals, mode='text', text=[str(v) for v in tick_vals], textposition='middle left', showlegend=False, hoverinfo='skip', textfont=dict(color='black', size=14)
     ))
     fig.add_trace(go.Scatter(
-        x=[-0.4], y=[-0.6], mode='text', text=['0'],
-        textposition='bottom left', showlegend=False, hoverinfo='skip', textfont=dict(color='black', size=14)
+        x=[-0.4], y=[-0.6], mode='text', text=['0'], textposition='bottom left', showlegend=False, hoverinfo='skip', textfont=dict(color='black', size=14)
     ))
 
     axis_layout = dict(
-        range=[-10.8, 10.8], 
-        zeroline=True, zerolinewidth=3, zerolinecolor='black', 
-        showgrid=True, gridwidth=2, gridcolor='#cccccc', 
-        minor=dict(dtick=1, gridwidth=2, gridcolor='#e0e0e0'), 
-        showticklabels=False, 
-        fixedrange=True 
+        range=[-10.8, 10.8], zeroline=True, zerolinewidth=3, zerolinecolor='black', showgrid=True, gridwidth=2, gridcolor='#cccccc', 
+        minor=dict(dtick=1, gridwidth=2, gridcolor='#e0e0e0'), showticklabels=False, fixedrange=True 
     )
-
     pil_inst = dict(showarrow=True, arrowhead=2, arrowsize=1, arrowwidth=2, arrowcolor='black')
     
     fig.update_layout(
-        xaxis=axis_layout,
-        yaxis=axis_layout,
-        showlegend=False,
-        margin=dict(l=20, r=20, t=20, b=20),
-        height=550,
-        plot_bgcolor='white',
-        hovermode=False,
-        dragmode=False,
+        xaxis=axis_layout, yaxis=axis_layout, showlegend=False, margin=dict(l=20, r=20, t=20, b=20), height=550, plot_bgcolor='white', hovermode=False, dragmode=False,
         annotations=[
             dict(x=10.8, y=0, ax=9.8, ay=0, xref='x', yref='y', axref='x', ayref='y', **pil_inst),
             dict(x=10.8, y=-0.5, text="x", showarrow=False, xref='x', yref='y', font=dict(size=16, color='black')),
@@ -280,7 +256,6 @@ def skapa_alg_func_uppgift(niva):
                 
                 if abs(svar) <= 100:
                     st.session_state.alg_fraga = f"Bestäm f({a})"
-                    # Rättat: Tog bort "f(x) =" 
                     st.session_state.alg_funktion = f"{f_str}"
                     st.session_state.alg_svar = svar
                     break
@@ -296,7 +271,6 @@ def skapa_alg_func_uppgift(niva):
                 
                 if abs(C) <= 300:
                     st.session_state.alg_fraga = f"Bestäm det positiva värdet på x om f(x) = {C}"
-                    # Rättat: Tog bort "f(x) ="
                     st.session_state.alg_funktion = f"{f_str}"
                     st.session_state.alg_svar = x
                     break
@@ -325,7 +299,6 @@ def skapa_alg_func_uppgift(niva):
                 
                 if abs(x) <= 100 and abs(C) <= 100:
                     st.session_state.alg_fraga = f"Bestäm x om f(x) = {C}"
-                    # Rättat: Tog bort "f(x) ="
                     st.session_state.alg_funktion = f"{f_str}"
                     st.session_state.alg_svar = x
                     break
@@ -350,7 +323,6 @@ def skapa_alg_func_uppgift(niva):
                     svar = k*inner + m
                     if abs(svar) <= 150:
                         st.session_state.alg_fraga = f"Bestäm f(f({a}))"
-                        # Rättat: Tog bort "f(x) ="
                         st.session_state.alg_funktion = f"{f_str}"
                         st.session_state.alg_svar = svar
                         break
@@ -360,7 +332,6 @@ def skapa_alg_func_uppgift(niva):
                     C = k*inner + m
                     if abs(x) <= 100 and abs(C) <= 150:
                         st.session_state.alg_fraga = f"Bestäm x om f(f(x)) = {C}"
-                        # Rättat: Tog bort "f(x) ="
                         st.session_state.alg_funktion = f"{f_str}"
                         st.session_state.alg_svar = x
                         break
@@ -379,7 +350,6 @@ def skapa_alg_func_uppgift(niva):
                 g_str = formatera_linjar(k2, m2)
                 
                 st.session_state.alg_fraga = f"Bestäm f(g({a}))"
-                # Rättat: Dubbla backslash för LaTeX-kommandon
                 st.session_state.alg_funktion = f"{f_str} \\quad \\text{{och}} \\quad g(x) = {g_str}"
                 st.session_state.alg_svar = svar
                 break
@@ -397,11 +367,10 @@ def skapa_alg_func_uppgift(niva):
                 g_str = formatera_linjar(k2, m2)
                 
                 st.session_state.alg_fraga = "Bestäm x om f(x) = g(x)"
-                # Rättat: Dubbla backslash för LaTeX-kommandon
                 st.session_state.alg_funktion = f"{f_str} \\quad \\text{{och}} \\quad g(x) = {g_str}"
                 st.session_state.alg_svar = x
                 break
-                
+
 # -- 3. Ekvationer --
 def formatera_sida(k, m):
     if k == 1: k_str = "x"
@@ -431,7 +400,6 @@ def skapa_ekv_uppgift(niva):
                 
             elif typ == 'division':
                 a = random.choice([2, 3, 4, 5])
-                # Måste se till att divisionen går jämnt upp
                 x = random.randint(-6, 6) * a 
                 b = random.randint(-10, 10)
                 c = int(x / a) + b
@@ -460,7 +428,6 @@ def skapa_ekv_uppgift(niva):
                 break
 
         else: # Niva 2
-            # Nu finns 5 olika tuffa ekvationstyper som lottas fram!
             typ = random.choice(['nuvarande', 'parenteser_bada', 'gemensam_namnare', 'x_i_namnare', 'gomda_forstagrads'])
             
             if typ == 'nuvarande':
@@ -549,10 +516,7 @@ def skapa_ekv_uppgift(niva):
                 B = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
                 C = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
                 
-                # Om x-termerna tar ut varandra helt på båda sidor går det inte att lösa för x
                 if A + B == C: continue 
-                
-                # Räkna ut konstanten D så att ekvationen stämmer med vårt slumpade x
                 D = (A + B - C) * x + A * B
                 
                 A_str = f"+ {A}" if A > 0 else f"- {-A}"
@@ -573,6 +537,7 @@ def skapa_ekv_uppgift(niva):
                 st.session_state.ekv_str = f"{VL} = {HL}"
                 st.session_state.ekv_svar = x
                 break
+
 # -- 4. Algebra Uttryck --
 def skapa_alg_uttryck_uppgift(niva=1):
     def formatera_svar(k2, k, m):
@@ -599,13 +564,10 @@ def skapa_alg_uttryck_uppgift(niva=1):
             c = random.choice([2, 3, 4])
             A = random.randint(-5, 5)
             B = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
-            
-            if A == 0:
-                del_1 = "x"
+            if A == 0: del_1 = "x"
             else:
                 A_str = f"+ {A}" if A > 0 else f"- {-A}"
                 del_1 = f"(x {A_str})"
-                
             B_str = f"+ {B}" if B > 0 else f"- {-B}"
             st.session_state.alg_uttryck_str = f"{del_1} - ({c}x {B_str})"
             
@@ -736,19 +698,98 @@ def skapa_alg_uttryck_uppgift(niva=1):
             svar_ratt = f"{a}x {b_svar}"
             B_fel = f"+ {b*C}" if b*C > 0 else f"- {-b*C}"
             
-            d1 = f"{a}x^2 {b_svar}" 
-            d2 = f"{a}x {B_fel}"    
-            d3 = f"{a*C}x {b_svar}"   
-
+            d1 = f"{a}x^2 {b_svar}"
+            d2 = f"{a*C}x {b_svar}"
+            d3 = f"{a}x {B_fel}"
+            
     svar_ratt_latex = f"${svar_ratt}$"
     alternativ = list(set([svar_ratt_latex, f"${d1}$", f"${d2}$", f"${d3}$"]))
     while len(alternativ) < 4:
         alternativ.append(alternativ[0].replace("$", " $", 1)) 
         alternativ = list(set(alternativ))
-    
     random.shuffle(alternativ)
     st.session_state.alg_uttryck_alternativ = alternativ
     st.session_state.alg_uttryck_svar = svar_ratt_latex
+
+# ==========================================
+# -- 5. LÅN OCH RÄNTA --
+# ==========================================
+def skapa_lan_uppgift(niva=1):
+    def formatera_kr(belopp):
+        return f"{int(belopp):,}".replace(",", " ")
+        
+    while True:
+        if niva == 1:
+            typ = random.choice(['arsranta', 'manadsranta', 'rak_amortering'])
+            if typ == 'arsranta':
+                kapital = random.choice([15000, 20000, 35000, 50000, 80000, 150000])
+                ranta_procent = random.choice([3, 4, 5, 6, 7, 8])
+                svar = int(kapital * (ranta_procent / 100))
+                st.session_state.lan_info = f"Du lånar {formatera_kr(kapital)} kr av banken med en årsränta på {ranta_procent} %."
+                st.session_state.lan_fraga = "Hur mycket får du betala i ränta under det första året? (Svara i kr)"
+                st.session_state.lan_svar = svar
+                break
+            elif typ == 'manadsranta':
+                kapital = random.choice([12000, 24000, 36000, 60000, 120000])
+                ranta_procent = random.choice([3, 4, 5, 6, 7, 8])
+                svar = int((kapital * (ranta_procent / 100)) / 12)
+                st.session_state.lan_info = f"Du tar ett lån på {formatera_kr(kapital)} kr. Årsräntan är {ranta_procent} %."
+                st.session_state.lan_fraga = "Hur stor blir räntekostnaden för den allra första månaden? (Svara i kr)"
+                st.session_state.lan_svar = svar
+                break
+            elif typ == 'rak_amortering':
+                ar = random.choice([2, 3, 4, 5, 10])
+                manads_amortering = random.choice([500, 1000, 1500, 2000, 2500])
+                kapital = manads_amortering * ar * 12
+                svar = manads_amortering
+                st.session_state.lan_info = f"Du lånar {formatera_kr(kapital)} kr som ska betalas tillbaka med rak amortering under {ar} år."
+                st.session_state.lan_fraga = "Hur mycket ska du amortera varje månad? (Svara i kr)"
+                st.session_state.lan_svar = svar
+                break
+
+        else: # Nivå 2
+            typ = random.choice(['manadskostnad_1', 'manadskostnad_2', 'snabblan'])
+            if typ in ['manadskostnad_1', 'manadskostnad_2']:
+                profiler = [
+                    {"K": 60000, "ar": 5, "amort": 1000, "rantor": [3, 6, 9]},
+                    {"K": 120000, "ar": 5, "amort": 2000, "rantor": [3, 6, 9]},
+                    {"K": 72000, "ar": 3, "amort": 2000, "rantor": [3, 4, 5, 6]},
+                    {"K": 144000, "ar": 4, "amort": 3000, "rantor": [2, 4, 6, 8]}
+                ]
+                p = random.choice(profiler)
+                kapital = p["K"]
+                ar = p["ar"]
+                amortering = p["amort"]
+                ranta_procent = random.choice(p["rantor"])
+                avgift = random.choice([25, 35, 45])
+                
+                if typ == 'manadskostnad_1':
+                    ranta_kr = (kapital * (ranta_procent / 100)) / 12
+                    svar = int(amortering + ranta_kr + avgift)
+                    st.session_state.lan_info = f"Du köper en bil för {formatera_kr(kapital)} kr på avbetalning. Lånet har rak amortering över {ar} år och en årsränta på {ranta_procent} %. Banken tar också ut en aviseringsavgift på {avgift} kr/månad."
+                    st.session_state.lan_fraga = "Vad blir din TOTALA månadskostnad den första månaden? (Svara i kr)"
+                    st.session_state.lan_svar = svar
+                    break
+                else: 
+                    nytt_kapital = kapital - amortering
+                    ranta_kr = (nytt_kapital * (ranta_procent / 100)) / 12
+                    svar = int(amortering + ranta_kr + avgift)
+                    st.session_state.lan_info = f"Du tar ett lån på {formatera_kr(kapital)} kr med rak amortering över {ar} år och en årsränta på {ranta_procent} %. Aviseringsavgiften är {avgift} kr/månad."
+                    st.session_state.lan_fraga = "När du ska betala din ANDRA faktura har lånet minskat. Vad blir din TOTALA månadskostnad den andra månaden? (Svara i kr)"
+                    st.session_state.lan_svar = svar
+                    break
+                    
+            elif typ == 'snabblan':
+                kapital = random.choice([3000, 4000, 5000, 8000])
+                manadsranta_procent = random.choice([2, 3, 4, 5])
+                upplagg_avgift = random.choice([295, 395, 495])
+                avi_avgift = random.choice([35, 45, 55])
+                ranta_kr = kapital * (manadsranta_procent / 100)
+                svar = int(kapital + ranta_kr + upplagg_avgift + avi_avgift)
+                st.session_state.lan_info = f"Du tar ett snabblån på {formatera_kr(kapital)} kr som ska betalas tillbaka i sin helhet efter exakt en månad. Uppläggningsavgiften är {upplagg_avgift} kr, aviseringsavgiften {avi_avgift} kr och månadsräntan är {manadsranta_procent} %."
+                st.session_state.lan_fraga = "Hur mycket måste du totalt betala tillbaka när månaden är slut? (Svara i kr)"
+                st.session_state.lan_svar = svar
+                break
 
 # --- MENYSYSTEM ---
 st.sidebar.title("Välj Träningsläge")
@@ -757,6 +798,7 @@ vald_kategori = st.sidebar.radio("Vad vill du träna på?", [
     "Funktioner: Algebraisk lösning",
     "Ekvationer",
     "Algebra",
+    "Lån och ränta",
     "Blandat (Slumpas)"
 ])
 
@@ -773,7 +815,7 @@ if st.session_state.aktuell_kategori != vald_kategori:
 st.sidebar.divider()
 
 # ==========================================
-# MODUL 1: Funktioner grafisk lösning
+# UI: Funktioner grafisk lösning
 # ==========================================
 if vald_kategori == "Funktioner: Grafisk lösning":
     st.title("Grafisk avläsning av funktioner")
@@ -785,7 +827,6 @@ if vald_kategori == "Funktioner: Grafisk lösning":
     if 'submitted_ans' not in st.session_state: st.session_state.submitted_ans = False
     if 'svar_status' not in st.session_state: st.session_state.svar_status = None
 
-    # INSTÄLLNINGAR I SIDOFÄLTET
     with st.sidebar:
         st.subheader("Inställningar")
         aktuellt_index = 0 if st.session_state.niva == 1 else 1
@@ -797,7 +838,6 @@ if vald_kategori == "Funktioner: Grafisk lösning":
             st.session_state.graf_uppgift_nr += 1
             st.rerun()
 
-    # LAYOUT
     col_vanster, col_hoger = st.columns([1.2, 1], gap="large")
 
     with col_vanster:
@@ -856,7 +896,7 @@ if vald_kategori == "Funktioner: Grafisk lösning":
             elif st.session_state.svar_status == 'varning_tom': st.warning("Fyll i alla rutor innan du rättar.")
 
 # ==========================================
-# MODUL 2: Funktioner algebraisk lösning
+# UI: Funktioner algebraisk lösning
 # ==========================================
 elif vald_kategori == "Funktioner: Algebraisk lösning":
     st.title("Algebraisk lösning av funktioner")
@@ -865,7 +905,6 @@ elif vald_kategori == "Funktioner: Algebraisk lösning":
     if 'alg_uppgift_nr' not in st.session_state: st.session_state.alg_uppgift_nr = 0
     if 'alg_fraga' not in st.session_state: skapa_alg_func_uppgift(st.session_state.alg_niva)
 
-    # INSTÄLLNINGAR I SIDOFÄLTET
     with st.sidebar:
         st.subheader("Inställningar")
         ny_niva = st.radio("Välj svårighetsgrad:", [1, 2], horizontal=True, index=0 if st.session_state.alg_niva==1 else 1, key="alg_niva_val_func")
@@ -876,12 +915,11 @@ elif vald_kategori == "Funktioner: Algebraisk lösning":
             skapa_alg_func_uppgift(st.session_state.alg_niva)
             st.rerun()
 
-    # LAYOUT
     col_vanster, col_hoger = st.columns([1.2, 1], gap="large")
             
     with col_vanster:
         st.markdown("<div style='text-align: center; font-size: 20px; color: gray; margin-top: 50px;'>Givet funktionen:</div>", unsafe_allow_html=True)
-        st.latex(f"f(x) = {st.session_state.alg_funktion}")
+        st.latex(st.session_state.alg_funktion)
         
     with col_hoger:
         st.subheader("Uppgift")
@@ -915,7 +953,7 @@ elif vald_kategori == "Funktioner: Algebraisk lösning":
             elif st.session_state.alg_status == 'tom': st.warning("Skriv in ett svar först.")
 
 # ==========================================
-# MODUL 3: Ekvationer
+# UI: Ekvationer
 # ==========================================
 elif vald_kategori == "Ekvationer":
     st.title("Lös ekvationerna")
@@ -975,7 +1013,7 @@ elif vald_kategori == "Ekvationer":
             elif st.session_state.ekv_status == 'tom': st.warning("Skriv in ett svar först.")
 
 # ==========================================
-# MODUL 4: Algebra 
+# UI: Algebra
 # ==========================================
 elif vald_kategori == "Algebra":
     st.title("Förenkla och faktorisera algebraiska uttryck")
@@ -1040,7 +1078,68 @@ elif vald_kategori == "Algebra":
                 st.warning("Vänligen välj ett alternativ först.")
 
 # ==========================================
-# MODUL 5: Blandat (Slumpas)
+# UI: Lån och Ränta
+# ==========================================
+elif vald_kategori == "Lån och ränta":
+    st.title("Beräkna Lån och Ränta")
+    
+    if 'lan_niva' not in st.session_state: st.session_state.lan_niva = 1
+    if 'lan_uppgift_nr' not in st.session_state: st.session_state.lan_uppgift_nr = 0
+    if 'lan_info' not in st.session_state: skapa_lan_uppgift(st.session_state.lan_niva)
+
+    with st.sidebar:
+        st.subheader("Inställningar")
+        ny_niva = st.radio("Välj svårighetsgrad:", [1, 2], horizontal=True, index=0 if st.session_state.lan_niva==1 else 1, key="lan_niva_val")
+        if ny_niva != st.session_state.lan_niva:
+            st.session_state.lan_niva = ny_niva
+            st.session_state.lan_rattat = False
+            st.session_state.lan_uppgift_nr += 1
+            skapa_lan_uppgift(st.session_state.lan_niva)
+            st.rerun()
+
+    col_vanster, col_hoger = st.columns([1.2, 1], gap="large")
+            
+    with col_vanster:
+        st.markdown("<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: #f8f9fa; padding: 25px; border-radius: 10px; border-left: 6px solid #0056b3;'>", unsafe_allow_html=True)
+        st.write(st.session_state.lan_info)
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+    with col_hoger:
+        st.subheader("Uppgift")
+        st.markdown(f"<div style='font-size: 26px; font-weight: bold; color: #0056b3; margin-bottom: 25px;'>{st.session_state.lan_fraga}</div>", unsafe_allow_html=True)
+        svar = st.text_input("Skriv in ditt svar (heltal kr):", key=f"lan_input_{st.session_state.lan_uppgift_nr}")
+        
+        st.write("")
+        k1, k2 = st.columns(2)
+        with k1:
+            if st.button("Rätta svar", type="primary", use_container_width=True):
+                st.session_state.lan_rattat = True
+                if svar.strip() != "":
+                    try:
+                        if int(svar.strip().replace(" ", "")) == st.session_state.lan_svar: 
+                            st.session_state.lan_status = 'ratt'
+                        else: 
+                            st.session_state.lan_status = 'fel'
+                    except ValueError: 
+                        st.session_state.lan_status = 'format'
+                else: 
+                    st.session_state.lan_status = 'tom'
+                st.rerun()
+        with k2:
+            if st.button("Ny uppgift", use_container_width=True):
+                st.session_state.lan_rattat = False
+                st.session_state.lan_uppgift_nr += 1
+                skapa_lan_uppgift(st.session_state.lan_niva)
+                st.rerun()
+
+        if st.session_state.get('lan_rattat', False):
+            if st.session_state.lan_status == 'ratt': st.success("✅ Helt rätt! Bra jobbat.")
+            elif st.session_state.lan_status == 'fel': st.error(f"❌ Tyvärr fel. Rätt svar var: {st.session_state.lan_svar} kr")
+            elif st.session_state.lan_status == 'format': st.warning("⚠️ Skriv bara siffror (inga kr eller decimaler).")
+            elif st.session_state.lan_status == 'tom': st.warning("Skriv in ett svar först.")
+
+# ==========================================
+# UI: Blandat (Slumpas)
 # ==========================================
 elif vald_kategori == "Blandat (Slumpas)":
     st.title("Blandade uppgifter - Träna på allt!")
@@ -1048,7 +1147,8 @@ elif vald_kategori == "Blandat (Slumpas)":
     if 'blandat_niva' not in st.session_state: st.session_state.blandat_niva = 1
 
     def ny_blandad_uppgift():
-        st.session_state.blandat_typ = random.choice(['graf', 'alg_func', 'ekv', 'alg_uttryck'])
+        # Nu inklusive lån och ränta i slumpningen
+        st.session_state.blandat_typ = random.choice(['graf', 'alg_func', 'ekv', 'alg_uttryck', 'lan'])
         niva = st.session_state.get('blandat_niva', 1)
         st.session_state.blandat_id = st.session_state.get('blandat_id', 0) + 1
         st.session_state.blandat_rattat = False
@@ -1062,8 +1162,9 @@ elif vald_kategori == "Blandat (Slumpas)":
         elif st.session_state.blandat_typ == 'ekv':
             skapa_ekv_uppgift(niva)
         elif st.session_state.blandat_typ == 'alg_uttryck':
-            # Skickar med 'niva' här istället för 1, så att nivå 2-algebran kommer med!
             skapa_alg_uttryck_uppgift(niva)
+        elif st.session_state.blandat_typ == 'lan':
+            skapa_lan_uppgift(niva)
 
     with st.sidebar:
         st.subheader("Inställningar")
@@ -1093,7 +1194,7 @@ elif vald_kategori == "Blandat (Slumpas)":
 
         elif st.session_state.blandat_typ == 'alg_func':
             st.markdown("<div style='text-align: center; font-size: 20px; color: gray; margin-top: 50px;'>Givet funktionen:</div>", unsafe_allow_html=True)
-            st.latex(f"f(x) = {st.session_state.alg_funktion}")
+            st.latex(st.session_state.alg_funktion)
 
         elif st.session_state.blandat_typ == 'ekv':
             st.markdown("<div style='text-align: center; font-size: 20px; color: gray; margin-top: 50px;'>Lös ekvationen:</div>", unsafe_allow_html=True)
@@ -1102,11 +1203,15 @@ elif vald_kategori == "Blandat (Slumpas)":
         elif st.session_state.blandat_typ == 'alg_uttryck':
             st.markdown(f"<div style='text-align: center; font-size: 20px; color: gray; margin-top: 50px;'>{st.session_state.alg_rubrik}</div>", unsafe_allow_html=True)
             st.latex(st.session_state.alg_uttryck_str)
+            
+        elif st.session_state.blandat_typ == 'lan':
+            st.markdown("<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: #f8f9fa; padding: 25px; border-radius: 10px; border-left: 6px solid #0056b3;'>", unsafe_allow_html=True)
+            st.write(st.session_state.lan_info)
+            st.markdown("</div>", unsafe_allow_html=True)
 
     with col_hoger:
         st.subheader("Uppgift")
         
-        # Visar instruktionstexten för alla förutom grafer där det kanske inte är ett måste med papper
         if st.session_state.blandat_typ in ['alg_func', 'ekv']:
             st.markdown("<p style='font-size: 14px; font-style: italic; color: #666; margin-bottom: 5px;'>Lös gärna på papper och skriv in ditt svar.</p>", unsafe_allow_html=True)
         elif st.session_state.blandat_typ == 'alg_uttryck':
@@ -1133,6 +1238,10 @@ elif vald_kategori == "Blandat (Slumpas)":
 
         elif st.session_state.blandat_typ == 'alg_uttryck':
             valt_svar = st.radio("Välj rätt alternativ:", st.session_state.alg_uttryck_alternativ, index=None, key=f"blandat_algu_in_{st.session_state.blandat_id}", label_visibility="collapsed")
+            
+        elif st.session_state.blandat_typ == 'lan':
+            st.markdown(f"<div style='font-size: 26px; font-weight: bold; color: #0056b3; margin-bottom: 25px;'>{st.session_state.lan_fraga}</div>", unsafe_allow_html=True)
+            svar = st.text_input("Ditt svar (heltal kr):", key=f"blandat_lan_in_{st.session_state.blandat_id}")
 
         st.write("")
         
@@ -1161,6 +1270,17 @@ elif vald_kategori == "Blandat (Slumpas)":
                     if valt_svar is not None:
                         st.session_state.blandat_status = 'ratt' if valt_svar.strip() == st.session_state.alg_uttryck_svar.strip() else 'fel'
                     else: st.session_state.blandat_status = 'tom'
+                    
+                elif st.session_state.blandat_typ == 'lan':
+                    if svar.strip() != "":
+                        try:
+                            if int(svar.strip().replace(" ", "")) == st.session_state.lan_svar: 
+                                st.session_state.blandat_status = 'ratt'
+                            else: 
+                                st.session_state.blandat_status = 'fel'
+                        except ValueError: st.session_state.blandat_status = 'format'
+                    else: st.session_state.blandat_status = 'tom'
+                        
                 st.rerun()
 
         with k2:
@@ -1175,9 +1295,10 @@ elif vald_kategori == "Blandat (Slumpas)":
                 if st.session_state.blandat_typ == 'graf': ratt_txt = ' och '.join([f"{a:g}".replace('.', ',') for a in st.session_state.graf_ratt_svar])
                 elif st.session_state.blandat_typ == 'alg_func': ratt_txt = st.session_state.alg_svar
                 elif st.session_state.blandat_typ == 'ekv': ratt_txt = st.session_state.ekv_svar
+                elif st.session_state.blandat_typ == 'lan': ratt_txt = f"{st.session_state.lan_svar} kr"
                 elif st.session_state.blandat_typ == 'alg_uttryck': ratt_txt = f"uttrycket som är exakt {st.session_state.alg_uttryck_svar}"
                 st.error(f"❌ Tyvärr fel. Rätt svar var: {ratt_txt}")
             elif st.session_state.blandat_status == 'format':
-                st.warning("⚠️ Svaret är i fel format (ange bara siffror).")
+                st.warning("⚠️ Svaret är i fel format (skriv bara siffror).")
             elif st.session_state.blandat_status == 'tom':
                 st.warning("Vänligen fyll i ett svar innan du rättar.")
