@@ -1030,23 +1030,22 @@ def rita_stat_graf(x, y):
         dragmode=False
     )
     
-    # Pil för x-axeln
+    # Pil för x-axeln (pekandes åt höger)
     fig.add_annotation(
-        x=1.02, y=0, xref='paper', yref='paper',
-        ax=0.98, ay=0, axref='paper', ayref='paper',
+        x=1, y=0, xref='paper', yref='paper',
+        ax=-25, ay=0,  # Pixel-offset: svansen är 25 pixlar till vänster
         showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=2, arrowcolor='black'
     )
-    # Pil för y-axeln
+    # Pil för y-axeln (pekandes uppåt)
     fig.add_annotation(
-        x=0, y=1.02, xref='paper', yref='paper',
-        ax=0, ay=0.98, axref='paper', ayref='paper',
+        x=0, y=1, xref='paper', yref='paper',
+        ax=0, ay=25,   # Pixel-offset: svansen är 25 pixlar nedanför
         showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=2, arrowcolor='black'
     )
     
     return fig
 
-def skapa_stat_uppgift(niva=1):
-    # niva används inte längre här, det är alltid "Nivå 2" svårighetsgrad
+def skapa_stat_uppgift():
     num_points = random.randint(40, 60)
     x = np.random.uniform(10, 90, num_points)
     
@@ -1664,7 +1663,7 @@ elif vald_kategori == "Blandat (Slumpas)":
         elif st.session_state.blandat_typ == 'slump':
             skapa_slump_uppgift(niva)
         elif st.session_state.blandat_typ == 'stat':
-            skapa_stat_uppgift() # Tar inte in nivå längre
+            skapa_stat_uppgift()
 
     with st.sidebar:
         st.subheader("Inställningar")
