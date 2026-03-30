@@ -1022,8 +1022,8 @@ def rita_stat_graf(x, y):
     # Uppdaterar layouten: vi döljer ALLA inbyggda ram- och axellinjer
     # för att undvika överlappningar med våra nya pil-axlar.
     fig.update_layout(
-        xaxis=dict(range=[0, 100], showticklabels=False, showgrid=False, zeroline=False, showline=False),
-        yaxis=dict(range=[0, 160], showticklabels=False, showgrid=False, zeroline=False, showline=False),
+        xaxis=dict(range=[0, 100], showticklabels=False, showgrid=False, zeroline=False, showline=True, linewidth=2, linecolor='black', mirror=False),
+        yaxis=dict(range=[0, 160], showticklabels=False, showgrid=False, zeroline=False, showline=True, linewidth=2, linecolor='black', mirror=False),
         margin=dict(l=20, r=20, t=20, b=20),
         height=450,
         plot_bgcolor='white',
@@ -1031,17 +1031,17 @@ def rita_stat_graf(x, y):
         dragmode=False
     )
     
-    # Ritar x-axeln genom att dra en linje från x=0 till x=1 i grafens "pappersutrymme"
+    # Pil för x-axeln
     fig.add_annotation(
         x=1, y=0, xref='paper', yref='paper',
-        ax=0, ay=0, axref='paper', ayref='paper',
+        ax=-20, ay=0,
         showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=2, arrowcolor='black'
     )
     
-    # Ritar y-axeln genom att dra en linje från y=0 till y=1 i grafens "pappersutrymme"
+    # Pil för y-axeln
     fig.add_annotation(
         x=0, y=1, xref='paper', yref='paper',
-        ax=0, ay=0, axref='paper', ayref='paper',
+        ax=0, ay=20,
         showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=2, arrowcolor='black'
     )
     
@@ -1458,6 +1458,7 @@ elif vald_kategori == "Förändringsfaktor":
                         anv_svar = float(svar_clean)
                         ratt_svar = float(st.session_state.ff_svar)
                         
+                        # Tillåter en liten marginal för decimalfel
                         if abs(anv_svar - ratt_svar) < 0.001: 
                             st.session_state.ff_status = 'ratt'
                         else: 
