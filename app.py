@@ -944,12 +944,13 @@ def rita_traddiagram(grenar, farg1, farg2):
     ))
     
     # Text-etiketter för att visa vilken dragning det är
-    fig.add_annotation(x=0.02, y=0.5, text="<b>Dragning 1</b>", showarrow=False, font=dict(size=14, color="gray"), xanchor="left")
-    fig.add_annotation(x=0.02, y=0, text="<b>Dragning 2</b>", showarrow=False, font=dict(size=14, color="gray"), xanchor="left")
+    # Högerjusterar och sätter koordinaterna längre till vänster, så att de inte krockar med noderna
+    fig.add_annotation(x=0.05, y=0.5, text="<b>Dragning 1</b>", showarrow=False, font=dict(size=14, color="gray"), xanchor="right")
+    fig.add_annotation(x=0.05, y=0, text="<b>Dragning 2</b>", showarrow=False, font=dict(size=14, color="gray"), xanchor="right")
 
-    # Döljer det vanliga koordinatsystemet
+    # Döljer det vanliga koordinatsystemet och utökar ritytan åt vänster så att etiketterna får plats
     fig.update_layout(
-        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[0, 1]),
+        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[-0.2, 1.05]),
         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[-0.2, 1.1]),
         margin=dict(l=10, r=10, t=10, b=10),
         height=400,
@@ -1157,25 +1158,30 @@ def rita_stat_graf(x, y):
         hoverinfo='skip'
     ))
     
-    # Använder samma metod som för de vanliga graferna
-    # Stänger av showline (boxen) och slår på zeroline (matematiska axlarna)
+    # Uppdaterar layouten: vi döljer ALLA inbyggda ram- och axellinjer
+    # för att undvika överlappningar med våra nya pil-axlar.
     fig.update_layout(
-        xaxis=dict(range=[-5, 105], showticklabels=False, showgrid=False, zeroline=True, zerolinewidth=3, zerolinecolor='black', showline=False, fixedrange=True),
-        yaxis=dict(range=[-10, 170], showticklabels=False, showgrid=False, zeroline=True, zerolinewidth=3, zerolinecolor='black', showline=False, fixedrange=True),
+        xaxis=dict(range=[0, 100], showticklabels=False, showgrid=False, zeroline=False, showline=False),
+        yaxis=dict(range=[0, 160], showticklabels=False, showgrid=False, zeroline=False, showline=False),
         margin=dict(l=20, r=20, t=20, b=20),
         height=450,
         plot_bgcolor='white',
         hovermode=False,
-        dragmode=False,
-        annotations=[
-            # Pil för x-axeln, fäst till koordinatsystemet
-            dict(x=105, y=0, ax=95, ay=0, xref='x', yref='y', axref='x', ayref='y', showarrow=True, arrowhead=2, arrowsize=1, arrowwidth=2, arrowcolor='black'),
-            # Pil för y-axeln, fäst till koordinatsystemet
-            dict(x=0, y=170, ax=0, ay=155, xref='x', yref='y', axref='x', ayref='y', showarrow=True, arrowhead=2, arrowsize=1, arrowwidth=2, arrowcolor='black'),
-            # Etiketter
-            dict(x=105, y=-5, text="x", showarrow=False, xref='x', yref='y', font=dict(size=16, color='black')),
-            dict(x=-3, y=170, text="y", showarrow=False, xref='x', yref='y', font=dict(size=16, color='black'))
-        ]
+        dragmode=False
+    )
+    
+    # Ritar x-axeln genom att dra en linje från x=0 till x=1 i grafens "pappersutrymme"
+    fig.add_annotation(
+        x=1, y=0, xref='paper', yref='paper',
+        ax=0, ay=0, axref='paper', ayref='paper',
+        showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=2, arrowcolor='black'
+    )
+    
+    # Ritar y-axeln genom att dra en linje från y=0 till y=1 i grafens "pappersutrymme"
+    fig.add_annotation(
+        x=0, y=1, xref='paper', yref='paper',
+        ax=0, ay=0, axref='paper', ayref='paper',
+        showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=2, arrowcolor='black'
     )
     
     return fig
