@@ -915,21 +915,22 @@ def rita_traddiagram(grenar, farg1, farg2):
             hoverinfo='skip'
         ))
         
-        # Beräkna mitten av linjen för att placera bråktalet/texten
-        mid_x = (nodes_x[start] + nodes_x[end]) / 2
-        mid_y = (nodes_y[start] + nodes_y[end]) / 2
-        
-        # Förskjut texten lite åt sidan beroende på lutningen så den inte hamnar på strecket
-        shift = -0.04 if nodes_x[end] < nodes_x[start] else 0.04
+        # Beräkna placeringen för bråktalet/texten. 
+        # Förskjuter 65% framåt längs grenen istället för mitten (50%).
+        forskjutning = 0.65
+        mid_x = nodes_x[start] + forskjutning * (nodes_x[end] - nodes_x[start])
+        mid_y = nodes_y[start] + forskjutning * (nodes_y[end] - nodes_y[start])
         
         # Textfärgen blir röd om det är x (den saknade), annars blå
         text_color = 'red' if grenar[i] == 'x' else '#0056b3'
         
         fig.add_annotation(
-            x=mid_x + shift, y=mid_y,
+            x=mid_x, y=mid_y,
             text=f"<b>{grenar[i]}</b>",
             showarrow=False,
-            font=dict(size=18, color=text_color)
+            font=dict(size=18, color=text_color),
+            bgcolor="white", # Lägger till vit bakgrund för läsbarhet och döljer strecket bakom
+            borderpad=2
         )
         
     # Rita själva noderna med vit bakgrund så linjerna inte lyser igenom
@@ -1156,30 +1157,25 @@ def rita_stat_graf(x, y):
         hoverinfo='skip'
     ))
     
-    # Uppdaterar layouten: vi döljer ALLA inbyggda ram- och axellinjer
-    # för att undvika överlappningar med våra nya pil-axlar.
+    # Använder samma metod som för de vanliga graferna
+    # Stänger av showline (boxen) och slår på zeroline (matematiska axlarna)
     fig.update_layout(
-        xaxis=dict(range=[0, 100], showticklabels=False, showgrid=False, zeroline=False, showline=False),
-        yaxis=dict(range=[0, 160], showticklabels=False, showgrid=False, zeroline=False, showline=False),
+        xaxis=dict(range=[-5, 105], showticklabels=False, showgrid=False, zeroline=True, zerolinewidth=3, zerolinecolor='black', showline=False, fixedrange=True),
+        yaxis=dict(range=[-10, 170], showticklabels=False, showgrid=False, zeroline=True, zerolinewidth=3, zerolinecolor='black', showline=False, fixedrange=True),
         margin=dict(l=20, r=20, t=20, b=20),
         height=450,
         plot_bgcolor='white',
         hovermode=False,
-        dragmode=False
-    )
-    
-    # Ritar x-axeln genom att dra en linje från x=0 till x=1 i grafens "pappersutrymme"
-    fig.add_annotation(
-        x=1, y=0, xref='paper', yref='paper',
-        ax=0, ay=0, axref='paper', ayref='paper',
-        showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=2, arrowcolor='black'
-    )
-    
-    # Ritar y-axeln genom att dra en linje från y=0 till y=1 i grafens "pappersutrymme"
-    fig.add_annotation(
-        x=0, y=1, xref='paper', yref='paper',
-        ax=0, ay=0, axref='paper', ayref='paper',
-        showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=2, arrowcolor='black'
+        dragmode=False,
+        annotations=[
+            # Pil för x-axeln, fäst till koordinatsystemet
+            dict(x=105, y=0, ax=95, ay=0, xref='x', yref='y', axref='x', ayref='y', showarrow=True, arrowhead=2, arrowsize=1, arrowwidth=2, arrowcolor='black'),
+            # Pil för y-axeln, fäst till koordinatsystemet
+            dict(x=0, y=170, ax=0, ay=155, xref='x', yref='y', axref='x', ayref='y', showarrow=True, arrowhead=2, arrowsize=1, arrowwidth=2, arrowcolor='black'),
+            # Etiketter
+            dict(x=105, y=-5, text="x", showarrow=False, xref='x', yref='y', font=dict(size=16, color='black')),
+            dict(x=-3, y=170, text="y", showarrow=False, xref='x', yref='y', font=dict(size=16, color='black'))
+        ]
     )
     
     return fig
@@ -1595,7 +1591,6 @@ elif vald_kategori == "Förändringsfaktor":
                         anv_svar = float(svar_clean)
                         ratt_svar = float(st.session_state.ff_svar)
                         
-                        # Tillåter en liten marginal för decimalfel
                         if abs(anv_svar - ratt_svar) < 0.001: 
                             st.session_state.ff_status = 'ratt'
                         else: 
