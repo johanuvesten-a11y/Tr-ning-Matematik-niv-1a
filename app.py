@@ -890,12 +890,149 @@ def skapa_ff_uppgift(niva=1):
 # ==========================================
 # -- 7. SANNOLIKHET --
 # ==========================================
+
+# NY FUNKTION: Ritar ett träddiagram uppifrån och ner
+def rita_traddiagram(grenar, farg1, farg2):
+    # grenar är en lista med 6 texter för sannolikheterna på varje gren
+    fig = go.Figure()
+    
+    # Koordinater för ett träd uppifrån och ner
+    # 0 = Start, 1 = Första dragning färg1, 2 = Första dragning färg2
+    # 3,4,5,6 = Andra dragningens utfall
+    nodes_x = [0.5, 0.25, 0.75, 0.125, 0.375, 0.625, 0.875]
+    nodes_y = [1, 0.5, 0.5, 0, 0, 0, 0]
+    labels = ["Start", farg1, farg2, farg1, farg2, farg1, farg2]
+    
+    edges = [(0, 1), (0, 2), (1, 3), (1, 4), (2, 5), (2, 6)]
+    
+    for i, (start, end) in enumerate(edges):
+        # Rita linjen för grenen
+        fig.add_trace(go.Scatter(
+            x=[nodes_x[start], nodes_x[end]],
+            y=[nodes_y[start], nodes_y[end]],
+            mode='lines',
+            line=dict(color='black', width=2),
+            hoverinfo='skip'
+        ))
+        
+        # Beräkna mitten av linjen för att placera bråktalet/texten
+        mid_x = (nodes_x[start] + nodes_x[end]) / 2
+        mid_y = (nodes_y[start] + nodes_y[end]) / 2
+        
+        # Förskjut texten lite åt sidan beroende på lutningen så den inte hamnar på strecket
+        shift = -0.04 if nodes_x[end] < nodes_x[start] else 0.04
+        
+        # Textfärgen blir röd om det är x (den saknade), annars blå
+        text_color = 'red' if grenar[i] == 'x' else '#0056b3'
+        
+        fig.add_annotation(
+            x=mid_x + shift, y=mid_y,
+            text=f"<b>{grenar[i]}</b>",
+            showarrow=False,
+            font=dict(size=18, color=text_color)
+        )
+        
+    # Rita själva noderna med vit bakgrund så linjerna inte lyser igenom
+    fig.add_trace(go.Scatter(
+        x=nodes_x, y=nodes_y,
+        mode='markers+text',
+        marker=dict(size=40, color='white', line=dict(color='black', width=2)),
+        text=[f"<b>{lbl}</b>" for lbl in labels],
+        textposition="middle center",
+        hoverinfo='skip'
+    ))
+    
+    # Text-etiketter för att visa vilken dragning det är
+    fig.add_annotation(x=0.02, y=0.5, text="<b>Dragning 1</b>", showarrow=False, font=dict(size=14, color="gray"), xanchor="left")
+    fig.add_annotation(x=0.02, y=0, text="<b>Dragning 2</b>", showarrow=False, font=dict(size=14, color="gray"), xanchor="left")
+
+    # Döljer det vanliga koordinatsystemet
+    fig.update_layout(
+        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[0, 1]),
+        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[-0.2, 1.1]),
+        margin=dict(l=10, r=10, t=10, b=10),
+        height=400,
+        plot_bgcolor='white',
+        showlegend=False,
+        hovermode=False,
+        dragmode=False
+    )
+    return fig
+
 def skapa_slump_uppgift(niva=1):
+    # Nollställ eventuella gamla träddiagram så de inte ligger kvar av misstag
+    st.session_state.slump_traddiagram = None
+    
     while True:
         if niva == 1:
-            typ = random.choice(['flerval_uppstallning', 'berakna_enkla', 'enkel_dragning', 'tarning_mynt'])
+            # Lade till de två nya uppgiftstyperna i slump-poolen för Nivå 1
+            typ = random.choice(['flerval_uppstallning', 'berakna_enkla', 'enkel_dragning', 'tarning_mynt', 'trad_berakna', 'trad_saknas'])
             
-            if typ == 'flerval_uppstallning':
+            if typ == 'trad_berakna':
+                A = random.randint(3, 6)
+                B = random.randint(3, 6)
+                tot = A + B
+                f1, f2 = "Röd", "Blå"
+                
+                # Sannolikheter för grenarna
+                p1 = Fraction(A, tot)
+                p2 = Fraction(B, tot)
+                p3 = Fraction(A-1, tot-1)
+                p4 = Fraction(B, tot-1)
+                p5 = Fraction(A, tot-1)
+                p6 = Fraction(B-1, tot-1)
+                
+                gren_texter = [
+                    f"{p1.numerator}/{p1.denominator}",
+                    f"{p2.numerator}/{p2.denominator}",
+                    f"{p3.numerator}/{p3.denominator}",
+                    f"{p4.numerator}/{p4.denominator}",
+                    f"{p5.numerator}/{p5.denominator}",
+                    f"{p6.numerator}/{p6.denominator}"
+                ]
+                
+                st.session_state.slump_traddiagram = rita_traddiagram(gren_texter, f1, f2)
+                st.session_state.slump_info = f"I en påse finns {A} röda och {B} blå kulor. Träddiagrammet visar vad som kan hända om du drar två kulor utan återläggning."
+                
+                fraga_val = random.choice(['två röda', 'två blå', 'exakt en av varje färg'])
+                if fraga_val == 'två röda':
+                    st.session_state.slump_fraga = "Vad är sannolikheten att du drar två röda kulor? (Svara i bråkform)"
+                    st.session_state.slump_svar_frac = p1 * p3
+                elif fraga_val == 'två blå':
+                    st.session_state.slump_fraga = "Vad är sannolikheten att du drar två blå kulor? (Svara i bråkform)"
+                    st.session_state.slump_svar_frac = p2 * p6
+                else:
+                    st.session_state.slump_fraga = "Vad är sannolikheten att du drar exakt en av varje färg? (Svara i bråkform)"
+                    st.session_state.slump_svar_frac = (p1 * p4) + (p2 * p5)
+                    
+                st.session_state.slump_svarstyp = 'brak'
+                break
+                
+            elif typ == 'trad_saknas':
+                A = random.randint(3, 7)
+                B = random.randint(3, 7)
+                tot = A + B
+                f1, f2 = "Röd", "Blå"
+                
+                fractions = [
+                    Fraction(A, tot), Fraction(B, tot),
+                    Fraction(A-1, tot-1), Fraction(B, tot-1),
+                    Fraction(A, tot-1), Fraction(B-1, tot-1)
+                ]
+                gren_texter = [f"{p.numerator}/{p.denominator}" for p in fractions]
+                
+                # Välj ut en gren slumpmässigt som ska "gömmas" med ett x
+                saknad_idx = random.randint(0, 5)
+                st.session_state.slump_svar_frac = fractions[saknad_idx]
+                gren_texter[saknad_idx] = "x"
+                
+                st.session_state.slump_traddiagram = rita_traddiagram(gren_texter, f1, f2)
+                st.session_state.slump_info = f"I en påse finns {A} röda och {B} blå kulor. Du drar två kulor utan återläggning."
+                st.session_state.slump_fraga = "Ett värde i träddiagrammet har bytts ut mot 'x'. Vilket bråktal ska stå istället för x i diagrammet?"
+                st.session_state.slump_svarstyp = 'brak'
+                break
+            
+            elif typ == 'flerval_uppstallning':
                 A = random.randint(3, 7)
                 B = random.randint(3, 7)
                 tot = A + B
@@ -1019,25 +1156,30 @@ def rita_stat_graf(x, y):
         hoverinfo='skip'
     ))
     
-    # Använder samma metod som för de vanliga graferna
-    # Stänger av showline (boxen) och slår på zeroline (matematiska axlarna)
+    # Uppdaterar layouten: vi döljer ALLA inbyggda ram- och axellinjer
+    # för att undvika överlappningar med våra nya pil-axlar.
     fig.update_layout(
-        xaxis=dict(range=[-5, 105], showticklabels=False, showgrid=False, zeroline=True, zerolinewidth=3, zerolinecolor='black', showline=False, fixedrange=True),
-        yaxis=dict(range=[-10, 170], showticklabels=False, showgrid=False, zeroline=True, zerolinewidth=3, zerolinecolor='black', showline=False, fixedrange=True),
+        xaxis=dict(range=[0, 100], showticklabels=False, showgrid=False, zeroline=False, showline=False),
+        yaxis=dict(range=[0, 160], showticklabels=False, showgrid=False, zeroline=False, showline=False),
         margin=dict(l=20, r=20, t=20, b=20),
         height=450,
         plot_bgcolor='white',
         hovermode=False,
-        dragmode=False,
-        annotations=[
-            # Pil för x-axeln, fäst till koordinatsystemet
-            dict(x=105, y=0, ax=95, ay=0, xref='x', yref='y', axref='x', ayref='y', showarrow=True, arrowhead=2, arrowsize=1, arrowwidth=2, arrowcolor='black'),
-            # Pil för y-axeln, fäst till koordinatsystemet
-            dict(x=0, y=170, ax=0, ay=155, xref='x', yref='y', axref='x', ayref='y', showarrow=True, arrowhead=2, arrowsize=1, arrowwidth=2, arrowcolor='black'),
-            # Etiketter
-            dict(x=105, y=-5, text="x", showarrow=False, xref='x', yref='y', font=dict(size=16, color='black')),
-            dict(x=-3, y=170, text="y", showarrow=False, xref='x', yref='y', font=dict(size=16, color='black'))
-        ]
+        dragmode=False
+    )
+    
+    # Ritar x-axeln genom att dra en linje från x=0 till x=1 i grafens "pappersutrymme"
+    fig.add_annotation(
+        x=1, y=0, xref='paper', yref='paper',
+        ax=0, ay=0, axref='paper', ayref='paper',
+        showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=2, arrowcolor='black'
+    )
+    
+    # Ritar y-axeln genom att dra en linje från y=0 till y=1 i grafens "pappersutrymme"
+    fig.add_annotation(
+        x=0, y=1, xref='paper', yref='paper',
+        ax=0, ay=0, axref='paper', ayref='paper',
+        showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=2, arrowcolor='black'
     )
     
     return fig
@@ -1453,6 +1595,7 @@ elif vald_kategori == "Förändringsfaktor":
                         anv_svar = float(svar_clean)
                         ratt_svar = float(st.session_state.ff_svar)
                         
+                        # Tillåter en liten marginal för decimalfel
                         if abs(anv_svar - ratt_svar) < 0.001: 
                             st.session_state.ff_status = 'ratt'
                         else: 
@@ -1509,6 +1652,9 @@ elif vald_kategori == "Sannolikhet":
             
     with col_vanster:
         st.markdown(f"<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: #fce4ec; padding: 25px; border-radius: 10px; border-left: 6px solid #e83e8c;'>{st.session_state.slump_info}</div>", unsafe_allow_html=True)
+        # Ritar ut träddiagrammet om ett sådant har genererats för uppgiften
+        if st.session_state.get('slump_traddiagram') is not None:
+            st.plotly_chart(st.session_state.slump_traddiagram, use_container_width=True, config={'displayModeBar': False})
         
     with col_hoger:
         st.subheader("Uppgift")
@@ -1541,6 +1687,7 @@ elif vald_kategori == "Sannolikhet":
                 else:
                     if svar.strip() != "":
                         try:
+                            # Kontrollerar bråket
                             svar_clean = svar.strip().replace(" ", "").replace(",", ".")
                             anv_frac = Fraction(svar_clean)
                             if anv_frac == st.session_state.slump_svar_frac:
@@ -1567,6 +1714,7 @@ elif vald_kategori == "Sannolikhet":
                 if st.session_state.slump_svarstyp == 'flerval':
                     st.error(f"❌ Tyvärr fel. Rätt uträkning var: {st.session_state.slump_svar}")
                 else:
+                    # Visa rätt svar för bråk
                     ratt_frac = st.session_state.slump_svar_frac
                     st.error(f"❌ Tyvärr fel. Rätt svar var: {ratt_frac.numerator}/{ratt_frac.denominator}")
             elif st.session_state.slump_status == 'format': 
@@ -1708,6 +1856,8 @@ elif vald_kategori == "Blandat (Slumpas)":
             
         elif st.session_state.blandat_typ == 'slump':
             st.markdown(f"<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: #fce4ec; padding: 25px; border-radius: 10px; border-left: 6px solid #e83e8c;'>{st.session_state.slump_info}</div>", unsafe_allow_html=True)
+            if st.session_state.get('slump_traddiagram') is not None:
+                st.plotly_chart(st.session_state.slump_traddiagram, use_container_width=True, config={'displayModeBar': False})
 
         elif st.session_state.blandat_typ == 'stat':
             fig = rita_stat_graf(st.session_state.stat_x, st.session_state.stat_y)
