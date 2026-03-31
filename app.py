@@ -891,7 +891,7 @@ def skapa_ff_uppgift(niva=1):
 # -- 7. SANNOLIKHET --
 # ==========================================
 
-# NY FUNKTION: Ritar ett träddiagram uppifrån och ner
+# Ritar ett träddiagram uppifrån och ner
 def rita_traddiagram(grenar, farg1, farg2):
     # grenar är en lista med 6 texter för sannolikheterna på varje gren
     fig = go.Figure()
@@ -967,7 +967,6 @@ def skapa_slump_uppgift(niva=1):
     
     while True:
         if niva == 1:
-            # Lade till de två nya uppgiftstyperna i slump-poolen för Nivå 1
             typ = random.choice(['flerval_uppstallning', 'berakna_enkla', 'enkel_dragning', 'tarning_mynt', 'trad_berakna', 'trad_saknas'])
             
             if typ == 'trad_berakna':
@@ -1083,11 +1082,23 @@ def skapa_slump_uppgift(niva=1):
                 
             elif typ == 'tarning_mynt':
                 st.session_state.slump_info = "Du kastar en vanlig sexsidig tärning och singlar ett mynt."
-                target_tarning = random.randint(1, 6)
+                
+                tarning_events = [
+                    ("ett jämnt tal", Fraction(3, 6)),
+                    ("ett udda tal", Fraction(3, 6)),
+                    ("mer än 4", Fraction(2, 6)),
+                    ("mindre än 3", Fraction(2, 6)),
+                    ("mer än 2", Fraction(4, 6)),
+                    ("mindre än 5", Fraction(4, 6))
+                ]
+                for i in range(1, 7):
+                    tarning_events.append((f"en {i}:a", Fraction(1, 6)))
+                    
+                valt_tarning_event, tarning_prob = random.choice(tarning_events)
                 target_mynt = random.choice(['krona', 'klave'])
                 
-                st.session_state.slump_fraga = f"Vad är sannolikheten att du får en {target_tarning}:a och {target_mynt}?"
-                st.session_state.slump_svar_frac = Fraction(1, 6) * Fraction(1, 2)
+                st.session_state.slump_fraga = f"Vad är sannolikheten att du får {valt_tarning_event} och {target_mynt}?"
+                st.session_state.slump_svar_frac = tarning_prob * Fraction(1, 2)
                 st.session_state.slump_svarstyp = 'brak'
                 break
 
