@@ -945,12 +945,12 @@ def rita_traddiagram(grenar, farg1, farg2):
     
     # Text-etiketter för att visa vilken dragning det är
     # Högerjusterar och sätter koordinaterna längre till vänster, så att de inte krockar med noderna
-    fig.add_annotation(x=0.05, y=0.5, text="<b>Dragning 1</b>", showarrow=False, font=dict(size=14, color="gray"), xanchor="right")
-    fig.add_annotation(x=0.05, y=0, text="<b>Dragning 2</b>", showarrow=False, font=dict(size=14, color="gray"), xanchor="right")
+    fig.add_annotation(x=-0.05, y=0.5, text="<b>Dragning 1</b>", showarrow=False, font=dict(size=14, color="gray"), xanchor="right")
+    fig.add_annotation(x=-0.05, y=0, text="<b>Dragning 2</b>", showarrow=False, font=dict(size=14, color="gray"), xanchor="right")
 
     # Döljer det vanliga koordinatsystemet och utökar ritytan åt vänster så att etiketterna får plats
     fig.update_layout(
-        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[-0.2, 1.05]),
+        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[-0.3, 1.05]),
         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[-0.2, 1.1]),
         margin=dict(l=10, r=10, t=10, b=10),
         height=400,
