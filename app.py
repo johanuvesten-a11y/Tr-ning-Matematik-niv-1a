@@ -705,7 +705,6 @@ def skapa_alg_uttryck_uppgift(niva=1):
             
     svar_ratt_latex = svar_ratt
     alternativ = list(set([svar_ratt_latex, d1, d2, d3]))
-    # Förhindra att listan blir för kort vid dubbletter, fyll ut med lite dolda mellanslag
     while len(alternativ) < 4:
         alternativ.append(alternativ[0] + " ") 
         alternativ = list(set(alternativ))
@@ -1183,17 +1182,17 @@ def rita_stat_graf(x, y):
         dragmode=False
     )
     
-    # Ritar x-axeln genom att dra en linje från x=0 till x=1 i grafens "pappersutrymme"
+    # Ritar x-axeln genom att dra en linje från x=0 till x=100
     fig.add_annotation(
-        x=1, y=0, xref='paper', yref='paper',
-        ax=0, ay=0, axref='paper', ayref='paper',
+        x=100, y=0, xref='x', yref='y',
+        ax=0, ay=0, axref='x', ayref='y',
         showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=2, arrowcolor='black'
     )
     
-    # Ritar y-axeln genom att dra en linje från y=0 till y=1 i grafens "pappersutrymme"
+    # Ritar y-axeln genom att dra en linje från y=0 till y=160
     fig.add_annotation(
-        x=0, y=1, xref='paper', yref='paper',
-        ax=0, ay=0, axref='paper', ayref='paper',
+        x=0, y=160, xref='x', yref='y',
+        ax=0, ay=0, axref='x', ayref='y',
         showarrow=True, arrowhead=2, arrowsize=1.5, arrowwidth=2, arrowcolor='black'
     )
     
@@ -1833,12 +1832,21 @@ elif vald_kategori == "Sannolikhet":
 elif vald_kategori == "Statistik":
     st.title("Tolka Statistik och Diagram")
     
+    if 'stat_niva' not in st.session_state: st.session_state.stat_niva = 1
     if 'stat_uppgift_nr' not in st.session_state: st.session_state.stat_uppgift_nr = 0
     if 'stat_x' not in st.session_state: skapa_stat_uppgift()
 
     with st.sidebar:
         st.subheader("Inställningar")
-        st.write("Endast en nivå tillgänglig.")
+        # I din förra iteration ville du inte ha nivå 2 för statistik.
+        # Vi lämnar en "falsk" knapp här för att matcha layouten, men den laddar bara från samma bank.
+        ny_niva = st.radio("Välj svårighetsgrad:", [1], horizontal=True, index=0, key="stat_niva_val")
+        if ny_niva != st.session_state.stat_niva:
+            st.session_state.stat_niva = ny_niva
+            st.session_state.stat_rattat = False
+            st.session_state.stat_uppgift_nr += 1
+            skapa_stat_uppgift()
+            st.rerun()
 
     col_vanster, col_hoger = st.columns([1.2, 1], gap="large")
             
@@ -1929,7 +1937,7 @@ elif vald_kategori == "Blandat (Slumpas)":
         elif st.session_state.blandat_typ == 'slump':
             skapa_slump_uppgift(niva)
         elif st.session_state.blandat_typ == 'stat':
-            skapa_stat_uppgift(niva)
+            skapa_stat_uppgift()
 
     with st.sidebar:
         st.subheader("Inställningar")
