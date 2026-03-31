@@ -1226,7 +1226,7 @@ def skapa_stat_uppgift(niva=1):
         st.session_state.stat_y = y
         st.session_state.stat_svar = korr
         st.session_state.stat_fraga = "Vilken typ av korrelation visar diagrammet?"
-        st.session_state.stat_info = "Kika på spridningsdiagrammet nedan."
+        st.session_state.stat_info = "Kika på spridningsdiagrammet ovan."
         
     elif typ == 'konf_overlapp':
         A = random.randint(14, 25)
@@ -1832,16 +1832,14 @@ elif vald_kategori == "Sannolikhet":
 elif vald_kategori == "Statistik":
     st.title("Tolka Statistik och Diagram")
     
-    if 'stat_niva' not in st.session_state: st.session_state.stat_niva = 1
     if 'stat_uppgift_nr' not in st.session_state: st.session_state.stat_uppgift_nr = 0
     if 'stat_x' not in st.session_state: skapa_stat_uppgift()
 
     with st.sidebar:
         st.subheader("Inställningar")
-        # I din förra iteration ville du inte ha nivå 2 för statistik.
-        # Vi lämnar en "falsk" knapp här för att matcha layouten, men den laddar bara från samma bank.
+        # Endast nivå 1 för statistik
         ny_niva = st.radio("Välj svårighetsgrad:", [1], horizontal=True, index=0, key="stat_niva_val")
-        if ny_niva != st.session_state.stat_niva:
+        if ny_niva != st.session_state.get('stat_niva', 1):
             st.session_state.stat_niva = ny_niva
             st.session_state.stat_rattat = False
             st.session_state.stat_uppgift_nr += 1
