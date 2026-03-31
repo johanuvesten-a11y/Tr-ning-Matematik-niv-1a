@@ -703,10 +703,10 @@ def skapa_alg_uttryck_uppgift(niva=1):
             d2 = f"{a*C}x {b_svar}"
             d3 = f"{a}x {B_fel}"
             
-    svar_ratt_latex = svar_ratt
-    alternativ = list(set([svar_ratt_latex, d1, d2, d3]))
+    svar_ratt_latex = f"${svar_ratt}$"
+    alternativ = list(set([svar_ratt_latex, f"${d1}$", f"${d2}$", f"${d3}$"]))
     while len(alternativ) < 4:
-        alternativ.append(alternativ[0] + " ") 
+        alternativ.append(alternativ[0].replace("$", " $", 1)) 
         alternativ = list(set(alternativ))
     random.shuffle(alternativ)
     st.session_state.alg_uttryck_alternativ = alternativ
@@ -1041,17 +1041,17 @@ def skapa_slump_uppgift(niva=1):
                 st.session_state.slump_info = f"I en påse finns {A} röda och {B} gröna godisbitar. Du drar två godisbitar slumpmässigt utan att titta."
                 st.session_state.slump_fraga = "Vilken beräkning ger sannolikheten att du får två röda godisbitar?"
                 
-                # Här använder vi textsträngar utan dollartecken så det ser bra ut i radio buttons
-                ratt = f"{A}/{tot} * {A-1}/{tot-1}"
-                d1 = f"{A}/{tot} * {A}/{tot}"
-                d2 = f"{A}/{tot} + {A-1}/{tot-1}"
-                d3 = f"{A}/{tot} * {A-1}/{tot}"
+                # Lägger in $ så att bråken renderas med riktiga horisontella streck (LaTeX) i svarsalternativen
+                ratt = f"\\frac{{{A}}}{{{tot}}} \\cdot \\frac{{{A-1}}}{{{tot-1}}}"
+                d1 = f"\\frac{{{A}}}{{{tot}}} \\cdot \\frac{{{A}}}{{{tot}}}"
+                d2 = f"\\frac{{{A}}}{{{tot}}} + \\frac{{{A-1}}}{{{tot-1}}}"
+                d3 = f"\\frac{{{A}}}{{{tot}}} \\cdot \\frac{{{A-1}}}{{{tot}}}"
                 
                 alt = [ratt, d1, d2, d3]
                 random.shuffle(alt)
                 
-                st.session_state.slump_alternativ = alt
-                st.session_state.slump_svar = ratt
+                st.session_state.slump_alternativ = [f"${a}$" for a in alt]
+                st.session_state.slump_svar = f"${ratt}$"
                 st.session_state.slump_svarstyp = 'flerval'
                 break
                 
@@ -1596,7 +1596,7 @@ elif vald_kategori == "Algebra":
             if st.session_state.alg_utt_status == 'ratt': 
                 st.success("✅ Helt rätt! Bra jobbat.")
             elif st.session_state.alg_utt_status == 'fel': 
-                st.error(f"❌ Tyvärr fel. Rätt svar var exakt: {st.session_state.alg_uttryck_svar}")
+                st.error(f"❌ Tyvärr fel. Rätt svar var exakt:\n\n {st.session_state.alg_uttryck_svar}")
             elif st.session_state.alg_utt_status == 'tom': 
                 st.warning("Vänligen välj ett alternativ först.")
 
@@ -1816,7 +1816,7 @@ elif vald_kategori == "Sannolikhet":
                 st.success("✅ Helt rätt! Snyggt jobbat.")
             elif st.session_state.slump_status == 'fel': 
                 if st.session_state.slump_svarstyp == 'flerval':
-                    st.error(f"❌ Tyvärr fel. Rätt uträkning var: {st.session_state.slump_svar}")
+                    st.error(f"❌ Tyvärr fel. Rätt uträkning var:\n\n {st.session_state.slump_svar}")
                 else:
                     # Visa rätt svar för bråk
                     ratt_frac = st.session_state.slump_svar_frac
