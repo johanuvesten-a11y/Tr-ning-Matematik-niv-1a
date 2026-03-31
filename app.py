@@ -703,10 +703,11 @@ def skapa_alg_uttryck_uppgift(niva=1):
             d2 = f"{a*C}x {b_svar}"
             d3 = f"{a}x {B_fel}"
             
-    svar_ratt_latex = f"${svar_ratt}$"
-    alternativ = list(set([svar_ratt_latex, f"${d1}$", f"${d2}$", f"${d3}$"]))
+    svar_ratt_latex = svar_ratt
+    alternativ = list(set([svar_ratt_latex, d1, d2, d3]))
+    # Förhindra att listan blir för kort vid dubbletter, fyll ut med lite dolda mellanslag
     while len(alternativ) < 4:
-        alternativ.append(alternativ[0].replace("$", " $", 1)) 
+        alternativ.append(alternativ[0] + " ") 
         alternativ = list(set(alternativ))
     random.shuffle(alternativ)
     st.session_state.alg_uttryck_alternativ = alternativ
@@ -1041,16 +1042,17 @@ def skapa_slump_uppgift(niva=1):
                 st.session_state.slump_info = f"I en påse finns {A} röda och {B} gröna godisbitar. Du drar två godisbitar slumpmässigt utan att titta."
                 st.session_state.slump_fraga = "Vilken beräkning ger sannolikheten att du får två röda godisbitar?"
                 
-                ratt = f"\\frac{{{A}}}{{{tot}}} \\cdot \\frac{{{A-1}}}{{{tot-1}}}"
-                d1 = f"\\frac{{{A}}}{{{tot}}} \\cdot \\frac{{{A}}}{{{tot}}}"
-                d2 = f"\\frac{{{A}}}{{{tot}}} + \\frac{{{A-1}}}{{{tot-1}}}"
-                d3 = f"\\frac{{{A}}}{{{tot}}} \\cdot \\frac{{{A-1}}}{{{tot}}}"
+                # Här använder vi textsträngar utan dollartecken så det ser bra ut i radio buttons
+                ratt = f"{A}/{tot} * {A-1}/{tot-1}"
+                d1 = f"{A}/{tot} * {A}/{tot}"
+                d2 = f"{A}/{tot} + {A-1}/{tot-1}"
+                d3 = f"{A}/{tot} * {A-1}/{tot}"
                 
                 alt = [ratt, d1, d2, d3]
                 random.shuffle(alt)
                 
-                st.session_state.slump_alternativ = [f"${a}$" for a in alt]
-                st.session_state.slump_svar = f"${ratt}$"
+                st.session_state.slump_alternativ = alt
+                st.session_state.slump_svar = ratt
                 st.session_state.slump_svarstyp = 'flerval'
                 break
                 
@@ -1198,6 +1200,8 @@ def rita_stat_graf(x, y):
     return fig
 
 def skapa_stat_uppgift(niva=1):
+    # Oavsett nivå slår vi ihop de 5 olika uppgiftstyperna 
+    # (dvs vi använder aldrig nivå 2-uppdelning för statistik)
     typer = ['spridning', 'konf_overlapp', 'konf_baklanges', 'konf_urval', 'konf_falskt']
     typ = random.choice(typer)
     st.session_state.stat_uppgiftstyp = typ
@@ -1218,8 +1222,7 @@ def skapa_stat_uppgift(niva=1):
         else:
             y = np.random.uniform(10, 90, num_points)
             
-        alts = ['Stark positiv', 'Svag positiv', 'Stark negativ', 'Svag negativ', 'Ingen korrelation']
-        st.session_state.stat_alternativ = alts
+        st.session_state.stat_alternativ = ['Välj svar...', 'Stark positiv', 'Svag positiv', 'Stark negativ', 'Svag negativ', 'Ingen korrelation']
         st.session_state.stat_x = x
         st.session_state.stat_y = y
         st.session_state.stat_svar = korr
@@ -1232,7 +1235,7 @@ def skapa_stat_uppgift(niva=1):
         fm = random.randint(2, 4)
         overlapp = (A - fm) <= (B + fm)
         
-        st.session_state.stat_info = f"En väljarbarometer visar att Parti A får {A} % och Parti B får {B} % av väljarstödet. Felmarginalen är $\\pm {fm}$ procentenheter för båda partierna vid 95 % konfidensgrad."
+        st.session_state.stat_info = f"En väljarbarometer visar att Parti A får {A} % och Parti B får {B} % av väljarstödet. Felmarginalen är ±{fm} procentenheter för båda partierna vid 95 % konfidensgrad."
         st.session_state.stat_fraga = "Vilken slutsats kan dras med 95 % säkerhet?"
         
         if overlapp:
@@ -1261,13 +1264,13 @@ def skapa_stat_uppgift(niva=1):
         nedre_str = f"{nedre:g}".replace('.', ',')
         ovre_str = f"{ovre:g}".replace('.', ',')
         
-        st.session_state.stat_info = f"Ett 95 % konfidensintervall för andelen defekta produkter i en fabrik anges till [{nedre_str} %, {ovre_str} %]."
+        st.session_state.stat_info = f"Ett 95 % konfidensintervall för andelen defekta produkter i en fabrik anges till {nedre_str}-{ovre_str}%."
         st.session_state.stat_fraga = "Vad var resultatet i själva stickprovet, och vad var felmarginalen?"
         
-        ratt = f"Resultatet var {res_str} % med en felmarginal på $\\pm {fm_str}$ procentenheter."
-        fel1 = f"Resultatet var {ovre_str} % med en felmarginal på $\\pm {f'{round(fm*2, 1):g}'.replace('.', ',')}$ procentenheter."
-        fel2 = f"Resultatet var {nedre_str} % med en felmarginal på $\\pm {ovre_str}$ procentenheter."
-        fel3 = f"Resultatet var {res_str} % med en felmarginal på $\\pm {f'{round(fm/2, 1):g}'.replace('.', ',')}$ procentenheter."
+        ratt = f"Resultatet var {res_str} % med en felmarginal på ±{fm_str} procentenheter."
+        fel1 = f"Resultatet var {ovre_str} % med en felmarginal på ±{f'{round(fm*2, 1):g}'.replace('.', ',')} procentenheter."
+        fel2 = f"Resultatet var {nedre_str} % med en felmarginal på ±{ovre_str} procentenheter."
+        fel3 = f"Resultatet var {res_str} % med en felmarginal på ±{f'{round(fm/2, 1):g}'.replace('.', ',')} procentenheter."
         
         alts = [ratt, fel1, fel2, fel3]
         random.shuffle(alts)
@@ -1277,7 +1280,7 @@ def skapa_stat_uppgift(niva=1):
     elif typ == 'konf_urval':
         fm = round(random.uniform(3.0, 5.0), 1)
         fm_str = f"{fm:g}".replace('.', ',')
-        st.session_state.stat_info = f"En tidning publicerar en opinionsundersökning men tycker att felmarginalen på $\\pm {fm_str}$ % gör resultatet för osäkert. De vill ha ett snävare (mindre) konfidensintervall nästa månad."
+        st.session_state.stat_info = f"En tidning publicerar en opinionsundersökning men tycker att felmarginalen på ±{fm_str} % gör resultatet för osäkert. De vill ha ett snävare (mindre) konfidensintervall nästa månad."
         st.session_state.stat_fraga = "Vad är det bästa sättet för dem att minska felmarginalen rent statistiskt?"
         
         ratt = "Fråga betydligt fler personer i nästa undersökning."
@@ -1296,13 +1299,13 @@ def skapa_stat_uppgift(niva=1):
         nedre = resultat - fm
         ovre = resultat + fm
         
-        st.session_state.stat_info = f"En undersökning visar att {resultat} % av eleverna på en stor skola vill ha längre raster. Undersökningen har en felmarginal på $\\pm {fm}$ procentenheter vid 95 % konfidensgrad."
+        st.session_state.stat_info = f"En undersökning visar att {resultat} % av eleverna på en stor skola vill ha längre raster. Undersökningen har en felmarginal på ±{fm} procentenheter vid 95 % konfidensgrad."
         st.session_state.stat_fraga = "Vilket av följande påståenden är FALSKT (felaktigt)?"
         
         ratt = f"Mellan {nedre} % och {ovre} % av eleverna *som tillfrågades* vill ha längre raster."
         fel1 = f"Det sanna värdet för hela skolan ligger med 95 % säkerhet mellan {nedre} % och {ovre} %."
         fel2 = f"I det faktiska stickprovet svarade exakt {resultat} % att de vill ha längre raster."
-        fel3 = "Även om intervallet är brett, finns det en 5 % risk att det sanna värdet ligger utanför intervallet."
+        fel3 = "Även om intervallet är brett, finns det en risk att det sanna värdet ligger utanför intervallet."
         
         alts = [ratt, fel1, fel2, fel3]
         random.shuffle(alts)
@@ -1830,19 +1833,12 @@ elif vald_kategori == "Sannolikhet":
 elif vald_kategori == "Statistik":
     st.title("Tolka Statistik och Diagram")
     
-    if 'stat_niva' not in st.session_state: st.session_state.stat_niva = 1
     if 'stat_uppgift_nr' not in st.session_state: st.session_state.stat_uppgift_nr = 0
-    if 'stat_x' not in st.session_state: skapa_stat_uppgift(st.session_state.stat_niva)
+    if 'stat_x' not in st.session_state: skapa_stat_uppgift()
 
     with st.sidebar:
         st.subheader("Inställningar")
-        ny_niva = st.radio("Välj svårighetsgrad:", [1, 2], horizontal=True, index=0 if st.session_state.stat_niva==1 else 1, key="stat_niva_val")
-        if ny_niva != st.session_state.stat_niva:
-            st.session_state.stat_niva = ny_niva
-            st.session_state.stat_rattat = False
-            st.session_state.stat_uppgift_nr += 1
-            skapa_stat_uppgift(st.session_state.stat_niva)
-            st.rerun()
+        st.write("Endast en nivå tillgänglig.")
 
     col_vanster, col_hoger = st.columns([1.2, 1], gap="large")
             
@@ -1858,7 +1854,10 @@ elif vald_kategori == "Statistik":
         st.subheader("Uppgift")
         st.markdown(f"<div style='font-size: 26px; font-weight: bold; color: #8B008B; margin-bottom: 25px;'>{st.session_state.stat_fraga}</div>", unsafe_allow_html=True)
         
-        valt_svar = st.radio("Välj ett alternativ:", st.session_state.stat_alternativ, key=f"stat_radio_{st.session_state.stat_uppgift_nr}", index=None, label_visibility="collapsed")
+        if st.session_state.stat_uppgiftstyp == 'spridning':
+            valt_svar = st.selectbox("Välj ett alternativ:", st.session_state.stat_alternativ, key=f"stat_box_{st.session_state.stat_uppgift_nr}", label_visibility="collapsed")
+        else:
+            valt_svar = st.radio("Välj ett alternativ:", st.session_state.stat_alternativ, key=f"stat_radio_{st.session_state.stat_uppgift_nr}", index=None, label_visibility="collapsed")
         
         st.write("")
         k1, k2 = st.columns(2)
@@ -1866,20 +1865,29 @@ elif vald_kategori == "Statistik":
             if st.button("Rätta svar", type="primary", use_container_width=True):
                 st.session_state.stat_rattat = True
                 
-                if valt_svar is not None:
-                    if valt_svar == st.session_state.stat_svar:
-                        st.session_state.stat_status = 'ratt'
+                if st.session_state.stat_uppgiftstyp == 'spridning':
+                    if valt_svar != 'Välj svar...':
+                        if valt_svar == st.session_state.stat_svar:
+                            st.session_state.stat_status = 'ratt'
+                        else:
+                            st.session_state.stat_status = 'fel'
                     else:
-                        st.session_state.stat_status = 'fel'
+                        st.session_state.stat_status = 'tom'
                 else:
-                    st.session_state.stat_status = 'tom'
+                    if valt_svar is not None:
+                        if valt_svar == st.session_state.stat_svar:
+                            st.session_state.stat_status = 'ratt'
+                        else:
+                            st.session_state.stat_status = 'fel'
+                    else:
+                        st.session_state.stat_status = 'tom'
                 st.rerun()
                 
         with k2:
             if st.button("Ny uppgift", use_container_width=True):
                 st.session_state.stat_rattat = False
                 st.session_state.stat_uppgift_nr += 1
-                skapa_stat_uppgift(st.session_state.stat_niva)
+                skapa_stat_uppgift()
                 st.rerun()
 
         if st.session_state.get('stat_rattat', False):
@@ -1888,7 +1896,7 @@ elif vald_kategori == "Statistik":
             elif st.session_state.stat_status == 'fel': 
                 st.error(f"❌ Tyvärr fel. Rätt svar var:\n\n {st.session_state.stat_svar}")
             elif st.session_state.stat_status == 'tom': 
-                st.warning("Vänligen välj ett alternativ.")
+                st.warning("Vänligen välj ett alternativ i menyn.")
 
 # ==========================================
 # UI: Blandat (Slumpas)
@@ -2032,7 +2040,10 @@ elif vald_kategori == "Blandat (Slumpas)":
 
         elif st.session_state.blandat_typ == 'stat':
             st.markdown(f"<div style='font-size: 26px; font-weight: bold; color: #8B008B; margin-bottom: 25px;'>{st.session_state.stat_fraga}</div>", unsafe_allow_html=True)
-            valt_svar = st.radio("Välj ett alternativ:", st.session_state.stat_alternativ, key=f"blandat_stat_radio_{st.session_state.blandat_id}", index=None, label_visibility="collapsed")
+            if st.session_state.stat_uppgiftstyp == 'spridning':
+                valt_svar = st.selectbox("Välj ett alternativ:", st.session_state.stat_alternativ, key=f"blandat_stat_box_{st.session_state.blandat_id}", label_visibility="collapsed")
+            else:
+                valt_svar = st.radio("Välj ett alternativ:", st.session_state.stat_alternativ, key=f"blandat_stat_radio_{st.session_state.blandat_id}", index=None, label_visibility="collapsed")
 
         st.write("")
         
@@ -2100,10 +2111,16 @@ elif vald_kategori == "Blandat (Slumpas)":
                         else: st.session_state.blandat_status = 'tom'
                 
                 elif st.session_state.blandat_typ == 'stat':
-                    if valt_svar is not None:
-                        st.session_state.blandat_status = 'ratt' if valt_svar == st.session_state.stat_svar else 'fel'
+                    if st.session_state.stat_uppgiftstyp == 'spridning':
+                        if valt_svar != 'Välj svar...':
+                            st.session_state.blandat_status = 'ratt' if valt_svar == st.session_state.stat_svar else 'fel'
+                        else:
+                            st.session_state.blandat_status = 'tom'
                     else:
-                        st.session_state.blandat_status = 'tom'
+                        if valt_svar is not None:
+                            st.session_state.blandat_status = 'ratt' if valt_svar == st.session_state.stat_svar else 'fel'
+                        else:
+                            st.session_state.blandat_status = 'tom'
 
                 st.rerun()
 
