@@ -1832,8 +1832,9 @@ elif vald_kategori == "Sannolikhet":
 elif vald_kategori == "Statistik":
     st.title("Tolka Statistik och Diagram")
     
+    if 'stat_niva' not in st.session_state: st.session_state.stat_niva = 1
     if 'stat_uppgift_nr' not in st.session_state: st.session_state.stat_uppgift_nr = 0
-    if 'stat_x' not in st.session_state: skapa_stat_uppgift()
+    if 'stat_uppgiftstyp' not in st.session_state: skapa_stat_uppgift()
 
     with st.sidebar:
         st.subheader("Inställningar")
