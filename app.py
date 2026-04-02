@@ -910,7 +910,7 @@ def skapa_ff_uppgift(niva=1):
                 break
 
 # ==========================================
-# -- 7. SANNOLIKHET --
+# -- 7. SANNOLIKHETSLÄRA --
 # ==========================================
 
 # Ritar ett träddiagram uppifrån och ner
@@ -1078,11 +1078,11 @@ def skapa_slump_uppgift(niva=1):
                 break
                 
             elif typ == 'berakna_enkla':
-                vinst = random.randint(2, 5)
-                nit = random.randint(3, 8)
-                tot = vinst + nit
+                vinst = 1
+                tot = random.randint(4, 12)
+                nit = tot - vinst
                 
-                st.session_state.slump_info = f"Ett lyckohjul har {tot} lika stora fält. {vinst} av fälten ger vinst och {nit} ger nit. Du snurrar hjulet två gånger."
+                st.session_state.slump_info = f"Ett lyckohjul har {tot} lika stora fält. Endast {vinst} av fälten ger vinst och {nit} ger nit. Du snurrar hjulet två gånger."
                 st.session_state.slump_fraga = "Vad är sannolikheten att du vinner på båda snurren?"
                 
                 st.session_state.slump_svar_frac = Fraction(vinst, tot) * Fraction(vinst, tot)
@@ -1342,7 +1342,7 @@ vald_kategori = st.sidebar.radio("Vad vill du träna på?", [
     "Algebra",
     "Lån och ränta",
     "Förändringsfaktor",
-    "Sannolikhet",
+    "Sannolikhetslära",
     "Statistik",
     "Blandat (Slumpas)"
 ])
@@ -1755,10 +1755,10 @@ elif vald_kategori == "Förändringsfaktor":
                 st.warning("Skriv in ett svar först.")
 
 # ==========================================
-# UI: Sannolikhet
+# UI: Sannolikhetslära
 # ==========================================
-elif vald_kategori == "Sannolikhet":
-    st.title("Träna på Sannolikhet")
+elif vald_kategori == "Sannolikhetslära":
+    st.title("Träna på Sannolikhetslära")
     
     if 'slump_niva' not in st.session_state: st.session_state.slump_niva = 1
     if 'slump_uppgift_nr' not in st.session_state: st.session_state.slump_uppgift_nr = 0
