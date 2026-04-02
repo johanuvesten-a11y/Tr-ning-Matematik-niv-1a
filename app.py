@@ -60,6 +60,62 @@ def generera_funktion():
         v = random.randint(-2, 2)
         return lambda x: a * np.sin(np.pi * period * (x - h)) + v
 
+def rita_plotly_graf(f, visa_facit=False, q_vis_type='vis_none', trace_x=None, trace_y=None, trace_alla_x=None):
+    fig = go.Figure()
+    x_plot = np.linspace(-10, 10, 400)
+    y_plot = f(x_plot)
+    fig.add_trace(go.Scatter(
+        x=x_plot, y=y_plot, mode='lines', line=dict(color='blue', width=2), hoverinfo='skip'
+    ))
+    if visa_facit:
+        if q_vis_type == 'vis_find_y':
+            tx, ty = trace_x, trace_y
+            fig.add_trace(go.Scatter(
+                x=[tx, tx, 0], y=[0, ty, ty], mode='lines+markers', line=dict(color='red', dash='dash', width=2), 
+                marker=dict(size=8, color='red'), showlegend=False, hoverinfo='skip'
+            ))
+        elif q_vis_type == 'vis_find_x':
+            ty = trace_y
+            ax_list = trace_alla_x
+            if ax_list:
+                min_ax, max_ax = min(ax_list + [0]), max(ax_list + [0])
+                fig.add_trace(go.Scatter(
+                    x=[min_ax, max_ax], y=[ty, ty], mode='lines', line=dict(color='red', dash='dash', width=2), showlegend=False, hoverinfo='skip'
+                ))
+                for ax_v in ax_list:
+                    fig.add_trace(go.Scatter(
+                        x=[ax_v, ax_v], y=[ty, 0], mode='lines+markers', line=dict(color='red', dash='dash', width=2), 
+                        marker=dict(size=8, color='red'), showlegend=False, hoverinfo='skip'
+                    ))
+
+    tick_vals = [-10, -5, 5, 10]
+    fig.add_trace(go.Scatter(
+        x=tick_vals, y=[-0.6]*4, mode='text', text=[str(v) for v in tick_vals], textposition='bottom center', showlegend=False, hoverinfo='skip', textfont=dict(color='black', size=14)
+    ))
+    fig.add_trace(go.Scatter(
+        x=[-0.6]*4, y=tick_vals, mode='text', text=[str(v) for v in tick_vals], textposition='middle left', showlegend=False, hoverinfo='skip', textfont=dict(color='black', size=14)
+    ))
+    fig.add_trace(go.Scatter(
+        x=[-0.4], y=[-0.6], mode='text', text=['0'], textposition='bottom left', showlegend=False, hoverinfo='skip', textfont=dict(color='black', size=14)
+    ))
+
+    axis_layout = dict(
+        range=[-10.8, 10.8], zeroline=True, zerolinewidth=3, zerolinecolor='black', showgrid=True, gridwidth=2, gridcolor='#cccccc', 
+        minor=dict(dtick=1, gridwidth=2, gridcolor='#e0e0e0'), showticklabels=False, fixedrange=True 
+    )
+    pil_inst = dict(showarrow=True, arrowhead=2, arrowsize=1, arrowwidth=2, arrowcolor='black')
+    
+    fig.update_layout(
+        xaxis=axis_layout, yaxis=axis_layout, showlegend=False, margin=dict(l=20, r=20, t=20, b=20), height=550, plot_bgcolor='white', hovermode=False, dragmode=False,
+        annotations=[
+            dict(x=10.8, y=0, ax=9.8, ay=0, xref='x', yref='y', axref='x', ayref='y', **pil_inst),
+            dict(x=10.8, y=-0.5, text="x", showarrow=False, xref='x', yref='y', font=dict(size=16, color='black')),
+            dict(x=0, y=10.8, ax=0, ay=9.8, xref='x', yref='y', axref='x', ayref='y', **pil_inst),
+            dict(x=-0.5, y=10.8, text="y", showarrow=False, xref='x', yref='y', font=dict(size=16, color='black'))
+        ]
+    )
+    return fig
+
 def skapa_graf_uppgift(niva):
     for _ in range(100): 
         f = generera_funktion()
