@@ -563,19 +563,19 @@ def skapa_alg_uttryck_uppgift(niva=1):
         if typ == 'minus_parentes':
             st.session_state.alg_rubrik = "Förenkla uttrycket:"
             c = random.choice([2, 3, 4])
-            A = random.randint(-5, 5)
             B = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
-            if A == 0: del_1 = "x"
-            else:
-                A_str = f"+ {A}" if A > 0 else f"- {-A}"
-                del_1 = f"(x {A_str})"
-            B_str = f"+ {B}" if B > 0 else f"- {-B}"
-            st.session_state.alg_uttryck_str = f"{del_1} - ({c}x {B_str})"
             
-            svar_ratt = formatera_svar(0, 1 - c, A - B)
-            d1 = formatera_svar(0, 1 - c, A + B) 
-            d2 = formatera_svar(0, 1 + c, A - B) 
-            d3 = formatera_svar(0, 1 + c, A + B) 
+            B_str = f"+ {B}" if B > 0 else f"- {-B}"
+            st.session_state.alg_uttryck_str = f"x - ({c}x {B_str})"
+            
+            # Rätt: x - cx - B = (1-c)x - B
+            svar_ratt = formatera_svar(0, 1 - c, -B)
+            # Fel 1: x - cx + B = (1-c)x + B (Missar teckenbyte)
+            d1 = formatera_svar(0, 1 - c, B) 
+            # Fel 2: x + cx - B = (1+c)x - B (Adderar istället för subtraherar x-termer)
+            d2 = formatera_svar(0, 1 + c, -B) 
+            # Fel 3: -cx - B (Tappar bort första x)
+            d3 = formatera_svar(0, -c, -B) 
             
         elif typ == 'konstant_parentes':
             st.session_state.alg_rubrik = "Förenkla uttrycket:"
@@ -585,19 +585,16 @@ def skapa_alg_uttryck_uppgift(niva=1):
             B = random.choice([-4, -3, -2, 2, 3, 4])
             A_str = f"+ {A}" if A > 0 else f"- {-A}"
             B_str = f"+ {B}" if B > 0 else f"- {-B}"
-            op = random.choice(['+', '-'])
-            if op == '-':
-                st.session_state.alg_uttryck_str = f"{a}(x {A_str}) - {c}(x {B_str})"
-                svar_ratt = formatera_svar(0, a - c, a*A - c*B)
-                d1 = formatera_svar(0, a - c, a*A + c*B)
-                d2 = formatera_svar(0, a - c, a*A - B)
-                d3 = formatera_svar(0, a + c, a*A - c*B)
-            else:
-                st.session_state.alg_uttryck_str = f"{a}(x {A_str}) + {c}(x {B_str})"
-                svar_ratt = formatera_svar(0, a + c, a*A + c*B)
-                d1 = formatera_svar(0, a + c, a*A - c*B)
-                d2 = formatera_svar(0, a + c, a*A + B)
-                d3 = formatera_svar(0, a - c, a*A + c*B)
+            
+            st.session_state.alg_uttryck_str = f"{a}(x {A_str}) - {c}(x {B_str})"
+            # Rätt: ax + aA - cx - cB = (a-c)x + (aA-cB)
+            svar_ratt = formatera_svar(0, a - c, a*A - c*B)
+            # Fel 1: missar teckenbyte på B
+            d1 = formatera_svar(0, a - c, a*A + c*B)
+            # Fel 2: adderar x-termerna (a+c)
+            d2 = formatera_svar(0, a + c, a*A - c*B)
+            # Fel 3: glömmer multiplicera c med B
+            d3 = formatera_svar(0, a - c, a*A - B)
                 
         elif typ == 'mult_parentes':
             st.session_state.alg_rubrik = "Förenkla uttrycket:"
@@ -606,10 +603,15 @@ def skapa_alg_uttryck_uppgift(niva=1):
             A_str = f"+ {A}" if A > 0 else f"- {-A}"
             B_str = f"+ {B}" if B > 0 else f"- {-B}"
             st.session_state.alg_uttryck_str = f"(x {A_str})(x {B_str})"
+            
+            # Rätt: x^2 + (A+B)x + AB
             svar_ratt = formatera_svar(1, A + B, A * B)
-            d1 = formatera_svar(1, A - B, A * B)
-            d2 = formatera_svar(1, A + B, -(A * B))
-            d3 = formatera_svar(1, -A - B, A * B)
+            # Fel 1: x^2 + AB (glömmer x-termerna)
+            d1 = formatera_svar(1, 0, A * B)
+            # Fel 2: x^2 + (A+B)x + (A+B) (adderar konstanter istället för multiplicerar)
+            d2 = formatera_svar(1, A + B, A + B)
+            # Fel 3: x^2 + (A*B)x + AB (multiplicerar inre istället för att addera)
+            d3 = formatera_svar(1, A * B, A * B)
 
         elif typ == 'faktorisera':
             st.session_state.alg_rubrik = "Faktorisera uttrycket så långt som möjligt:"
@@ -622,9 +624,14 @@ def skapa_alg_uttryck_uppgift(niva=1):
             B = k * b
             op = random.choice(['+', '-'])
             st.session_state.alg_uttryck_str = f"{A}x {op} {B}"
+            
+            # Rätt
             svar_ratt = f"{k}({a}x {op} {b})"
-            d1 = f"{k}({a}x {op} {B})"  
-            d2 = f"{a}({k}x {op} {b})" 
+            # Fel 1: bryter ut a istället för k
+            d1 = f"{a}({k}x {op} {b})"  
+            # Fel 2: glömmer dela B
+            d2 = f"{k}({a}x {op} {B})" 
+            # Fel 3: bryter ut x fast det inte finns i båda
             d3 = f"{k}x({a} {op} {b})" if op == '+' else f"{k}x({a} - {b})"
 
     else: # Nivå 2
@@ -646,15 +653,15 @@ def skapa_alg_uttryck_uppgift(niva=1):
             if var_typ == 'xy':
                 st.session_state.alg_uttryck_str = f"{A}xy {op} {B}x"
                 svar_ratt = f"{c}x({a}y {op} {b})"
-                d1 = f"{c}({a}xy {op} {b}x)"     
-                d2 = f"x({A}y {op} {B})"         
-                d3 = f"{c}x({a}y {op} {B})"      
+                d1 = f"{a}x({c}y {op} {b})"     
+                d2 = f"{c}({a}xy {op} {b}x)"         
+                d3 = f"{c}xy({a} {op} {b})"      
             else:
                 st.session_state.alg_uttryck_str = f"{A}x^2 {op} {B}x"
                 svar_ratt = f"{c}x({a}x {op} {b})"
-                d1 = f"{c}({a}x^2 {op} {b}x)"    
-                d2 = f"x({A}x {op} {B})"         
-                d3 = f"{c}x({a}x {op} {B})"      
+                d1 = f"{a}x({c}x {op} {b})"    
+                d2 = f"{c}({a}x^2 {op} {b}x)"         
+                d3 = f"{c}x^2({a} {op} {b})"      
 
         elif typ == 'mult_parentes_koeff':
             st.session_state.alg_rubrik = "Förenkla uttrycket:"
@@ -667,8 +674,11 @@ def skapa_alg_uttryck_uppgift(niva=1):
             
             st.session_state.alg_uttryck_str = f"({a}x {b_str})({c}x {d_str})"
             svar_ratt = formatera_svar(a*c, a*d + b*c, b*d)
+            # Fel 1: glömmer blandtermer
             d1 = formatera_svar(a*c, 0, b*d) 
-            d2 = formatera_svar(a*c, a*d - b*c, b*d) 
+            # Fel 2: adderar konstanterna
+            d2 = formatera_svar(a*c, a*d + b*c, b+d) 
+            # Fel 3: adderar a och c
             d3 = formatera_svar(a+c, a*d + b*c, b*d) 
 
         elif typ == 'flersteg':
@@ -683,9 +693,12 @@ def skapa_alg_uttryck_uppgift(niva=1):
             
             st.session_state.alg_uttryck_str = f"x({a}x {b_str}) - (x {c_str})(x {d_str})"
             svar_ratt = formatera_svar(a - 1, b - (c + d), -(c * d))
+            # Fel 1: teckenfel sista termen
             d1 = formatera_svar(a - 1, b - (c + d), c * d) 
-            d2 = formatera_svar(a - 1, b + c + d, -(c * d)) 
-            d3 = formatera_svar(a + 1, b - (c + d), -(c * d)) 
+            # Fel 2: adderar x^2
+            d2 = formatera_svar(a + 1, b - (c + d), -(c * d)) 
+            # Fel 3: adderar blandtermerna
+            d3 = formatera_svar(a - 1, b + c + d, -(c * d)) 
 
         elif typ == 'rationell':
             st.session_state.alg_rubrik = "Förenkla uttrycket:"
@@ -696,18 +709,27 @@ def skapa_alg_uttryck_uppgift(niva=1):
             
             st.session_state.alg_uttryck_str = f"\\frac{{{a*C}x^2 {B_str}x}}{{{C}x}}"
             b_svar = f"+ {b}" if b > 0 else f"- {-b}"
+            
+            # Rätt
             svar_ratt = f"{a}x {b_svar}"
             B_fel = f"+ {b*C}" if b*C > 0 else f"- {-b*C}"
             
+            # Fel 1: glömmer dela x^2
             d1 = f"{a}x^2 {b_svar}"
+            # Fel 2: glömmer dela aC
             d2 = f"{a*C}x {b_svar}"
+            # Fel 3: glömmer dela B
             d3 = f"{a}x {B_fel}"
             
+    # Formatera med LaTeX så ex. x^2 blir snyggt
     svar_ratt_latex = f"${svar_ratt}$"
     alternativ = list(set([svar_ratt_latex, f"${d1}$", f"${d2}$", f"${d3}$"]))
+    
+    # Skapa utfyllnad om dubbletter råkat skapas
     while len(alternativ) < 4:
         alternativ.append(alternativ[0].replace("$", " $", 1)) 
         alternativ = list(set(alternativ))
+        
     random.shuffle(alternativ)
     st.session_state.alg_uttryck_alternativ = alternativ
     st.session_state.alg_uttryck_svar = svar_ratt_latex
