@@ -742,29 +742,70 @@ def skapa_lan_uppgift(niva):
 
 def skapa_ff_uppgift(niva):
     if niva == 1:
-        typ = random.choice(['berakna_ff', 'nytt_pris', 'hitta_procent'])
+        typ = random.choice(['berakna_ff', 'nytt_pris', 'hitta_procent', 'index_berakna', 'index_nytt_varde', 'index_procentuell_forandring'])
+        
         if typ == 'berakna_ff':
             riktning, procent = random.choice(['ökar', 'minskar']), round(random.uniform(1.5, 80.5), 1) if random.choice([True, False]) else random.randint(5, 80)
             return {"info_box_green": f"Ett pris {riktning} med {f'{procent:g}'.replace('.', ',')} %.", "fraga": "Vad blir förändringsfaktorn? (Svara med decimaltal)", "ratt_svar": round(1 + (procent / 100) if riktning == 'ökar' else 1 - (procent / 100), 4), "input_typ": "text", "svarstyp": "float"}
+            
         elif typ == 'hitta_procent':
             riktning, procent = random.choice(['ökar', 'minskar']), round(random.uniform(1.5, 95.5), 1) if random.choice([True, False]) else random.randint(5, 95)
             ff = 1 + (procent / 100) if riktning == 'ökar' else 1 - (procent / 100)
             return {"info_box_green": f"En förändringsfaktor är {f'{round(ff, 4):g}'.replace('.', ',')}.", "fraga": "Vilken procentuell förändring motsvarar detta? (En sänkning svaras med minus, t.ex. -12,5)", "ratt_svar": procent if riktning == 'ökar' else -procent, "input_typ": "text", "svarstyp": "procent"}
+            
         elif typ == 'nytt_pris':
             startpris, riktning, procent = random.choice([100, 200, 250, 400, 500, 800, 1000, 1500]), random.choice(['höjs', 'sänks']), random.choice([10, 15, 20, 25, 30, 40, 50, 12.5])
             return {"info_box_green": f"En vara kostar {startpris} kr. Priset {riktning} med {f'{procent:g}'.replace('.', ',')} %.", "fraga": "Vad blir det nya priset? (Svara i hela kronor)", "ratt_svar": int(round(startpris * (1 + procent / 100))) if riktning == 'höjs' else int(round(startpris * (1 - procent / 100))), "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
+            
+        elif typ == 'index_berakna':
+            P0 = random.choice([50, 100, 200, 250, 400, 500])
+            idx_val = random.choice([110, 120, 125, 130, 140, 150])
+            P1 = int(P0 * idx_val / 100)
+            info = f"Ett basår kostade en specifik vara {P0} kr. Några år senare kostar samma vara {P1} kr."
+            return {"info_box_green": info, "fraga": "Vilket index har varan det senare året? (Svara med ett heltal)", "ratt_svar": idx_val, "input_typ": "text", "svarstyp": "int"}
+            
+        elif typ == 'index_nytt_varde':
+            P0 = random.choice([100, 200, 500, 1000, 2000, 5000])
+            idx_val = random.choice([112, 115, 120, 130, 140, 150])
+            P1 = int(P0 * idx_val / 100)
+            info = f"En vara kostade {P0} kr under basåret (då index alltid är 100). Ett senare år är index för varan {idx_val}."
+            return {"info_box_green": info, "fraga": "Vad kostar varan det senare året? (Svara i kr)", "ratt_svar": P1, "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
+            
+        elif typ == 'index_procentuell_forandring':
+            kombinationer = [(110, 121, 10), (120, 132, 10), (120, 144, 20), (120, 150, 25), (140, 154, 10), (140, 168, 20), (150, 165, 10), (150, 180, 20), (125, 150, 20)]
+            i1, i2, ans = random.choice(kombinationer)
+            info = f"Index för en viss vara var {i1} år 1 och {i2} år 2."
+            return {"info_box_green": info, "fraga": "Med hur många procent ökade priset från år 1 till år 2?", "ratt_svar": ans, "input_typ": "text", "svarstyp": "procent"}
+            
     else:
-        typ = random.choice(['hitta_gammalt', 'upprepad_procent'])
+        typ = random.choice(['hitta_gammalt', 'upprepad_procent', 'index_byta_basar', 'index_reallon'])
+        
         if typ == 'hitta_gammalt':
             gammalt_pris, procent, riktning = random.choice([400, 500, 800, 1000, 1200, 1500, 2000]), random.choice([10, 20, 25, 30, 40, 50]), random.choice(['höjs', 'sänks'])
             nytt_pris = int(round(gammalt_pris * (1 + procent / 100))) if riktning == 'höjs' else int(round(gammalt_pris * (1 - procent / 100)))
             return {"info_box_green": f"Efter att priset på en vara {riktning} med {procent} % kostar den nu {nytt_pris} kr.", "fraga": "Vad kostade varan från början? (Svara i hela kronor)", "ratt_svar": gammalt_pris, "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
+            
         elif typ == 'upprepad_procent':
             p1, p2 = random.choice([10, 20, 25, 30]), random.choice([10, 20, 25, 30])
             r1, r2 = random.choice(['ökar', 'minskar']), random.choice(['ökar', 'minskar'])
             f1 = (1 + p1/100) if r1 == 'ökar' else (1 - p1/100)
             f2 = (1 + p2/100) if r2 == 'ökar' else (1 - p2/100)
             return {"info_box_green": f"Priset på en produkt {r1} först med {p1} % och {r2} därefter med {p2} %.", "fraga": "Vad är den totala förändringsfaktorn för båda ändringarna tillsammans? (Svara med decimaltal)", "ratt_svar": round(f1 * f2, 4), "input_typ": "text", "svarstyp": "float"}
+            
+        elif typ == 'index_byta_basar':
+            komb = [(120, 144, 120), (120, 150, 125), (125, 150, 120), (140, 168, 120), (150, 180, 120), (150, 195, 130)]
+            old_i2, old_i3, new_i3 = random.choice(komb)
+            info = f"I en indextabell är index 100 för år 1, {old_i2} för år 2, och {old_i3} för år 3. Man bestämmer sig sedan för att byta basår till år 2."
+            return {"info_box_green": info, "fraga": "Vilket index får år 3 i den nya tabellen?", "ratt_svar": new_i3, "input_typ": "text", "svarstyp": "int"}
+            
+        elif typ == 'index_reallon':
+            kpi = random.choice([110, 120, 125, 140, 150])
+            lon_faktor = random.choice([1.05, 1.1, 1.15, 1.2])
+            base_lon = random.choice([20000, 25000, 30000, 35000])
+            new_lon = int(base_lon * (kpi/100) * lon_faktor)
+            reallon = int(new_lon / (kpi / 100))
+            info = f"År 1 är KPI 100 och din månadslön är {base_lon} kr. År 2 är KPI {kpi} och din lön har ökat till {new_lon} kr."
+            return {"info_box_green": info, "fraga": "Vad är din lön år 2 omräknad till penningvärdet för år 1 (så kallad reallön)?", "ratt_svar": reallon, "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
 
 def rita_traddiagram(grenar, farg1, farg2):
     fig = go.Figure()
