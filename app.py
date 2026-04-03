@@ -596,7 +596,7 @@ def skapa_lan_uppgift(niva):
                 return {
                     "info_box_blue": "Titta på kalkylarket nedan:",
                     "markdown_table": tabell,
-                    "fraga": "Vilken formel ska du skriva in i cell E2 för att räkna ut den totala månadskostnaden? (Kom ihåg =)",
+                    "fraga": "Vilken formel ska du skriva in i cell E2 för att räkna ut den totala månadskostnaden?",
                     "ratt_svar_lista": ['=c2+d2', '=d2+c2'],
                     "ratt_svar_visning": "=C2+D2",
                     "ratt_svar": "=C2+D2", # Fallback om fel svar visas
@@ -884,7 +884,8 @@ with col_vanster:
         
     # 5. Kalkylbladstabeller
     if 'markdown_table' in u:
-        st.markdown(f"<div style='margin-top: 20px; font-size: 18px;'>{u['markdown_table']}</div>", unsafe_allow_html=True)
+        st.write("")
+        st.markdown(u['markdown_table'])
 
 with col_hoger:
     st.subheader("Uppgift")
