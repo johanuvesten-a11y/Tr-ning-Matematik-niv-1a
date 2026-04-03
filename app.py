@@ -578,7 +578,7 @@ def skapa_lan_uppgift(niva):
             
             tabell_html = f"""
             <div style="overflow-x: auto; margin-top: 10px; margin-bottom: 20px;">
-                <table style="width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 16px; background-color: white; border: 1px solid #ccc;">
+                <table style="width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 14px; background-color: white; border: 1px solid #ccc;">
                     <thead>
                         <tr style="background-color: #f1f3f4; border-bottom: 2px solid #ccc;">
                             <th style="padding: 8px; border: 1px solid #ccc; width: 40px;"></th>
