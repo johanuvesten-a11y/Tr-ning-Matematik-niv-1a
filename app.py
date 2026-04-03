@@ -772,8 +772,12 @@ def skapa_ff_uppgift(niva):
             return {"info_box_green": info, "fraga": "Vad kostar varan det senare året? (Svara i kr)", "ratt_svar": P1, "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
             
         elif typ == 'index_procentuell_forandring':
-            kombinationer = [(110, 121, 10), (120, 132, 10), (120, 144, 20), (120, 150, 25), (140, 154, 10), (140, 168, 20), (150, 165, 10), (150, 180, 20), (125, 150, 20)]
-            i1, i2, ans = random.choice(kombinationer)
+            # Slumpar ökningen helt fritt mellan 5% och 150% (i steg om 5)
+            ans = random.choice(range(5, 155, 5)) 
+            # Vi väljer jämna tjugotal för det första indexet, då garanterar vi att index 2 blir ett heltal även om ökningen är t.ex. 15% eller 25%
+            i1 = random.randint(5, 15) * 20 
+            i2 = int(round(i1 * (1 + ans / 100.0)))
+            
             info = f"Index för en viss vara var {i1} år 1 och {i2} år 2."
             return {"info_box_green": info, "fraga": "Med hur många procent ökade priset från år 1 till år 2?", "ratt_svar": ans, "input_typ": "text", "svarstyp": "procent"}
             
