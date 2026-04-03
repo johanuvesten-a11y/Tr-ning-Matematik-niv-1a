@@ -457,8 +457,45 @@ def skapa_alg_uttryck_uppgift(niva):
                 d3 = f"{k}x({a} {op} {b})" if op == '+' else f"{k}x({a} - {b})"
 
         else: # Nivå 2
-            typ = random.choice(['faktorisera_avancerat', 'mult_parentes_koeff', 'flersteg', 'rationell'])
-            if typ == 'faktorisera_avancerat':
+            typ = random.choice(['faktorisera_avancerat', 'mult_parentes_koeff', 'flersteg', 'rationell', 'likhet_parentes'])
+            
+            if typ == 'likhet_parentes':
+                while True:
+                    A = random.choice([2, 3, 4, 5])
+                    D = random.choice([2, 3, 4, 5])
+                    if A == D: continue
+                    
+                    E = random.choice([-5, -4, -3, -2, 2, 3, 4, 5])
+                    F = random.choice([-10, -9, -8, -7, -6, -5, -4, -3, -2, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+                    
+                    # För att B och C ska bli heltal måste A dela D*E och D*F
+                    if (D * E) % A == 0 and (D * F) % A == 0:
+                        B = (D * E) // A
+                        C = (D * F) // A
+                        break
+                        
+                B_str = "x" if B == 1 else ("-x" if B == -1 else f"{B}x")
+                C_str = f"+ {C}" if C > 0 else f"- {-C}"
+                VL = f"{A}({B_str} {C_str})"
+                
+                HL = f"{D}( \\dots )"
+                alg_uttryck_str = f"{VL} = {HL}"
+                
+                E_str = "x" if E == 1 else ("-x" if E == -1 else f"{E}x")
+                F_str = f"+ {F}" if F > 0 else f"- {-F}"
+                svar_ratt = f"{E_str} {F_str}"
+                
+                return {
+                    "info_text": "Skriv ett uttryck i parentesen så att likheten gäller:",
+                    "latex_text": alg_uttryck_str,
+                    "undertext": "Svara på formen ax + b (t.ex. 6x - 15).",
+                    "fraga": "Vad ska stå i parentesen?",
+                    "ratt_svar": svar_ratt,
+                    "input_typ": "text",
+                    "svarstyp": "string_math"
+                }
+
+            elif typ == 'faktorisera_avancerat':
                 c, a = random.choice([2, 3, 4, 5]), random.choice([2, 3, 4, 5])
                 b = random.choice([1, 2, 3, 4, 5])
                 while math.gcd(a, b) != 1: b = random.randint(1, 5)
@@ -874,6 +911,15 @@ with col_hoger:
                         elif u['svarstyp'] == 'fraction':
                             svar_clean = input_svar.strip().replace(" ", "").replace(",", ".")
                             status = 'ratt' if Fraction(svar_clean) == u['ratt_svar'] else 'fel'
+                        elif u['svarstyp'] == 'string_math':
+                            # Rensar inmatning och gör den smidigare att utvärdera för Algebrauttryck
+                            svar_clean = input_svar.replace(" ", "").lower()
+                            ratt_clean = str(u['ratt_svar']).replace(" ", "").lower()
+                            if svar_clean.startswith("+"): svar_clean = svar_clean[1:]
+                            if svar_clean.startswith("1x"): svar_clean = "x" + svar_clean[2:]
+                            if svar_clean.startswith("-1x"): svar_clean = "-x" + svar_clean[3:]
+                            svar_clean = svar_clean.replace("+1x", "+x").replace("-1x", "-x")
+                            status = 'ratt' if svar_clean == ratt_clean else 'fel'
                     except ValueError: status = 'format'
                 else: status = 'tom'
                     
@@ -903,6 +949,8 @@ with col_hoger:
                 ratt_txt = f"{u['ratt_svar'].numerator}/{u['ratt_svar'].denominator}"
             elif u['svarstyp'] in ['float', 'procent']:
                 ratt_txt = f"{u['ratt_svar']:g}".replace('.', ',')
+            elif u['svarstyp'] == 'string_math':
+                ratt_txt = str(u['ratt_svar'])
             else:
                 ratt_txt = str(u['ratt_svar'])
                 
