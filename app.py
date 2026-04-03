@@ -560,7 +560,7 @@ def skapa_lan_uppgift(niva):
     def formatera_kr(b): return f"{int(round(b)):,}".replace(",", " ")
     
     if niva == 1:
-        typ = random.choice(['arsranta', 'manadsranta', 'rak_amortering'])
+        typ = random.choice(['arsranta', 'manadsranta', 'rak_amortering', 'kalkylblad_varde', 'kalkylblad_formel'])
         if typ == 'arsranta':
             kapital, ranta = random.choice([15000, 20000, 35000, 50000, 80000, 150000]), random.choice([3, 4, 5, 6, 7, 8])
             return {"info_box_blue": f"Du lånar {formatera_kr(kapital)} kr av banken med en årsränta på {ranta} %.", "fraga": "Hur mycket får du betala i ränta under det första året? (Svara i kr)", "ratt_svar": int(round(kapital * (ranta / 100))), "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
@@ -570,6 +570,39 @@ def skapa_lan_uppgift(niva):
         elif typ == 'rak_amortering':
             ar, amort = random.choice([2, 3, 4, 5, 10]), random.choice([500, 1000, 1500, 2000, 2500])
             return {"info_box_blue": f"Du lånar {formatera_kr(amort * ar * 12)} kr som ska betalas tillbaka med rak amortering under {ar} år.", "fraga": "Hur mycket ska du amortera varje månad? (Svara i kr)", "ratt_svar": amort, "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
+        elif typ in ['kalkylblad_varde', 'kalkylblad_formel']:
+            kapital = random.choice([60000, 120000, 240000])
+            ranta = random.choice([3, 4, 5, 6])
+            amort = random.choice([1000, 2000, 3000])
+            manadsranta_kr = int(round(kapital * (ranta / 100) / 12))
+            
+            tabell = f"""
+| | A | B | C | D | E |
+|---|---|---|---|---|---|
+| **1** | **Lånebelopp** | **Årsränta** | **Månadsränta** | **Amortering** | **Månadskostnad** |
+| **2** | {formatera_kr(kapital)} | {ranta} % | *[tom]* | {formatera_kr(amort)} | *[tom]* |
+"""
+            if typ == 'kalkylblad_varde':
+                return {
+                    "info_box_blue": "Titta på kalkylarket nedan:",
+                    "markdown_table": tabell,
+                    "fraga": "I cell C2 skriver du in formeln: `=A2*(B2/100)/12`. Vilket värde kommer att visas i cell C2 när du trycker på Enter? (Svara i kr)",
+                    "ratt_svar": manadsranta_kr,
+                    "input_typ": "text",
+                    "svarstyp": "int",
+                    "suffix": "kr"
+                }
+            else:
+                return {
+                    "info_box_blue": "Titta på kalkylarket nedan:",
+                    "markdown_table": tabell,
+                    "fraga": "Vilken formel ska du skriva in i cell E2 för att räkna ut den totala månadskostnaden? (Kom ihåg =)",
+                    "ratt_svar_lista": ['=c2+d2', '=d2+c2'],
+                    "ratt_svar_visning": "=C2+D2",
+                    "ratt_svar": "=C2+D2", # Fallback om fel svar visas
+                    "input_typ": "text",
+                    "svarstyp": "kalkyl_formel"
+                }
     else:
         typ = random.choice(['manadskostnad_1', 'manadskostnad_2', 'snabblan'])
         if typ in ['manadskostnad_1', 'manadskostnad_2']:
@@ -848,6 +881,10 @@ with col_vanster:
         st.markdown(f"<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: #f3e5f5; padding: 25px; border-radius: 10px; border-left: 6px solid #8B008B;'>{u['info_box_purple']}</div>", unsafe_allow_html=True)
     if 'info_text_italic' in u:
         st.markdown(f"<div style='font-size: 20px; font-style: italic; color: gray;'>{u['info_text_italic']}</div>", unsafe_allow_html=True)
+        
+    # 5. Kalkylbladstabeller
+    if 'markdown_table' in u:
+        st.markdown(f"<div style='margin-top: 20px; font-size: 18px;'>{u['markdown_table']}</div>", unsafe_allow_html=True)
 
 with col_hoger:
     st.subheader("Uppgift")
@@ -920,6 +957,13 @@ with col_hoger:
                             if svar_clean.startswith("-1x"): svar_clean = "-x" + svar_clean[3:]
                             svar_clean = svar_clean.replace("+1x", "+x").replace("-1x", "-x")
                             status = 'ratt' if svar_clean == ratt_clean else 'fel'
+                        elif u['svarstyp'] == 'kalkyl_formel':
+                            svar_clean = input_svar.strip().replace(" ", "").lower()
+                            if not svar_clean.startswith("="):
+                                status = 'format_saknar_likamed'
+                            else:
+                                godkanda = [s.lower() for s in u.get('ratt_svar_lista', [])]
+                                status = 'ratt' if svar_clean in godkanda else 'fel'
                     except ValueError: status = 'format'
                 else: status = 'tom'
                     
@@ -949,6 +993,8 @@ with col_hoger:
                 ratt_txt = f"{u['ratt_svar'].numerator}/{u['ratt_svar'].denominator}"
             elif u['svarstyp'] in ['float', 'procent']:
                 ratt_txt = f"{u['ratt_svar']:g}".replace('.', ',')
+            elif u['svarstyp'] == 'kalkyl_formel':
+                ratt_txt = u['ratt_svar_visning']
             elif u['svarstyp'] == 'string_math':
                 ratt_txt = str(u['ratt_svar'])
             else:
@@ -967,6 +1013,8 @@ with col_hoger:
                 st.warning("⚠️ Skriv svaret som ett bråk, till exempel 3/8.")
             else:
                 st.warning("⚠️ Svaret är i fel format.")
+        elif status == 'format_saknar_likamed':
+            st.warning("⚠️ Formler i kalkylark måste alltid börja med ett likamedstecken (=).")
         elif status == 'tom':
             if u['input_typ'] in ['radio', 'selectbox']:
                 st.warning("Vänligen välj ett alternativ i listan.")
