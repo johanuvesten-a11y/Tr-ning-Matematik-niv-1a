@@ -417,89 +417,95 @@ def skapa_alg_uttryck_uppgift(niva):
         if res == "": return "0"
         return res
 
-    if niva == 1:
-        typ = random.choice(['minus_parentes', 'mult_parentes', 'konstant_parentes', 'faktorisera'])
-        if typ == 'minus_parentes':
-            c = random.choice([2, 3, 4])
-            B = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
-            alg_uttryck_str = f"x - ({c}x {f'+ {B}' if B > 0 else f'- {-B}'})"
-            svar_ratt = formatera_svar(0, 1 - c, -B)
-            d1 = formatera_svar(0, 1 - c, B) 
-            d2 = formatera_svar(0, 1 + c, -B) 
-            d3 = formatera_svar(0, -c, -B) 
-        elif typ == 'konstant_parentes':
-            a, c = random.randint(2, 5), random.randint(2, 5)
-            A, B = random.choice([-4, -3, -2, 2, 3, 4]), random.choice([-4, -3, -2, 2, 3, 4])
-            alg_uttryck_str = f"{a}(x {f'+ {A}' if A > 0 else f'- {-A}'}) - {c}(x {f'+ {B}' if B > 0 else f'- {-B}'})"
-            svar_ratt = formatera_svar(0, a - c, a*A - c*B)
-            d1 = formatera_svar(0, a - c, a*A + c*B)
-            d2 = formatera_svar(0, a + c, a*A - c*B)
-            d3 = formatera_svar(0, a - c, a*A - B)
-        elif typ == 'mult_parentes':
-            A = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
-            B = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
-            alg_uttryck_str = f"(x {f'+ {A}' if A > 0 else f'- {-A}'})(x {f'+ {B}' if B > 0 else f'- {-B}'})"
-            svar_ratt = formatera_svar(1, A + B, A * B)
-            d1 = formatera_svar(1, 0, A * B)
-            d2 = formatera_svar(1, A + B, A + B)
-            d3 = formatera_svar(1, A * B, A * B)
-        elif typ == 'faktorisera':
-            k = random.choice([2, 3, 4, 5, 6, 7]) 
-            a = random.choice([2, 3, 4, 5, 6])
-            b = random.choice([1, 2, 3, 4, 5, 6])
-            while math.gcd(a, b) != 1: b = random.randint(1, 6)
-            op = random.choice(['+', '-'])
-            alg_uttryck_str = f"{k * a}x {op} {k * b}"
-            svar_ratt = f"{k}({a}x {op} {b})"
-            d1 = f"{a}({k}x {op} {b})"  
-            d2 = f"{k}({a}x {op} {k * b})" 
-            d3 = f"{k}x({a} {op} {b})" if op == '+' else f"{k}x({a} - {b})"
+    while True:
+        if niva == 1:
+            typ = random.choice(['minus_parentes', 'mult_parentes', 'konstant_parentes', 'faktorisera'])
+            if typ == 'minus_parentes':
+                c = random.choice([2, 3, 4])
+                B = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
+                alg_uttryck_str = f"x - ({c}x {f'+ {B}' if B > 0 else f'- {-B}'})"
+                svar_ratt = formatera_svar(0, 1 - c, -B)
+                d1 = formatera_svar(0, 1 - c, B) 
+                d2 = formatera_svar(0, 1 + c, -B) 
+                d3 = formatera_svar(0, -c, -B) 
+            elif typ == 'konstant_parentes':
+                a, c = random.randint(2, 5), random.randint(2, 5)
+                A, B = random.choice([-4, -3, -2, 2, 3, 4]), random.choice([-4, -3, -2, 2, 3, 4])
+                alg_uttryck_str = f"{a}(x {f'+ {A}' if A > 0 else f'- {-A}'}) - {c}(x {f'+ {B}' if B > 0 else f'- {-B}'})"
+                svar_ratt = formatera_svar(0, a - c, a*A - c*B)
+                d1 = formatera_svar(0, a - c, a*A + c*B)
+                d2 = formatera_svar(0, a + c, a*A - c*B)
+                d3 = formatera_svar(0, a - c, a*A - B)
+            elif typ == 'mult_parentes':
+                A = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
+                B = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
+                alg_uttryck_str = f"(x {f'+ {A}' if A > 0 else f'- {-A}'})(x {f'+ {B}' if B > 0 else f'- {-B}'})"
+                svar_ratt = formatera_svar(1, A + B, A * B)
+                d1 = formatera_svar(1, 0, A * B)
+                d2 = formatera_svar(1, A + B, A + B)
+                d3 = formatera_svar(1, A * B, A * B)
+            elif typ == 'faktorisera':
+                k = random.choice([2, 3, 4, 5, 6, 7]) 
+                a = random.choice([2, 3, 4, 5, 6])
+                b = random.choice([1, 2, 3, 4, 5, 6])
+                while math.gcd(a, b) != 1: b = random.randint(1, 6)
+                op = random.choice(['+', '-'])
+                alg_uttryck_str = f"{k * a}x {op} {k * b}"
+                svar_ratt = f"{k}({a}x {op} {b})"
+                d1 = f"{a}({k}x {op} {b})"  
+                d2 = f"{k}({a}x {op} {k * b})" 
+                d3 = f"{k}x({a} {op} {b})" if op == '+' else f"{k}x({a} - {b})"
 
-    else: # Nivå 2
-        typ = random.choice(['faktorisera_avancerat', 'mult_parentes_koeff', 'flersteg', 'rationell'])
-        if typ == 'faktorisera_avancerat':
-            c, a = random.choice([2, 3, 4, 5]), random.choice([2, 3, 4, 5])
-            b = random.choice([1, 2, 3, 4, 5])
-            while math.gcd(a, b) != 1: b = random.randint(1, 5)
-            var_typ, op = random.choice(['xy', 'x2']), random.choice(['+', '-'])
-            if var_typ == 'xy':
-                alg_uttryck_str = f"{c * a}xy {op} {c * b}x"
-                svar_ratt = f"{c}x({a}y {op} {b})"
-                d1, d2, d3 = f"{a}x({c}y {op} {b})", f"{c}({a}xy {op} {b}x)", f"{c}xy({a} {op} {b})"      
-            else:
-                alg_uttryck_str = f"{c * a}x^2 {op} {c * b}x"
-                svar_ratt = f"{c}x({a}x {op} {b})"
-                d1, d2, d3 = f"{a}x({c}x {op} {b})", f"{c}({a}x^2 {op} {b}x)", f"{c}x^2({a} {op} {b})"      
-        elif typ == 'mult_parentes_koeff':
-            a, c = random.choice([2, 3, 4]), random.choice([2, 3, 4])
-            b, d = random.choice([-4, -3, -2, -1, 1, 2, 3, 4]), random.choice([-4, -3, -2, -1, 1, 2, 3, 4])
-            alg_uttryck_str = f"({a}x {f'+ {b}' if b > 0 else f'- {-b}'})({c}x {f'+ {d}' if d > 0 else f'- {-d}'})"
-            svar_ratt = formatera_svar(a*c, a*d + b*c, b*d)
-            d1 = formatera_svar(a*c, 0, b*d) 
-            d2 = formatera_svar(a*c, a*d + b*c, b+d) 
-            d3 = formatera_svar(a+c, a*d + b*c, b*d) 
-        elif typ == 'flersteg':
-            a = random.choice([2, 3])
-            b, c, d = random.choice([-4, -3, 2, 3, 4]), random.choice([-3, -2, -1, 1, 2, 3]), random.choice([-3, -2, -1, 1, 2, 3])
-            alg_uttryck_str = f"x({a}x {f'+ {b}' if b > 0 else f'- {-b}'}) - (x {f'+ {c}' if c > 0 else f'- {-c}'})(x {f'+ {d}' if d > 0 else f'- {-d}'})"
-            svar_ratt = formatera_svar(a - 1, b - (c + d), -(c * d))
-            d1 = formatera_svar(a - 1, b - (c + d), c * d) 
-            d2 = formatera_svar(a + 1, b - (c + d), -(c * d)) 
-            d3 = formatera_svar(a - 1, b + c + d, -(c * d)) 
-        elif typ == 'rationell':
-            C = random.choice([2, 3, 4, 5])
-            a, b = random.choice([-4, -3, -2, 2, 3, 4]), random.choice([-5, -4, -3, -2, 2, 3, 4, 5])
-            alg_uttryck_str = f"\\frac{{{a*C}x^2 {f'+ {b*C}' if b*C > 0 else f'- {-b*C}'}x}}{{{C}x}}"
-            svar_ratt = f"{a}x {f'+ {b}' if b > 0 else f'- {-b}'}"
-            d1 = f"{a}x^2 {f'+ {b}' if b > 0 else f'- {-b}'}"
-            d2 = f"{a*C}x {f'+ {b}' if b > 0 else f'- {-b}'}"
-            d3 = f"{a}x {f'+ {b*C}' if b*C > 0 else f'- {-b*C}'}"
+        else: # Nivå 2
+            typ = random.choice(['faktorisera_avancerat', 'mult_parentes_koeff', 'flersteg', 'rationell'])
+            if typ == 'faktorisera_avancerat':
+                c, a = random.choice([2, 3, 4, 5]), random.choice([2, 3, 4, 5])
+                b = random.choice([1, 2, 3, 4, 5])
+                while math.gcd(a, b) != 1: b = random.randint(1, 5)
+                var_typ, op = random.choice(['xy', 'x2']), random.choice(['+', '-'])
+                if var_typ == 'xy':
+                    alg_uttryck_str = f"{c * a}xy {op} {c * b}x"
+                    svar_ratt = f"{c}x({a}y {op} {b})"
+                    d1, d2, d3 = f"{a}x({c}y {op} {b})", f"{c}({a}xy {op} {b}x)", f"{c}xy({a} {op} {b})"      
+                else:
+                    alg_uttryck_str = f"{c * a}x^2 {op} {c * b}x"
+                    svar_ratt = f"{c}x({a}x {op} {b})"
+                    d1, d2, d3 = f"{a}x({c}x {op} {b})", f"{c}({a}x^2 {op} {b}x)", f"{c}x^2({a} {op} {b})"      
+            elif typ == 'mult_parentes_koeff':
+                a, c = random.choice([2, 3, 4]), random.choice([2, 3, 4])
+                b, d = random.choice([-4, -3, -2, -1, 1, 2, 3, 4]), random.choice([-4, -3, -2, -1, 1, 2, 3, 4])
+                alg_uttryck_str = f"({a}x {f'+ {b}' if b > 0 else f'- {-b}'})({c}x {f'+ {d}' if d > 0 else f'- {-d}'})"
+                svar_ratt = formatera_svar(a*c, a*d + b*c, b*d)
+                d1 = formatera_svar(a*c, 0, b*d) 
+                d2 = formatera_svar(a*c, a*d + b*c, b+d) 
+                d3 = formatera_svar(a+c, a*d + b*c, b*d) 
+            elif typ == 'flersteg':
+                a = random.choice([2, 3])
+                b, c, d = random.choice([-4, -3, 2, 3, 4]), random.choice([-3, -2, -1, 1, 2, 3]), random.choice([-3, -2, -1, 1, 2, 3])
+                alg_uttryck_str = f"x({a}x {f'+ {b}' if b > 0 else f'- {-b}'}) - (x {f'+ {c}' if c > 0 else f'- {-c}'})(x {f'+ {d}' if d > 0 else f'- {-d}'})"
+                svar_ratt = formatera_svar(a - 1, b - (c + d), -(c * d))
+                d1 = formatera_svar(a - 1, b - (c + d), c * d) 
+                d2 = formatera_svar(a + 1, b - (c + d), -(c * d)) 
+                d3 = formatera_svar(a - 1, b + c + d, -(c * d)) 
+            elif typ == 'rationell':
+                C = random.choice([2, 3, 4, 5])
+                a, b = random.choice([-4, -3, -2, 2, 3, 4]), random.choice([-5, -4, -3, -2, 2, 3, 4, 5])
+                B_str = f"+ {b*C}" if b*C > 0 else f"- {-b*C}"
+                alg_uttryck_str = f"\\frac{{{a*C}x^2 {B_str}x}}{{{C}x}}"
+                b_svar = f"+ {b}" if b > 0 else f"- {-b}"
+                svar_ratt = f"{a}x {b_svar}"
+                B_fel = f"+ {b*C}" if b*C > 0 else f"- {-b*C}"
+                d1 = f"{a}x^2 {b_svar}"
+                d2 = f"{a*C}x {b_svar}"
+                d3 = f"{a}x {B_fel}"
+                
+        svar_ratt_latex = f"${svar_ratt}$"
+        alternativ = [svar_ratt_latex, f"${d1}$", f"${d2}$", f"${d3}$"]
+        
+        # Säkerställ att vi får 4 HELT unika svarsalternativ, annars slumpar loopen om direkt
+        if len(set(alternativ)) == 4:
+            break
             
-    svar_ratt_latex = f"${svar_ratt}$"
-    alternativ = list(set([svar_ratt_latex, f"${d1}$", f"${d2}$", f"${d3}$"]))
-    while len(alternativ) < 4:
-        alternativ.append(alternativ[0].replace("$", " $", 1)) 
-        alternativ = list(set(alternativ))
     random.shuffle(alternativ)
 
     return {
