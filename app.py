@@ -579,30 +579,59 @@ def skapa_lan_uppgift(niva):
             tabell = f"""
 | | A | B | C | D | E |
 |---|---|---|---|---|---|
-| **1** | **Lånebelopp** | **Årsränta** | **Månadsränta** | **Amortering** | **Månadskostnad** |
+| **1** | **Lånebelopp** | **Räntesats** | **Räntekostnad/mån** | **Amortering** | **Månadskostnad** |
 | **2** | {formatera_kr(kapital)} | {ranta} % | *[tom]* | {formatera_kr(amort)} | *[tom]* |
 """
+            subtyp = random.choice(['C2', 'E2'])
+            
             if typ == 'kalkylblad_varde':
-                return {
-                    "info_box_blue": "Titta på kalkylarket nedan:",
-                    "markdown_table": tabell,
-                    "fraga": "I cell C2 skriver du in formeln: `=A2*(B2/100)/12`. Vilket värde kommer att visas i cell C2 när du trycker på Enter? (Svara i kr)",
-                    "ratt_svar": manadsranta_kr,
-                    "input_typ": "text",
-                    "svarstyp": "int",
-                    "suffix": "kr"
-                }
-            else:
-                return {
-                    "info_box_blue": "Titta på kalkylarket nedan:",
-                    "markdown_table": tabell,
-                    "fraga": "Vilken formel ska du skriva in i cell E2 för att räkna ut den totala månadskostnaden?",
-                    "ratt_svar_lista": ['=c2+d2', '=d2+c2'],
-                    "ratt_svar_visning": "=C2+D2",
-                    "ratt_svar": "=C2+D2", # Fallback om fel svar visas
-                    "input_typ": "text",
-                    "svarstyp": "kalkyl_formel"
-                }
+                if subtyp == 'C2':
+                    return {
+                        "info_box_blue": "Titta på kalkylarket nedan:",
+                        "markdown_table": tabell,
+                        "fraga": "I cell C2 skriver du in formeln: `=A2*B2/12`. Vilket värde kommer att visas i cell C2 när du trycker på Enter? (Svara i kr)",
+                        "ratt_svar": manadsranta_kr,
+                        "input_typ": "text",
+                        "svarstyp": "int",
+                        "suffix": "kr"
+                    }
+                else:
+                    return {
+                        "info_box_blue": f"Titta på kalkylarket nedan. Tänk dig att du redan har räknat ut att räntekostnaden i cell C2 blev {formatera_kr(manadsranta_kr)} kr.",
+                        "markdown_table": tabell,
+                        "fraga": "I cell E2 skriver du in formeln: `=C2+D2`. Vilket värde kommer att visas i cell E2? (Svara i kr)",
+                        "ratt_svar": manadsranta_kr + amort,
+                        "input_typ": "text",
+                        "svarstyp": "int",
+                        "suffix": "kr"
+                    }
+            else: # formel
+                if subtyp == 'C2':
+                    return {
+                        "info_box_blue": "Titta på kalkylarket nedan:",
+                        "markdown_table": tabell,
+                        "fraga": "Vilken formel ska du skriva in i cell C2 för att kalkylarket ska räkna ut räntekostnaden för en månad?",
+                        "ratt_svar_lista": [
+                            '=a2*b2/12', '=b2*a2/12', '=a2*(b2/100)/12', '=(a2*b2)/12',
+                            '=a2/12*b2', '=b2/12*a2', '=a2*b2/100/12', '=(a2*b2/100)/12',
+                            '=b2*a2/100/12', '=a2*(b2/12)', '=(a2/12)*b2', '=(b2/12)*a2'
+                        ],
+                        "ratt_svar_visning": "=A2*B2/12",
+                        "ratt_svar": "=A2*B2/12",
+                        "input_typ": "text",
+                        "svarstyp": "kalkyl_formel"
+                    }
+                else:
+                    return {
+                        "info_box_blue": "Titta på kalkylarket nedan:",
+                        "markdown_table": tabell,
+                        "fraga": "Vilken formel ska du skriva in i cell E2 för att kalkylarket ska räkna ut den totala månadskostnaden?",
+                        "ratt_svar_lista": ['=c2+d2', '=d2+c2'],
+                        "ratt_svar_visning": "=C2+D2",
+                        "ratt_svar": "=C2+D2",
+                        "input_typ": "text",
+                        "svarstyp": "kalkyl_formel"
+                    }
     else:
         typ = random.choice(['manadskostnad_1', 'manadskostnad_2', 'snabblan'])
         if typ in ['manadskostnad_1', 'manadskostnad_2']:
