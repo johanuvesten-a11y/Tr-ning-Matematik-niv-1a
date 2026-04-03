@@ -729,7 +729,12 @@ def generera_ny_uppgift():
     niva = st.session_state.niva
     
     if kat == "Blandat (Slumpas)":
-        valbar_kat = random.choice(list(KATEGORIER.keys()))
+        tillgangliga_kategorier = list(KATEGORIER.keys())
+        # Om nivå 2 är vald, plocka bort Statistik från hatten
+        if niva == 2:
+            tillgangliga_kategorier.remove("Statistik")
+            
+        valbar_kat = random.choice(tillgangliga_kategorier)
         u = KATEGORIER[valbar_kat](niva)
         u['visnings_kategori'] = valbar_kat # För att veta vilken färg vi ska använda etc.
     else:
