@@ -12,7 +12,7 @@ st.set_page_config(layout="wide", page_title="Matematikträning")
 st.markdown("""
 <style>
 input[type="text"] {
-    font-size: 24px !important;
+    font-size: 14px !important;
     font-weight: bold !important;
     text-align: center !important;
     padding: 15px !important;
@@ -419,8 +419,39 @@ def skapa_alg_uttryck_uppgift(niva):
 
     while True:
         if niva == 1:
-            typ = random.choice(['minus_parentes', 'mult_parentes', 'konstant_parentes', 'faktorisera'])
-            if typ == 'minus_parentes':
+            typ = random.choice(['minus_parentes', 'mult_parentes', 'konstant_parentes', 'faktorisera', 'forhallande_blanda', 'forhallande_forenkla'])
+            
+            if typ == 'forhallande_blanda':
+                A, B = random.randint(1, 3), random.randint(2, 5)
+                if A == B: B += 1
+                k = random.randint(2, 6)
+                saft, vatten = A * k, B * k
+                total = saft + vatten
+                fraga_vatten = random.choice([True, False])
+                info = f"Du ska blanda saft och vatten i förhållandet {A}:{B}. Du häller i {saft} dl koncentrerad saft."
+                if fraga_vatten:
+                    fraga = "Hur många deciliter (dl) vatten ska du blanda med?"
+                    svar = vatten
+                else:
+                    fraga = "Hur många deciliter (dl) färdigblandad saft får du totalt?"
+                    svar = total
+                return {"info_box_blue": info, "fraga": fraga, "ratt_svar": svar, "input_typ": "text", "svarstyp": "int", "suffix": "dl", "undertext": "Svara med ett heltal."}
+                
+            elif typ == 'forhallande_forenkla':
+                A, B = random.randint(2, 6), random.randint(2, 6)
+                while math.gcd(A, B) != 1 or A == B:
+                    A, B = random.randint(2, 6), random.randint(2, 6)
+                k = random.randint(3, 8)
+                killar, tjejer = A * k, B * k
+                if random.choice([True, False]):
+                    info = f"I en klass finns det {killar} killar och {tjejer} tjejer."
+                    fraga = "Vilket är förhållandet mellan antalet killar och tjejer?"
+                else:
+                    info = f"I en fruktskål ligger {killar} äpplen och {tjejer} päron."
+                    fraga = "Vilket är förhållandet mellan antalet äpplen och päron?"
+                return {"info_box_blue": info, "fraga": fraga, "ratt_svar": f"{A}:{B}", "input_typ": "text", "svarstyp": "ratio", "undertext": "Svara på enklaste form med ett kolon (t.ex. 2:3)."}
+                
+            elif typ == 'minus_parentes':
                 c = random.choice([2, 3, 4])
                 B = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
                 alg_uttryck_str = f"x - ({c}x {f'+ {B}' if B > 0 else f'- {-B}'})"
@@ -457,9 +488,45 @@ def skapa_alg_uttryck_uppgift(niva):
                 d3 = f"{k}x({a} {op} {b})" if op == '+' else f"{k}x({a} - {b})"
 
         else: # Nivå 2
-            typ = random.choice(['faktorisera_avancerat', 'mult_parentes_koeff', 'flersteg', 'rationell', 'likhet_parentes'])
+            typ = random.choice(['faktorisera_avancerat', 'mult_parentes_koeff', 'flersteg', 'rationell', 'likhet_parentes', 'forhallande_dela_total', 'forhallande_tre_parter'])
             
-            if typ == 'likhet_parentes':
+            if typ == 'forhallande_dela_total':
+                A, B = random.randint(2, 7), random.randint(2, 7)
+                while math.gcd(A, B) != 1 or A == B:
+                    A, B = random.randint(2, 7), random.randint(2, 7)
+                k = random.choice([50, 100, 200, 500])
+                total = (A + B) * k
+                info = f"Två personer ska dela på {total} kr i förhållandet {A}:{B} (den första får {A} delar, den andra får {B} delar)."
+                if random.choice([True, False]):
+                    fraga = "Hur många kronor får den som får den STÖRSTA andelen?"
+                    svar = max(A, B) * k
+                else:
+                    fraga = "Hur många kronor får den som får den MINSTA andelen?"
+                    svar = min(A, B) * k
+                return {"info_box_blue": info, "fraga": fraga, "ratt_svar": svar, "input_typ": "text", "svarstyp": "int", "suffix": "kr", "undertext": "Svara med ett heltal."}
+
+            elif typ == 'forhallande_tre_parter':
+                A, B, C = random.randint(1, 4), random.randint(1, 4), random.randint(1, 4)
+                while A == B and B == C:
+                    C = random.randint(1, 4)
+                k = random.randint(3, 8)
+                
+                recept_typ = random.choice(['marinad', 'betong'])
+                if recept_typ == 'marinad':
+                    info = f"Ett recept på marinad anger förhållandet mellan olja, soja och vinäger till {A}:{B}:{C}. Du gör en stor sats och använder {A*k} msk olja."
+                    delar = [('soja', B*k), ('vinäger', C*k)]
+                    vald_del = random.choice(delar)
+                    fraga = f"Hur många matskedar {vald_del[0]} ska du använda?"
+                    suffix = "msk"
+                else:
+                    info = f"För att blanda en viss sorts betong är förhållandet mellan cement, grus och sand {A}:{B}:{C}. Du använder {A*k} kg cement."
+                    delar = [('grus', B*k), ('sand', C*k)]
+                    vald_del = random.choice(delar)
+                    fraga = f"Hur många kg {vald_del[0]} ska du använda?"
+                    suffix = "kg"
+                return {"info_box_blue": info, "fraga": fraga, "ratt_svar": vald_del[1], "input_typ": "text", "svarstyp": "int", "suffix": suffix, "undertext": "Svara med ett heltal."}
+
+            elif typ == 'likhet_parentes':
                 while True:
                     A = random.choice([2, 3, 4, 5])
                     D = random.choice([2, 3, 4, 5])
@@ -468,7 +535,6 @@ def skapa_alg_uttryck_uppgift(niva):
                     E = random.choice([-5, -4, -3, -2, 2, 3, 4, 5])
                     F = random.choice([-10, -9, -8, -7, -6, -5, -4, -3, -2, 2, 3, 4, 5, 6, 7, 8, 9, 10])
                     
-                    # För att B och C ska bli heltal måste A dela D*E och D*F
                     if (D * E) % A == 0 and (D * F) % A == 0:
                         B = (D * E) // A
                         C = (D * F) // A
@@ -477,7 +543,6 @@ def skapa_alg_uttryck_uppgift(niva):
                 B_str = "x" if B == 1 else ("-x" if B == -1 else f"{B}x")
                 C_str = f"+ {C}" if C > 0 else f"- {-C}"
                 VL = f"{A}({B_str} {C_str})"
-                
                 HL = f"{D}( \\dots )"
                 alg_uttryck_str = f"{VL} = {HL}"
                 
@@ -539,7 +604,6 @@ def skapa_alg_uttryck_uppgift(niva):
         svar_ratt_latex = f"${svar_ratt}$"
         alternativ = [svar_ratt_latex, f"${d1}$", f"${d2}$", f"${d3}$"]
         
-        # Säkerställ att vi får 4 HELT unika svarsalternativ, annars slumpar loopen om direkt
         if len(set(alternativ)) == 4:
             break
             
@@ -840,7 +904,7 @@ TITLAR = {
     "Funktioner: Grafisk lösning": "Grafisk avläsning av funktioner",
     "Funktioner: Algebraisk lösning": "Algebraisk lösning av funktioner",
     "Ekvationer": "Lös ekvationerna",
-    "Algebra": "Förenkla och faktorisera algebraiska uttryck",
+    "Algebra": "Algebra & Förhållanden",
     "Lån och ränta": "Beräkna Lån och Ränta",
     "Förändringsfaktor": "Träna på Förändringsfaktor",
     "Sannolikhetslära": "Träna på Sannolikhetslära",
@@ -858,13 +922,12 @@ def generera_ny_uppgift():
     
     if kat == "Blandat (Slumpas)":
         tillgangliga_kategorier = list(KATEGORIER.keys())
-        # Om nivå 2 är vald, plocka bort Statistik från hatten
         if niva == 2:
             tillgangliga_kategorier.remove("Statistik")
             
         valbar_kat = random.choice(tillgangliga_kategorier)
         u = KATEGORIER[valbar_kat](niva)
-        u['visnings_kategori'] = valbar_kat # För att veta vilken färg vi ska använda etc.
+        u['visnings_kategori'] = valbar_kat 
     else:
         u = KATEGORIER[kat](niva)
         u['visnings_kategori'] = kat
@@ -886,7 +949,6 @@ if 'aktuell_kategori' not in st.session_state or st.session_state.aktuell_katego
 st.sidebar.divider()
 st.sidebar.subheader("Inställningar")
 
-# Endast nivå 1 för statistik
 if vald_kategori == "Statistik":
     ny_niva = st.sidebar.radio("Välj svårighetsgrad:", [1], horizontal=True, index=0)
 else:
@@ -906,7 +968,6 @@ st.title(TITLAR[st.session_state.aktuell_kategori])
 col_vanster, col_hoger = st.columns([1.2, 1], gap="large")
 
 with col_vanster:
-    # 1. Grafisk Plot
     if u.get('graf_f') is not None:
         fig = rita_plotly_graf(
             f = u['graf_f'],
@@ -918,17 +979,14 @@ with col_vanster:
         )
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
         
-    # 2. Plotly fig (träd, spridning)
     if u.get('plotly_fig') is not None:
         st.plotly_chart(u['plotly_fig'], use_container_width=True, config={'displayModeBar': False})
 
-    # 3. Text/Latex content
     if 'info_text' in u:
         st.markdown(f"<div style='text-align: center; font-size: 20px; color: gray; margin-top: 50px;'>{u['info_text']}</div>", unsafe_allow_html=True)
     if 'latex_text' in u:
         st.latex(u['latex_text'])
     
-    # 4. Färgade informationsboxar
     if 'info_box_blue' in u:
         st.markdown(f"<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: #f8f9fa; padding: 25px; border-radius: 10px; border-left: 6px solid #0056b3;'>{u['info_box_blue']}</div>", unsafe_allow_html=True)
     if 'info_box_green' in u:
@@ -940,7 +998,6 @@ with col_vanster:
     if 'info_text_italic' in u:
         st.markdown(f"<div style='font-size: 20px; font-style: italic; color: gray;'>{u['info_text_italic']}</div>", unsafe_allow_html=True)
         
-    # 5. Kalkylbladstabeller (HTML)
     if 'html_table' in u:
         st.write("")
         st.markdown(u['html_table'], unsafe_allow_html=True)
@@ -950,19 +1007,16 @@ with col_hoger:
     if 'undertext' in u:
         st.markdown(f"<p style='font-size: 14px; font-style: italic; color: #666; margin-bottom: 5px;'>{u['undertext']}</p>", unsafe_allow_html=True)
         
-    # Färgkodning beroende på kategori
     q_color = "#0056b3"
     if u['visnings_kategori'] == "Förändringsfaktor": q_color = "#28a745"
     elif u['visnings_kategori'] == "Sannolikhetslära": q_color = "#e83e8c"
     elif u['visnings_kategori'] == "Statistik": q_color = "#8B008B"
     
-    # Transparent utfyllnad om ekvation är ensam på vänstersidan
     if u['visnings_kategori'] == "Ekvationer":
         st.markdown("<div style='font-size: 32px; font-weight: bold; color: transparent; margin-bottom: 25px;'>&nbsp;</div>", unsafe_allow_html=True) 
     else:
         st.markdown(f"<div style='font-size: 26px; font-weight: bold; color: {q_color}; margin-bottom: 25px;'>{u['fraga']}</div>", unsafe_allow_html=True)
     
-    # Generera Inmatningsfält
     input_svar = None
     uid = st.session_state.uppgift_id
     if u['input_typ'] == 'flera_text':
@@ -979,14 +1033,12 @@ with col_hoger:
         
     st.write("")
     
-    # Knappar
     k1, k2 = st.columns(2)
     with k1:
         if st.button("Rätta svar", type="primary", use_container_width=True):
             st.session_state.rattat = True
             status = 'fel'
             
-            # Validering
             if u['input_typ'] == 'flera_text':
                 if all(s.strip() != "" for s in input_svar):
                     try:
@@ -1007,8 +1059,13 @@ with col_hoger:
                         elif u['svarstyp'] == 'fraction':
                             svar_clean = input_svar.strip().replace(" ", "").replace(",", ".")
                             status = 'ratt' if Fraction(svar_clean) == u['ratt_svar'] else 'fel'
+                        elif u['svarstyp'] == 'ratio':
+                            svar_clean = input_svar.strip().replace(" ", "")
+                            if ":" not in svar_clean:
+                                status = 'format_ratio'
+                            else:
+                                status = 'ratt' if svar_clean == str(u['ratt_svar']) else 'fel'
                         elif u['svarstyp'] == 'string_math':
-                            # Rensar inmatning och gör den smidigare att utvärdera för Algebrauttryck
                             svar_clean = input_svar.replace(" ", "").lower()
                             ratt_clean = str(u['ratt_svar']).replace(" ", "").lower()
                             if svar_clean.startswith("+"): svar_clean = svar_clean[1:]
@@ -1039,13 +1096,11 @@ with col_hoger:
             generera_ny_uppgift()
             st.rerun()
             
-    # Återkoppling
     if st.session_state.rattat:
         status = st.session_state.svar_status
         if status == 'ratt':
             st.success("✅ Helt rätt! Snyggt jobbat.")
         elif status == 'fel':
-            # Formatera rätt svar för utskrift
             if u['svarstyp'] == 'array_float':
                 ratt_txt = ' och '.join([f"{a:g}".replace('.', ',') for a in u['ratt_svar']])
             elif u['svarstyp'] == 'fraction':
@@ -1054,7 +1109,7 @@ with col_hoger:
                 ratt_txt = f"{u['ratt_svar']:g}".replace('.', ',')
             elif u['svarstyp'] == 'kalkyl_formel':
                 ratt_txt = u['ratt_svar_visning']
-            elif u['svarstyp'] == 'string_math':
+            elif u['svarstyp'] in ['string_math', 'ratio']:
                 ratt_txt = str(u['ratt_svar'])
             else:
                 ratt_txt = str(u['ratt_svar'])
@@ -1072,6 +1127,8 @@ with col_hoger:
                 st.warning("⚠️ Skriv svaret som ett bråk, till exempel 3/8.")
             else:
                 st.warning("⚠️ Svaret är i fel format.")
+        elif status == 'format_ratio':
+            st.warning("⚠️ Svara med ett kolon mellan siffrorna, till exempel 3:4.")
         elif status == 'format_saknar_likamed':
             st.warning("⚠️ Formler i kalkylark måste alltid börja med ett likamedstecken (=).")
         elif status == 'tom':
