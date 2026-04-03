@@ -576,19 +576,48 @@ def skapa_lan_uppgift(niva):
             amort = random.choice([1000, 2000, 3000])
             manadsranta_kr = int(round(kapital * (ranta / 100) / 12))
             
-            tabell = f"""
-| | A | B | C | D | E |
-|---|---|---|---|---|---|
-| **1** | **Lånebelopp** | **Räntesats** | **Räntekostnad/mån** | **Amortering** | **Månadskostnad** |
-| **2** | {formatera_kr(kapital)} | {ranta} % | *[tom]* | {formatera_kr(amort)} | *[tom]* |
-"""
+            tabell_html = f"""
+            <div style="overflow-x: auto; margin-top: 10px; margin-bottom: 20px;">
+                <table style="width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 16px; background-color: white; border: 1px solid #ccc;">
+                    <thead>
+                        <tr style="background-color: #f1f3f4; border-bottom: 2px solid #ccc;">
+                            <th style="padding: 8px; border: 1px solid #ccc; width: 40px;"></th>
+                            <th style="padding: 8px; border: 1px solid #ccc; text-align: center; color: #333;">A</th>
+                            <th style="padding: 8px; border: 1px solid #ccc; text-align: center; color: #333;">B</th>
+                            <th style="padding: 8px; border: 1px solid #ccc; text-align: center; color: #333;">C</th>
+                            <th style="padding: 8px; border: 1px solid #ccc; text-align: center; color: #333;">D</th>
+                            <th style="padding: 8px; border: 1px solid #ccc; text-align: center; color: #333;">E</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th style="background-color: #f1f3f4; padding: 8px; border: 1px solid #ccc; text-align: center; color: #333;">1</th>
+                            <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center;">Lånebelopp</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center;">Räntesats</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center;">Räntekostnad<br>/mån</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center;">Amortering</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center;">Månads-<br>kostnad</td>
+                        </tr>
+                        <tr>
+                            <th style="background-color: #f1f3f4; padding: 8px; border: 1px solid #ccc; text-align: center; color: #333;">2</th>
+                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center;">{formatera_kr(kapital)}</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center;">{ranta} %</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center; color: gray; font-style: italic;">[tom]</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center;">{formatera_kr(amort)}</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center; color: gray; font-style: italic;">[tom]</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            """
+            
             subtyp = random.choice(['C2', 'E2'])
             
             if typ == 'kalkylblad_varde':
                 if subtyp == 'C2':
                     return {
                         "info_box_blue": "Titta på kalkylarket nedan:",
-                        "markdown_table": tabell,
+                        "html_table": tabell_html,
                         "fraga": "I cell C2 skriver du in formeln: `=A2*B2/12`. Vilket värde kommer att visas i cell C2 när du trycker på Enter? (Svara i kr)",
                         "ratt_svar": manadsranta_kr,
                         "input_typ": "text",
@@ -598,7 +627,7 @@ def skapa_lan_uppgift(niva):
                 else:
                     return {
                         "info_box_blue": f"Titta på kalkylarket nedan. Tänk dig att du redan har räknat ut att räntekostnaden i cell C2 blev {formatera_kr(manadsranta_kr)} kr.",
-                        "markdown_table": tabell,
+                        "html_table": tabell_html,
                         "fraga": "I cell E2 skriver du in formeln: `=C2+D2`. Vilket värde kommer att visas i cell E2? (Svara i kr)",
                         "ratt_svar": manadsranta_kr + amort,
                         "input_typ": "text",
@@ -609,7 +638,7 @@ def skapa_lan_uppgift(niva):
                 if subtyp == 'C2':
                     return {
                         "info_box_blue": "Titta på kalkylarket nedan:",
-                        "markdown_table": tabell,
+                        "html_table": tabell_html,
                         "fraga": "Vilken formel ska du skriva in i cell C2 för att kalkylarket ska räkna ut räntekostnaden för en månad?",
                         "ratt_svar_lista": [
                             '=a2*b2/12', '=b2*a2/12', '=a2*(b2/100)/12', '=(a2*b2)/12',
@@ -624,7 +653,7 @@ def skapa_lan_uppgift(niva):
                 else:
                     return {
                         "info_box_blue": "Titta på kalkylarket nedan:",
-                        "markdown_table": tabell,
+                        "html_table": tabell_html,
                         "fraga": "Vilken formel ska du skriva in i cell E2 för att kalkylarket ska räkna ut den totala månadskostnaden?",
                         "ratt_svar_lista": ['=c2+d2', '=d2+c2'],
                         "ratt_svar_visning": "=C2+D2",
@@ -911,10 +940,10 @@ with col_vanster:
     if 'info_text_italic' in u:
         st.markdown(f"<div style='font-size: 20px; font-style: italic; color: gray;'>{u['info_text_italic']}</div>", unsafe_allow_html=True)
         
-    # 5. Kalkylbladstabeller
-    if 'markdown_table' in u:
+    # 5. Kalkylbladstabeller (HTML)
+    if 'html_table' in u:
         st.write("")
-        st.markdown(u['markdown_table'])
+        st.markdown(u['html_table'], unsafe_allow_html=True)
 
 with col_hoger:
     st.subheader("Uppgift")
