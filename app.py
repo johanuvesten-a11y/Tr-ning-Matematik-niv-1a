@@ -187,6 +187,7 @@ def skapa_graf_uppgift(niva):
                 op = random.choice(['+', '-'])
                 svar = p1[1] + p2[1] if op == '+' else p1[1] - p2[1]
                 fraga = f"Bestäm f({p1[0]:g}) {op} f({p2[0]:g})"
+                ratt_svar = [svar]
                 return {"graf_f": f, "q_type_vis": q_type_vis, "fraga": fraga.replace('.', ','), "ratt_svar": [round(svar, 4) + 0.0], "input_typ": "flera_text", "svarstyp": "array_float"}
                 
             elif fraga_typ == 'f_kx':
@@ -254,7 +255,7 @@ def skapa_alg_func_uppgift(niva):
                     term_x = "x" if a_coeff == 1 else ("-x" if a_coeff == -1 else f"{a_coeff}x")
                 else:
                     term_x = f"\\frac{{x}}{{{b}}}" if a_coeff == 1 else (f"-\\frac{{x}}{{{b}}}" if a_coeff == -1 else f"\\frac{{{a_coeff}x}}{{{b}}}")
-                    C = int((a_coeff*x)/b + m)
+                    C = int(round((a_coeff*x)/b + m))
                 m_str = f" + {m}" if m > 0 else (f" - {-m}" if m < 0 else "")
                 
                 if abs(x) <= 100 and abs(C) <= 100:
@@ -318,7 +319,7 @@ def skapa_ekv_uppgift(niva):
                 x = random.randint(-6, 6) * a 
                 b = random.randint(-10, 10)
                 b_str = f" + {b}" if b > 0 else (f" - {-b}" if b < 0 else "")
-                ekv = f"\\frac{{x}}{{{a}}}{b_str} = {int(x / a) + b}"
+                ekv = f"\\frac{{x}}{{{a}}}{b_str} = {int(round(x / a)) + b}"
             elif typ == 'bada_sidor':
                 a = random.choice([-5, -4, -3, -2, 2, 3, 4, 5])
                 c_coeff = random.choice([-5, -4, -3, -2, 2, 3, 4, 5])
@@ -369,7 +370,7 @@ def skapa_ekv_uppgift(niva):
                 if not E.is_integer(): continue 
                 A_str = f"+ {A}" if A > 0 else (f"- {-A}" if A < 0 else "")
                 C_str = f"+ {C}" if C > 0 else (f"- {-C}" if C < 0 else "")
-                ekv = f"\\frac{{x {A_str}}}{{{B}}} + \\frac{{x {C_str}}}{{{D}}} = {int(E)}"
+                ekv = f"\\frac{{x {A_str}}}{{{B}}} + \\frac{{x {C_str}}}{{{D}}} = {int(round(E))}"
             elif typ == 'x_i_namnare':
                 B = random.choice([-5, -4, -3, -2, 1, 2, 3, 4, 5])
                 x = random.randint(-10, 10)
@@ -513,16 +514,16 @@ def skapa_alg_uttryck_uppgift(niva):
     }
 
 def skapa_lan_uppgift(niva):
-    def formatera_kr(b): return f"{int(b):,}".replace(",", " ")
+    def formatera_kr(b): return f"{int(round(b)):,}".replace(",", " ")
     
     if niva == 1:
         typ = random.choice(['arsranta', 'manadsranta', 'rak_amortering'])
         if typ == 'arsranta':
             kapital, ranta = random.choice([15000, 20000, 35000, 50000, 80000, 150000]), random.choice([3, 4, 5, 6, 7, 8])
-            return {"info_box_blue": f"Du lånar {formatera_kr(kapital)} kr av banken med en årsränta på {ranta} %.", "fraga": "Hur mycket får du betala i ränta under det första året? (Svara i kr)", "ratt_svar": int(kapital * (ranta / 100)), "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
+            return {"info_box_blue": f"Du lånar {formatera_kr(kapital)} kr av banken med en årsränta på {ranta} %.", "fraga": "Hur mycket får du betala i ränta under det första året? (Svara i kr)", "ratt_svar": int(round(kapital * (ranta / 100))), "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
         elif typ == 'manadsranta':
             kapital, ranta = random.choice([12000, 24000, 36000, 60000, 120000]), random.choice([3, 4, 5, 6, 7, 8])
-            return {"info_box_blue": f"Du tar ett lån på {formatera_kr(kapital)} kr. Årsräntan är {ranta} %.", "fraga": "Hur stor blir räntekostnaden för den allra första månaden? (Svara i kr)", "ratt_svar": int((kapital * (ranta / 100)) / 12), "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
+            return {"info_box_blue": f"Du tar ett lån på {formatera_kr(kapital)} kr. Årsräntan är {ranta} %.", "fraga": "Hur stor blir räntekostnaden för den allra första månaden? (Svara i kr)", "ratt_svar": int(round((kapital * (ranta / 100)) / 12)), "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
         elif typ == 'rak_amortering':
             ar, amort = random.choice([2, 3, 4, 5, 10]), random.choice([500, 1000, 1500, 2000, 2500])
             return {"info_box_blue": f"Du lånar {formatera_kr(amort * ar * 12)} kr som ska betalas tillbaka med rak amortering under {ar} år.", "fraga": "Hur mycket ska du amortera varje månad? (Svara i kr)", "ratt_svar": amort, "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
@@ -532,14 +533,14 @@ def skapa_lan_uppgift(niva):
             p = random.choice([{"K": 60000, "ar": 5, "amort": 1000, "rantor": [3, 6, 9]}, {"K": 120000, "ar": 5, "amort": 2000, "rantor": [3, 6, 9]}, {"K": 72000, "ar": 3, "amort": 2000, "rantor": [3, 4, 5, 6]}])
             ranta, avgift = random.choice(p["rantor"]), random.choice([25, 35, 45])
             if typ == 'manadskostnad_1':
-                svar = int(p["amort"] + (p["K"] * (ranta / 100)) / 12 + avgift)
+                svar = int(round(p["amort"] + (p["K"] * (ranta / 100)) / 12 + avgift))
                 return {"info_box_blue": f"Du köper en bil för {formatera_kr(p['K'])} kr på avbetalning. Lånet har rak amortering över {p['ar']} år och en årsränta på {ranta} %. Banken tar också ut en aviseringsavgift på {avgift} kr/månad.", "fraga": "Vad blir din TOTALA månadskostnad den första månaden? (Svara i kr)", "ratt_svar": svar, "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
             else: 
-                svar = int(p["amort"] + ((p["K"] - p["amort"]) * (ranta / 100)) / 12 + avgift)
+                svar = int(round(p["amort"] + ((p["K"] - p["amort"]) * (ranta / 100)) / 12 + avgift))
                 return {"info_box_blue": f"Du tar ett lån på {formatera_kr(p['K'])} kr med rak amortering över {p['ar']} år och en årsränta på {ranta} %. Aviseringsavgiften är {avgift} kr/månad.", "fraga": "När du ska betala din ANDRA faktura har lånet minskat. Vad blir din TOTALA månadskostnad den andra månaden? (Svara i kr)", "ratt_svar": svar, "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
         elif typ == 'snabblan':
             kapital, manadsranta, upplagg, avi = random.choice([3000, 4000, 5000, 8000]), random.choice([2, 3, 4, 5]), random.choice([295, 395, 495]), random.choice([35, 45, 55])
-            return {"info_box_blue": f"Du tar ett snabblån på {formatera_kr(kapital)} kr som ska betalas tillbaka i sin helhet efter exakt en månad. Uppläggningsavgiften är {upplagg} kr, aviseringsavgiften {avi} kr och månadsräntan är {manadsranta} %.", "fraga": "Hur mycket måste du totalt betala tillbaka när månaden är slut? (Svara i kr)", "ratt_svar": int(kapital + kapital * (manadsranta / 100) + upplagg + avi), "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
+            return {"info_box_blue": f"Du tar ett snabblån på {formatera_kr(kapital)} kr som ska betalas tillbaka i sin helhet efter exakt en månad. Uppläggningsavgiften är {upplagg} kr, aviseringsavgiften {avi} kr och månadsräntan är {manadsranta} %.", "fraga": "Hur mycket måste du totalt betala tillbaka när månaden är slut? (Svara i kr)", "ratt_svar": int(round(kapital + kapital * (manadsranta / 100) + upplagg + avi)), "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
 
 def skapa_ff_uppgift(niva):
     if niva == 1:
@@ -553,12 +554,12 @@ def skapa_ff_uppgift(niva):
             return {"info_box_green": f"En förändringsfaktor är {f'{round(ff, 4):g}'.replace('.', ',')}.", "fraga": "Vilken procentuell förändring motsvarar detta? (En sänkning svaras med minus, t.ex. -12,5)", "ratt_svar": procent if riktning == 'ökar' else -procent, "input_typ": "text", "svarstyp": "procent"}
         elif typ == 'nytt_pris':
             startpris, riktning, procent = random.choice([100, 200, 250, 400, 500, 800, 1000, 1500]), random.choice(['höjs', 'sänks']), random.choice([10, 15, 20, 25, 30, 40, 50, 12.5])
-            return {"info_box_green": f"En vara kostar {startpris} kr. Priset {riktning} med {f'{procent:g}'.replace('.', ',')} %.", "fraga": "Vad blir det nya priset? (Svara i hela kronor)", "ratt_svar": int(startpris * (1 + procent / 100)) if riktning == 'höjs' else int(startpris * (1 - procent / 100)), "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
+            return {"info_box_green": f"En vara kostar {startpris} kr. Priset {riktning} med {f'{procent:g}'.replace('.', ',')} %.", "fraga": "Vad blir det nya priset? (Svara i hela kronor)", "ratt_svar": int(round(startpris * (1 + procent / 100))) if riktning == 'höjs' else int(round(startpris * (1 - procent / 100))), "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
     else:
         typ = random.choice(['hitta_gammalt', 'upprepad_procent'])
         if typ == 'hitta_gammalt':
             gammalt_pris, procent, riktning = random.choice([400, 500, 800, 1000, 1200, 1500, 2000]), random.choice([10, 20, 25, 30, 40, 50]), random.choice(['höjs', 'sänks'])
-            nytt_pris = int(gammalt_pris * (1 + procent / 100)) if riktning == 'höjs' else int(gammalt_pris * (1 - procent / 100))
+            nytt_pris = int(round(gammalt_pris * (1 + procent / 100))) if riktning == 'höjs' else int(round(gammalt_pris * (1 - procent / 100)))
             return {"info_box_green": f"Efter att priset på en vara {riktning} med {procent} % kostar den nu {nytt_pris} kr.", "fraga": "Vad kostade varan från början? (Svara i hela kronor)", "ratt_svar": gammalt_pris, "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
         elif typ == 'upprepad_procent':
             p1, p2 = random.choice([10, 20, 25, 30]), random.choice([10, 20, 25, 30])
