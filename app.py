@@ -93,7 +93,7 @@ def ratta_svar(u, input_svar):
                 
                 elif u['svarstyp'] in ['float', 'procent']:
                     svar_clean = input_svar.strip().replace(",", ".").replace(" ", "").replace("%", "")
-                    return 'ratt' if abs(float(svar_clean) - u['ratt_svar']) < 0.001 else 'fel'
+                    return 'ratt' if abs(float(svar_clean) - float(u['ratt_svar'])) < 0.001 else 'fel'
                 
                 elif u['svarstyp'] == 'fraction':
                     svar_clean = input_svar.strip().replace(" ", "").replace(",", ".")
@@ -107,12 +107,14 @@ def ratta_svar(u, input_svar):
                         return 'ratt' if svar_clean == str(u['ratt_svar']) else 'fel'
                 
                 elif u['svarstyp'] == 'string_math':
-                    svar_clean = input_svar.replace(",", ".") # Ifall elev använder decimalkomma
+                    # Ersätt vanliga knasigheter som komma och mellanslag
+                    svar_clean = input_svar.replace(",", ".").replace(" ", "").replace("^", "**")
                     try:
-                        # Använd sympy med "implicit_multiplication" för att godkänna 2x istället för bara 2*x
+                        # Använd sympy med "implicit_multiplication"
                         transformations = (standard_transformations + (implicit_multiplication_application,))
                         expr_elev = parse_expr(svar_clean, transformations=transformations)
-                        expr_facit = parse_expr(str(u['ratt_svar']), transformations=transformations)
+                        ratt_svar_str = str(u['ratt_svar']).replace(" ", "").replace("^", "**")
+                        expr_facit = parse_expr(ratt_svar_str, transformations=transformations)
                         
                         # Förenkla skillnaden. Är den noll är uttrycken exakt likvärdiga.
                         if sp.simplify(expr_elev - expr_facit) == 0:
@@ -120,7 +122,7 @@ def ratta_svar(u, input_svar):
                         else:
                             return 'fel'
                     except Exception:
-                        return 'format' # Sympy kastar fel om uttrycket är ogiltigt/obegripligt text
+                        return 'format'
                 
                 elif u['svarstyp'] == 'kalkyl_formel':
                     svar_clean = input_svar.strip().replace(" ", "").lower()
@@ -633,7 +635,7 @@ def skapa_alg_uttryck_uppgift(niva):
                         break
                         
                 VL = f"{A}({formatera_polynom([(B, 'x'), (C, '')])})"
-                HL = f"{D}( \\dots )"
+                HL = f"{D}( \dots )"
                 alg_uttryck_str = f"{VL} = {HL}"
                 svar_ratt = formatera_polynom([(E, 'x'), (F, '')])
                 
@@ -1013,11 +1015,182 @@ def skapa_stat_uppgift(niva=1):
         random.shuffle(alts)
         return {"info_box_purple": f"En undersökning visar att {resultat} % av eleverna på en stor skola vill ha längre raster. Undersökningen har en felmarginal på ±{fm} procentenheter vid 95 % konfidensgrad.", "fraga": "Vilket av följande påståenden är FALSKT (felaktigt)?", "ratt_svar": ratt, "alternativ": alts, "input_typ": "radio", "svarstyp": "string"}
 
+def skapa_problemlosning_uppgift(niva):
+    namn_lista = ["Charlie", "Kim", "Ali", "Maja", "Sami", "Robin", "Nilo", "Alex", "Noa", "Elsa", "Viktor"]
+    
+    if niva == 1:
+        typ = random.choice(['hyra_fordon', 'vardeminskning', 'pannkakor_proportion', 'valuta_omvandling'])
+        
+        if typ == 'hyra_fordon':
+            namn = random.choice(namn_lista)
+            fordon = random.choice(["bil", "minibuss", "skåpbil", "husbil"])
+            start = random.randint(3, 10) * 100
+            mil_kost = random.randint(2, 6) * 10
+            
+            ratt = f"y = {mil_kost}x + {start}"
+            alt1 = f"y = {start}x + {mil_kost}"
+            alt2 = f"y = {mil_kost} + x + {start}"
+            alt3 = f"y = {mil_kost}x + {start}x"
+            
+            alts = [f"${ratt}$", f"${alt1}$", f"${alt2}$", f"${alt3}$"]
+            random.shuffle(alts)
+            
+            info = f"{namn} ska hyra en {fordon}. Startavgiften är {start} kr. Dessutom kostar det {mil_kost} kr för varje mil hen kör."
+            return {
+                "info_box_blue": info,
+                "fraga": "Vilken formel beskriver den totala kostnaden y kr för x mil som körs?",
+                "ratt_svar": f"${ratt}$",
+                "alternativ": alts,
+                "input_typ": "radio",
+                "svarstyp": "string"
+            }
+            
+        elif typ == 'vardeminskning':
+            fordon = random.choice(["bil", "båt", "husvagn", "traktor", "motorcykel"])
+            pris = random.randint(15, 60) * 10000
+            procent = random.randint(10, 25)
+            ff = round((100 - procent) / 100.0, 2)
+            
+            info = f"En {fordon} kostar {formatera_kr(pris)} kr i inköpspris. Värdet minskar med {procent} % per år."
+            
+            return {
+                "info_box_blue": info,
+                "fraga": "Skriv ett uttryck som beskriver värdet i kronor x år efter inköp.",
+                "ratt_svar": f"{pris}*{ff}**x",
+                "input_typ": "text",
+                "svarstyp": "string_math",
+                "undertext": "Ange bara uttrycket med x som variabel och ^ för upphöjt till (t.ex. 500*0,8^x)."
+            }
+            
+        elif typ == 'pannkakor_proportion':
+            personer_start = random.randint(2, 5) * 2
+            mjol = random.randint(150, 400)
+            personer_mal = random.randint(15, 30)
+            
+            svar = int((mjol / personer_start) * personer_mal)
+            
+            info = f"Ett recept för {personer_start} portioner kräver {mjol} gram mjöl."
+            return {
+                "info_box_blue": info,
+                "fraga": f"Hur mycket mjöl krävs om man ska laga {personer_mal} portioner?",
+                "ratt_svar": svar,
+                "input_typ": "text",
+                "svarstyp": "int",
+                "suffix": "gram"
+            }
+            
+        elif typ == 'valuta_omvandling':
+            valuta = random.choice(["USD", "EUR", "GBP"])
+            kurs = round(random.uniform(8.5, 12.5), 2)
+            sek_belopp = random.choice([2000, 3000, 5000, 8000])
+            svar = int(sek_belopp / kurs)
+            
+            info = f"Aktuell valutakurs är att 1 {valuta} kostar {str(kurs).replace('.', ',')} SEK."
+            return {
+                "info_box_blue": info,
+                "fraga": f"Du växlar {sek_belopp} SEK. Hur många Hela {valuta} får du? (Avrunda nedåt till närmaste heltal)",
+                "ratt_svar": svar,
+                "input_typ": "text",
+                "svarstyp": "int",
+                "suffix": valuta
+            }
+
+    else:
+        typ = random.choice(['pizza_brak', 'algebraisk_forstaelse', 'monster_stickor', 'tolka_uttryck_rabatt'])
+        
+        if typ == 'pizza_brak':
+            namn1, namn2 = random.sample(namn_lista, 2)
+            A_den = random.choice([3, 4, 5])
+            B_den = random.choice([2, 3])
+            
+            kvar_1 = Fraction(1, 1) - Fraction(1, A_den)
+            ata_2 = Fraction(1, B_den) * kvar_1
+            kvar_total = kvar_1 - ata_2
+            
+            info = f"{namn1} och {namn2} köper en stor pizza tillsammans. {namn1} äter upp 1/{A_den} av hela pizzan. Senare äter {namn2} upp 1/{B_den} av det som är kvar."
+            return {
+                "info_box_blue": info,
+                "fraga": "Hur stor andel av HELA pizzan finns sedan kvar?",
+                "ratt_svar": kvar_total,
+                "input_typ": "text",
+                "svarstyp": "fraction",
+                "undertext": "Svara i bråkform med ett snedstreck (t.ex. 3/8)."
+            }
+            
+        elif typ == 'algebraisk_forstaelse':
+            namn1, namn2 = random.sample(namn_lista, 2)
+            proc_okning = random.choice([15, 20, 25, 30, 40])
+            dec_okning = round(proc_okning / 100.0, 2)
+            
+            info = f"{namn1} väger $a$ kg och {namn2} väger $b$ kg. Du vet att följande samband gäller:\n\n$a + {str(dec_okning).replace('.', ',')}a = b$"
+            
+            ratt1 = f"{namn2} väger {proc_okning} % mer än {namn1}"
+            ratt2 = f"{namn2}s vikt är {str(round(1+dec_okning, 2)).replace('.', ',')} gånger {namn1}s vikt"
+            
+            fel1 = f"{namn1} väger {proc_okning} % mer än {namn2}"
+            fel2 = f"{namn1} väger {str(dec_okning).replace('.', ',')} kg mer än {namn2}"
+            fel3 = f"{namn2} väger {str(dec_okning).replace('.', ',')} kg mer än {namn1}"
+            fel4 = f"{namn1}s vikt är {str(round(1+dec_okning, 2)).replace('.', ',')} gånger {namn2}s vikt"
+            
+            valt_ratt = random.choice([ratt1, ratt2])
+            alts_visning = random.sample([valt_ratt, fel1, random.choice([fel2, fel3]), fel4], 4)
+            
+            return {
+                "info_box_blue": info,
+                "fraga": "Vilket av följande alternativ stämmer alltid?",
+                "ratt_svar": valt_ratt,
+                "alternativ": alts_visning,
+                "input_typ": "radio",
+                "svarstyp": "string"
+            }
+            
+        elif typ == 'monster_stickor':
+            k = random.randint(2, 5)
+            m = random.randint(1, 4)
+            f1, f2, f3 = k*1 + m, k*2 + m, k*3 + m
+            
+            info = f"Ett mönster byggs med tändstickor.\n\n* Figur 1 består av {f1} stickor.\n* Figur 2 består av {f2} stickor.\n* Figur 3 består av {f3} stickor."
+            svar_ratt = f"{k}*n + {m}"
+            
+            return {
+                "info_box_blue": info,
+                "fraga": "Skriv ett generellt algebraiskt uttryck för antalet stickor i figur n.",
+                "ratt_svar": svar_ratt,
+                "input_typ": "text",
+                "svarstyp": "string_math",
+                "undertext": "Använd n som variabel. Svara med ett uttryck, till exempel 6n + 2."
+            }
+            
+        elif typ == 'tolka_uttryck_rabatt':
+            engangs = random.randint(5, 8) * 10 - 1
+            klipp = engangs * 10 - random.randint(10, 20) * 10
+            
+            info = f"I simhallen kostar en engångsentré {engangs} kr. Man kan också köpa ett rabattkort för 10 gånger som kostar {klipp} kr.\n\nEn person slår in följande på sin miniräknare:\n$\\frac{{10 \\cdot {engangs} - {klipp}}}{{10}}$"
+            
+            ratt = "Hur mycket man i snitt sparar per badtillfälle med rabattkortet."
+            alts = [
+                ratt,
+                "Vad ett bad kostar per gång med rabattkortet.",
+                "Hur många gånger man måste bada för att tjäna in rabattkortet.",
+                "Hur mycket rabatt man får totalt för alla 10 gånger."
+            ]
+            random.shuffle(alts)
+            
+            return {
+                "info_box_blue": info,
+                "fraga": "Förklara vad personen har beräknat genom att välja rätt svarsalternativ.",
+                "ratt_svar": ratt,
+                "alternativ": alts,
+                "input_typ": "radio",
+                "svarstyp": "string"
+            }
+
 # ==========================================
 # 2. LOGIK FÖR ATT GENERERA NY UPPGIFT
 # ==========================================
 
 KATEGORIER = {
+    "Problemlösning": skapa_problemlosning_uppgift,
     "Funktioner: Grafisk lösning": skapa_graf_uppgift,
     "Funktioner: Algebraisk lösning": skapa_alg_func_uppgift,
     "Ekvationer": skapa_ekv_uppgift,
@@ -1029,6 +1202,7 @@ KATEGORIER = {
 }
 
 TITLAR = {
+    "Problemlösning": "Problemlösning & Lästal",
     "Funktioner: Grafisk lösning": "Grafisk avläsning av funktioner",
     "Funktioner: Algebraisk lösning": "Algebraisk lösning av funktioner",
     "Ekvationer": "Lös ekvationerna",
@@ -1139,6 +1313,7 @@ with col_hoger:
     if u['visnings_kategori'] == "Förändringsfaktor": q_color = "#28a745"
     elif u['visnings_kategori'] == "Sannolikhetslära": q_color = "#e83e8c"
     elif u['visnings_kategori'] == "Statistik": q_color = "#8B008B"
+    elif u['visnings_kategori'] == "Problemlösning": q_color = "#d35400"
     
     if u['visnings_kategori'] == "Ekvationer":
         st.markdown("<div style='font-size: 32px; font-weight: bold; color: transparent; margin-bottom: 25px;'>&nbsp;</div>", unsafe_allow_html=True) 
@@ -1187,9 +1362,11 @@ with col_hoger:
                 elif u['svarstyp'] == 'fraction':
                     ratt_txt = f"{u['ratt_svar'].numerator}/{u['ratt_svar'].denominator}"
                 elif u['svarstyp'] in ['float', 'procent']:
-                    ratt_txt = f"{u['ratt_svar']:g}".replace('.', ',')
+                    ratt_txt = f"{float(u['ratt_svar']):g}".replace('.', ',')
                 elif u['svarstyp'] == 'kalkyl_formel':
                     ratt_txt = u['ratt_svar_visning']
+                elif u['svarstyp'] == 'string_math':
+                    ratt_txt = str(u['ratt_svar']).replace("**", "^").replace("*", " \cdot ")
                 else:
                     ratt_txt = str(u['ratt_svar'])
                     
