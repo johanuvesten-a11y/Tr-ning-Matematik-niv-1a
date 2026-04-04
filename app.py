@@ -1042,7 +1042,8 @@ def skapa_problemlosning_uppgift(niva):
                 "ratt_svar": f"${ratt}$",
                 "alternativ": alts,
                 "input_typ": "radio",
-                "svarstyp": "string"
+                "svarstyp": "string",
+                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
             }
             
         elif typ == 'vardeminskning':
@@ -1059,14 +1060,20 @@ def skapa_problemlosning_uppgift(niva):
                 "ratt_svar": f"{pris}*{ff}**x",
                 "input_typ": "text",
                 "svarstyp": "string_math",
-                "undertext": "Ange bara uttrycket med x som variabel och ^ för upphöjt till (t.ex. 500*0,8^x)."
+                "undertext": "Ange uttrycket med x som variabel och ^ för upphöjt till (t.ex. 500*0,8^x).\nLös uppgiften med huvudräkning (utan miniräknare)."
             }
             
         elif typ == 'pannkakor_proportion':
-            personer_start = random.randint(2, 5) * 2
-            mjol = random.randint(150, 400)
-            personer_mal = random.randint(15, 30)
-            
+            # Anpassat för enkel huvudräkning 
+            kombinationer = [
+                (4, 200, 12), # 3 gånger så mycket
+                (6, 300, 18), # 3 gånger så mycket
+                (4, 150, 20), # 5 gånger så mycket
+                (5, 250, 15), # 3 gånger så mycket
+                (2, 150, 10), # 5 gånger så mycket
+                (4, 250, 8)   # 2 gånger så mycket
+            ]
+            personer_start, mjol, personer_mal = random.choice(kombinationer)
             svar = int((mjol / personer_start) * personer_mal)
             
             info = f"Ett recept för {personer_start} portioner kräver {mjol} gram mjöl."
@@ -1076,23 +1083,31 @@ def skapa_problemlosning_uppgift(niva):
                 "ratt_svar": svar,
                 "input_typ": "text",
                 "svarstyp": "int",
-                "suffix": "gram"
+                "suffix": "gram",
+                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
             }
             
         elif typ == 'valuta_omvandling':
-            valuta = random.choice(["USD", "EUR", "GBP"])
-            kurs = round(random.uniform(8.5, 12.5), 2)
-            sek_belopp = random.choice([2000, 3000, 5000, 8000])
+            # Anpassat för enkel huvudräkning
+            valuta_val = random.choice([
+                ("USD", 10, random.choice([100, 250, 500, 1000])),
+                ("EUR", 11, random.choice([110, 220, 330, 550])),
+                ("GBP", 12, random.choice([120, 240, 600, 1200])),
+                ("NOK", 1.1, random.choice([110, 220, 550, 1100]))
+            ])
+            valuta, kurs, sek_belopp = valuta_val
+            kurs_str = "1,10" if kurs == 1.1 else str(kurs)
             svar = int(sek_belopp / kurs)
             
-            info = f"Aktuell valutakurs är att 1 {valuta} kostar {str(kurs).replace('.', ',')} SEK."
+            info = f"Aktuell valutakurs är att 1 {valuta} kostar {kurs_str} SEK."
             return {
                 "info_box_blue": info,
-                "fraga": f"Du växlar {sek_belopp} SEK. Hur många Hela {valuta} får du? (Avrunda nedåt till närmaste heltal)",
+                "fraga": f"Du växlar {sek_belopp} SEK. Hur många {valuta} får du?",
                 "ratt_svar": svar,
                 "input_typ": "text",
                 "svarstyp": "int",
-                "suffix": valuta
+                "suffix": valuta,
+                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
             }
 
     else:
@@ -1114,7 +1129,7 @@ def skapa_problemlosning_uppgift(niva):
                 "ratt_svar": kvar_total,
                 "input_typ": "text",
                 "svarstyp": "fraction",
-                "undertext": "Svara i bråkform med ett snedstreck (t.ex. 3/8)."
+                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare).\nSvara i bråkform med ett snedstreck (t.ex. 3/8)."
             }
             
         elif typ == 'algebraisk_forstaelse':
@@ -1122,7 +1137,8 @@ def skapa_problemlosning_uppgift(niva):
             proc_okning = random.choice([15, 20, 25, 30, 40])
             dec_okning = round(proc_okning / 100.0, 2)
             
-            info = f"{namn1} väger $a$ kg och {namn2} väger $b$ kg. Du vet att följande samband gäller:\n\n$a + {str(dec_okning).replace('.', ',')}a = b$"
+            # Använder html (<i> och <b>) för att det garanterat ska bli snyggt och läsbart inuti den blå lådan
+            info = f"{namn1} väger <i>a</i> kg och {namn2} väger <i>b</i> kg. Du vet att följande samband gäller:<br><br><b>a + {str(dec_okning).replace('.', ',')}a = b</b>"
             
             ratt1 = f"{namn2} väger {proc_okning} % mer än {namn1}"
             ratt2 = f"{namn2}s vikt är {str(round(1+dec_okning, 2)).replace('.', ',')} gånger {namn1}s vikt"
@@ -1141,7 +1157,8 @@ def skapa_problemlosning_uppgift(niva):
                 "ratt_svar": valt_ratt,
                 "alternativ": alts_visning,
                 "input_typ": "radio",
-                "svarstyp": "string"
+                "svarstyp": "string",
+                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
             }
             
         elif typ == 'monster_stickor':
@@ -1149,7 +1166,7 @@ def skapa_problemlosning_uppgift(niva):
             m = random.randint(1, 4)
             f1, f2, f3 = k*1 + m, k*2 + m, k*3 + m
             
-            info = f"Ett mönster byggs med tändstickor.\n\n* Figur 1 består av {f1} stickor.\n* Figur 2 består av {f2} stickor.\n* Figur 3 består av {f3} stickor."
+            info = f"Ett mönster byggs med tändstickor.<br><br>&bull; Figur 1 består av {f1} stickor.<br>&bull; Figur 2 består av {f2} stickor.<br>&bull; Figur 3 består av {f3} stickor."
             svar_ratt = f"{k}*n + {m}"
             
             return {
@@ -1158,14 +1175,14 @@ def skapa_problemlosning_uppgift(niva):
                 "ratt_svar": svar_ratt,
                 "input_typ": "text",
                 "svarstyp": "string_math",
-                "undertext": "Använd n som variabel. Svara med ett uttryck, till exempel 6n + 2."
+                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare).\nAnvänd n som variabel. Svara med ett uttryck, till exempel 6n + 2."
             }
             
         elif typ == 'tolka_uttryck_rabatt':
             engangs = random.randint(5, 8) * 10 - 1
             klipp = engangs * 10 - random.randint(10, 20) * 10
             
-            info = f"I simhallen kostar en engångsentré {engangs} kr. Man kan också köpa ett rabattkort för 10 gånger som kostar {klipp} kr.\n\nEn person slår in följande på sin miniräknare:\n$\\frac{{10 \\cdot {engangs} - {klipp}}}{{10}}$"
+            info = f"I simhallen kostar en engångsentré {engangs} kr. Man kan också köpa ett rabattkort för 10 gånger som kostar {klipp} kr.<br><br>En person beräknar följande:<br><b>(10 &middot; {engangs} - {klipp}) / 10</b>"
             
             ratt = "Hur mycket man i snitt sparar per badtillfälle med rabattkortet."
             alts = [
@@ -1182,7 +1199,8 @@ def skapa_problemlosning_uppgift(niva):
                 "ratt_svar": ratt,
                 "alternativ": alts,
                 "input_typ": "radio",
-                "svarstyp": "string"
+                "svarstyp": "string",
+                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
             }
 
 # ==========================================
@@ -1190,7 +1208,6 @@ def skapa_problemlosning_uppgift(niva):
 # ==========================================
 
 KATEGORIER = {
-    "Problemlösning": skapa_problemlosning_uppgift,
     "Funktioner: Grafisk lösning": skapa_graf_uppgift,
     "Funktioner: Algebraisk lösning": skapa_alg_func_uppgift,
     "Ekvationer": skapa_ekv_uppgift,
@@ -1198,11 +1215,11 @@ KATEGORIER = {
     "Lån och ränta": skapa_lan_uppgift,
     "Förändringsfaktor": skapa_ff_uppgift,
     "Sannolikhetslära": skapa_slump_uppgift,
-    "Statistik": skapa_stat_uppgift
+    "Statistik": skapa_stat_uppgift,
+    "Problemlösning": skapa_problemlosning_uppgift
 }
 
 TITLAR = {
-    "Problemlösning": "Problemlösning & Lästal",
     "Funktioner: Grafisk lösning": "Grafisk avläsning av funktioner",
     "Funktioner: Algebraisk lösning": "Algebraisk lösning av funktioner",
     "Ekvationer": "Lös ekvationerna",
@@ -1211,6 +1228,7 @@ TITLAR = {
     "Förändringsfaktor": "Träna på Förändringsfaktor",
     "Sannolikhetslära": "Träna på Sannolikhetslära",
     "Statistik": "Tolka Statistik och Diagram",
+    "Problemlösning": "Problemlösning & Lästal",
     "Blandat (Slumpas)": "Blandade uppgifter - Träna på allt!"
 }
 
@@ -1307,7 +1325,7 @@ with col_vanster:
 with col_hoger:
     st.subheader("Uppgift")
     if 'undertext' in u:
-        st.markdown(f"<p style='font-size: 14px; font-style: italic; color: #666; margin-bottom: 5px;'>{u['undertext']}</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='font-size: 14px; font-style: italic; color: #666; margin-bottom: 5px;'>{u['undertext'].replace(chr(10), '<br>')}</p>", unsafe_allow_html=True)
         
     q_color = "#0056b3"
     if u['visnings_kategori'] == "Förändringsfaktor": q_color = "#28a745"
