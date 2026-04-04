@@ -4,6 +4,8 @@ import random
 import math
 import plotly.graph_objects as go
 from fractions import Fraction
+import sympy as sp
+from sympy.parsing.sympy_parser import parse_expr, standard_transformations, implicit_multiplication_application
 
 # --- Ställ in sidans layout till bred ---
 st.set_page_config(layout="wide", page_title="Matematikträning")
@@ -26,6 +28,119 @@ input[type="text"] {
 }
 </style>
 """, unsafe_allow_html=True)
+
+# ==========================================
+# 0. HJÄLPFUNKTIONER FÖR FORMATERING & RÄTTNING
+# ==========================================
+
+def formatera_polynom(termer):
+    """
+    Hjälpfunktion för att formatera algebraiska termer till snygg text (t.ex. tar bort 1x, hanterar minus).
+    termer: En lista med tupler (koefficient, 'variabelsträng'), t.ex. [(3, 'x^2'), (-1, 'x'), (5, '')]
+    """
+    res = ""
+    for koeff, var in termer:
+        if koeff == 0:
+            continue
+        
+        # Formatera koefficienten (siffran)
+        if var == "":
+            term_str = str(abs(koeff))
+        else:
+            if abs(koeff) == 1:
+                term_str = var
+            else:
+                term_str = f"{abs(koeff)}{var}"
+        
+        # Hantera tecken och bygga ihop strängen
+        if res == "":
+            if koeff < 0:
+                res += f"-{term_str}"
+            else:
+                res += term_str
+        else:
+            if koeff < 0:
+                res += f" - {term_str}"
+            else:
+                res += f" + {term_str}"
+                
+    return res if res != "" else "0"
+
+def formatera_kr(b): 
+    return f"{int(round(b)):,}".replace(",", " ")
+
+def ratta_svar(u, input_svar):
+    """
+    Centraliserad logik för att rätta alla uppgiftstyper.
+    Returnerar status som en sträng: 'ratt', 'fel', 'format', 'format_ratio', 'format_saknar_likamed', 'tom'
+    """
+    if u['input_typ'] == 'flera_text':
+        if all(s.strip() != "" for s in input_svar):
+            try:
+                anv_svar_float = sorted([round(float(s.strip().replace(',', '.')), 4) for s in input_svar])
+                return 'ratt' if anv_svar_float == u['ratt_svar'] else 'fel'
+            except ValueError: 
+                return 'format'
+        else: 
+            return 'tom'
+            
+    elif u['input_typ'] == 'text':
+        if input_svar.strip() != "":
+            try:
+                if u['svarstyp'] == 'int':
+                    svar_clean = input_svar.strip().replace(" ", "")
+                    return 'ratt' if int(svar_clean) == u['ratt_svar'] else 'fel'
+                
+                elif u['svarstyp'] in ['float', 'procent']:
+                    svar_clean = input_svar.strip().replace(",", ".").replace(" ", "").replace("%", "")
+                    return 'ratt' if abs(float(svar_clean) - u['ratt_svar']) < 0.001 else 'fel'
+                
+                elif u['svarstyp'] == 'fraction':
+                    svar_clean = input_svar.strip().replace(" ", "").replace(",", ".")
+                    return 'ratt' if Fraction(svar_clean) == u['ratt_svar'] else 'fel'
+                
+                elif u['svarstyp'] == 'ratio':
+                    svar_clean = input_svar.strip().replace(" ", "")
+                    if ":" not in svar_clean:
+                        return 'format_ratio'
+                    else:
+                        return 'ratt' if svar_clean == str(u['ratt_svar']) else 'fel'
+                
+                elif u['svarstyp'] == 'string_math':
+                    svar_clean = input_svar.replace(",", ".") # Ifall elev använder decimalkomma
+                    try:
+                        # Använd sympy med "implicit_multiplication" för att godkänna 2x istället för bara 2*x
+                        transformations = (standard_transformations + (implicit_multiplication_application,))
+                        expr_elev = parse_expr(svar_clean, transformations=transformations)
+                        expr_facit = parse_expr(str(u['ratt_svar']), transformations=transformations)
+                        
+                        # Förenkla skillnaden. Är den noll är uttrycken exakt likvärdiga.
+                        if sp.simplify(expr_elev - expr_facit) == 0:
+                            return 'ratt'
+                        else:
+                            return 'fel'
+                    except Exception:
+                        return 'format' # Sympy kastar fel om uttrycket är ogiltigt/obegripligt text
+                
+                elif u['svarstyp'] == 'kalkyl_formel':
+                    svar_clean = input_svar.strip().replace(" ", "").lower()
+                    if not svar_clean.startswith("="):
+                        return 'format_saknar_likamed'
+                    else:
+                        godkanda = [s.lower() for s in u.get('ratt_svar_lista', [])]
+                        return 'ratt' if svar_clean in godkanda else 'fel'
+            except ValueError: 
+                return 'format'
+        else: 
+            return 'tom'
+            
+    elif u['input_typ'] in ['radio', 'selectbox']:
+        if input_svar is not None and input_svar != 'Välj svar...':
+            return 'ratt' if str(input_svar).strip() == str(u['ratt_svar']).strip() else 'fel'
+        else: 
+            return 'tom'
+    
+    return 'fel'
 
 # ==========================================
 # 1. MATEMATIKGENERATORER (Returnerar data)
@@ -211,16 +326,12 @@ def skapa_alg_func_uppgift(niva):
                     k = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
                     m = random.randint(-10, 10)
                     svar = k*a + m
-                    k_str = "x" if k == 1 else ("-x" if k == -1 else f"{k}x")
-                    m_str = f" + {m}" if m > 0 else (f" - {-m}" if m < 0 else "")
-                    f_str = f"{k_str}{m_str}"
+                    f_str = formatera_polynom([(k, 'x'), (m, '')])
                 elif func_type == 'kvadratisk':
                     k = random.choice([-3, -2, -1, 1, 2, 3])
                     m = random.randint(-10, 10)
                     svar = k*(a**2) + m
-                    k_str = "x^2" if k == 1 else ("-x^2" if k == -1 else f"{k}x^2")
-                    m_str = f" + {m}" if m > 0 else (f" - {-m}" if m < 0 else "")
-                    f_str = f"{k_str}{m_str}"
+                    f_str = formatera_polynom([(k, 'x^2'), (m, '')])
                 else:
                     bas = random.choice([2, 3])
                     a = random.randint(0, 4) 
@@ -238,11 +349,10 @@ def skapa_alg_func_uppgift(niva):
                 k = random.choice([-3, -2, -1, 1, 2, 3])
                 m = random.randint(-15, 15)
                 C = k*(x**2) + m
-                k_str = "x^2" if k == 1 else ("-x^2" if k == -1 else f"{k}x^2")
-                m_str = f" + {m}" if m > 0 else (f" - {-m}" if m < 0 else "")
+                f_str = formatera_polynom([(k, 'x^2'), (m, '')])
                 
                 if abs(C) <= 300:
-                    return {"info_text": "Givet funktionen:", "latex_text": f"f(x) = {k_str}{m_str}", "fraga": f"Bestäm det positiva värdet på x om f(x) = {C}", "ratt_svar": x, "input_typ": "text", "svarstyp": "int", "undertext": "Lös gärna på papper och skriv in ditt svar."}
+                    return {"info_text": "Givet funktionen:", "latex_text": f"f(x) = {f_str}", "fraga": f"Bestäm det positiva värdet på x om f(x) = {C}", "ratt_svar": x, "input_typ": "text", "svarstyp": "int", "undertext": "Lös gärna på papper och skriv in ditt svar."}
                     
             else: # Linjär
                 b = random.choice([1, 1, 2, 3, 4]) 
@@ -252,20 +362,19 @@ def skapa_alg_func_uppgift(niva):
                 x = random.randint(-20, 20) * b 
                 if b == 1:
                     C = a_coeff*x + m
-                    term_x = "x" if a_coeff == 1 else ("-x" if a_coeff == -1 else f"{a_coeff}x")
+                    f_str = formatera_polynom([(a_coeff, 'x'), (m, '')])
                 else:
                     term_x = f"\\frac{{x}}{{{b}}}" if a_coeff == 1 else (f"-\\frac{{x}}{{{b}}}" if a_coeff == -1 else f"\\frac{{{a_coeff}x}}{{{b}}}")
                     C = int(round((a_coeff*x)/b + m))
-                m_str = f" + {m}" if m > 0 else (f" - {-m}" if m < 0 else "")
+                    m_str = f" + {m}" if m > 0 else (f" - {-m}" if m < 0 else "")
+                    f_str = f"{term_x}{m_str}"
                 
                 if abs(x) <= 100 and abs(C) <= 100:
-                    return {"info_text": "Givet funktionen:", "latex_text": f"f(x) = {term_x}{m_str}", "fraga": f"Bestäm x om f(x) = {C}", "ratt_svar": x, "input_typ": "text", "svarstyp": "int", "undertext": "Lös gärna på papper och skriv in ditt svar."}
+                    return {"info_text": "Givet funktionen:", "latex_text": f"f(x) = {f_str}", "fraga": f"Bestäm x om f(x) = {C}", "ratt_svar": x, "input_typ": "text", "svarstyp": "int", "undertext": "Lös gärna på papper och skriv in ditt svar."}
                     
         else: # Niva 2 
             def formatera_linjar(k, m):
-                k_str = "x" if k == 1 else ("-x" if k == -1 else f"{k}x")
-                if m == 0: return k_str
-                return f"{k_str} + {m}" if m > 0 else f"{k_str} - {-m}"
+                return formatera_polynom([(k, 'x'), (m, '')])
 
             typ = random.choice(['f_f_a', 'f_f_x_C', 'f_g_a', 'f_likamed_g'])
             if typ in ['f_f_a', 'f_f_x_C']:
@@ -300,11 +409,7 @@ def skapa_alg_func_uppgift(niva):
 
 def skapa_ekv_uppgift(niva):
     def formatera_sida(k, m):
-        k_str = "x" if k == 1 else ("-x" if k == -1 else (f"{k}x" if k != 0 else ""))
-        if k == 0: return str(m)
-        if m > 0: return f"{k_str} + {m}"
-        elif m < 0: return f"{k_str} - {-m}"
-        else: return k_str
+        return formatera_polynom([(k, 'x'), (m, '')])
 
     while True:
         x = random.randint(-10, 10)
@@ -402,20 +507,7 @@ def skapa_ekv_uppgift(niva):
 
 def skapa_alg_uttryck_uppgift(niva):
     def formatera_svar(k2, k, m):
-        res = ""
-        if k2 == 1: res += "x^2"
-        elif k2 == -1: res += "-x^2"
-        elif k2 != 0: res += f"{k2}x^2"
-        if k != 0:
-            if k == 1: res += " + x" if res else "x"
-            elif k == -1: res += " - x" if res else "-x"
-            elif k > 0: res += f" + {k}x" if res else f"{k}x"
-            elif k < 0: res += f" - {-k}x" if res else f"{k}x"
-        if m != 0:
-            if m > 0: res += f" + {m}" if res else f"{m}"
-            elif m < 0: res += f" - {-m}" if res else f"{m}"
-        if res == "": return "0"
-        return res
+        return formatera_polynom([(k2, 'x^2'), (k, 'x'), (m, '')])
 
     while True:
         if niva == 1:
@@ -540,15 +632,10 @@ def skapa_alg_uttryck_uppgift(niva):
                         C = (D * F) // A
                         break
                         
-                B_str = "x" if B == 1 else ("-x" if B == -1 else f"{B}x")
-                C_str = f"+ {C}" if C > 0 else f"- {-C}"
-                VL = f"{A}({B_str} {C_str})"
+                VL = f"{A}({formatera_polynom([(B, 'x'), (C, '')])})"
                 HL = f"{D}( \\dots )"
                 alg_uttryck_str = f"{VL} = {HL}"
-                
-                E_str = "x" if E == 1 else ("-x" if E == -1 else f"{E}x")
-                F_str = f"+ {F}" if F > 0 else f"- {-F}"
-                svar_ratt = f"{E_str} {F_str}"
+                svar_ratt = formatera_polynom([(E, 'x'), (F, '')])
                 
                 return {
                     "info_text": "Skriv ett uttryck i parentesen så att likheten gäller:",
@@ -621,7 +708,6 @@ def skapa_alg_uttryck_uppgift(niva):
     }
 
 def skapa_lan_uppgift(niva):
-    def formatera_kr(b): return f"{int(round(b)):,}".replace(",", " ")
     
     if niva == 1:
         typ = random.choice(['arsranta', 'manadsranta', 'rak_amortering', 'kalkylblad_varde', 'kalkylblad_formel'])
@@ -772,12 +858,9 @@ def skapa_ff_uppgift(niva):
             return {"info_box_green": info, "fraga": "Vad kostar varan det senare året? (Svara i kr)", "ratt_svar": P1, "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
             
         elif typ == 'index_procentuell_forandring':
-            # Slumpar ökningen helt fritt mellan 5% och 150% (i steg om 5)
             ans = random.choice(range(5, 155, 5)) 
-            # Vi väljer jämna tjugotal för det första indexet, då garanterar vi att index 2 blir ett heltal även om ökningen är t.ex. 15% eller 25%
             i1 = random.randint(5, 15) * 20 
             i2 = int(round(i1 * (1 + ans / 100.0)))
-            
             info = f"Index för en viss vara var {i1} år 1 och {i2} år 2."
             return {"info_box_green": info, "fraga": "Med hur många procent ökade priset från år 1 till år 2?", "ratt_svar": ans, "input_typ": "text", "svarstyp": "procent"}
             
@@ -1062,122 +1145,81 @@ with col_hoger:
     else:
         st.markdown(f"<div style='font-size: 26px; font-weight: bold; color: {q_color}; margin-bottom: 25px;'>{u['fraga']}</div>", unsafe_allow_html=True)
     
-    input_svar = None
     uid = st.session_state.uppgift_id
-    if u['input_typ'] == 'flera_text':
-        input_svar = []
-        for i in range(len(u['ratt_svar'])):
-            etikett = f"Svar {i+1}:" if len(u['ratt_svar']) > 1 else "Ditt svar:"
-            input_svar.append(st.text_input(etikett, key=f"input_{uid}_{i}"))
-    elif u['input_typ'] == 'text':
-        input_svar = st.text_input("Ditt svar:", key=f"input_text_{uid}")
-    elif u['input_typ'] == 'radio':
-        input_svar = st.radio("Alternativ:", u['alternativ'], index=None, label_visibility="collapsed", key=f"input_radio_{uid}")
-    elif u['input_typ'] == 'selectbox':
-        input_svar = st.selectbox("Välj ett alternativ:", u['alternativ'], label_visibility="collapsed", key=f"input_select_{uid}")
-        
-    st.write("")
-    
-    k1, k2 = st.columns(2)
-    with k1:
-        if st.button("Rätta svar", type="primary", use_container_width=True):
-            st.session_state.rattat = True
-            status = 'fel'
-            
-            if u['input_typ'] == 'flera_text':
-                if all(s.strip() != "" for s in input_svar):
-                    try:
-                        anv_svar_float = sorted([round(float(s.strip().replace(',', '.')), 4) for s in input_svar])
-                        status = 'ratt' if anv_svar_float == u['ratt_svar'] else 'fel'
-                    except ValueError: status = 'format'
-                else: status = 'tom'
-                    
-            elif u['input_typ'] == 'text':
-                if input_svar.strip() != "":
-                    try:
-                        if u['svarstyp'] == 'int':
-                            svar_clean = input_svar.strip().replace(" ", "")
-                            status = 'ratt' if int(svar_clean) == u['ratt_svar'] else 'fel'
-                        elif u['svarstyp'] in ['float', 'procent']:
-                            svar_clean = input_svar.strip().replace(",", ".").replace(" ", "").replace("%", "")
-                            status = 'ratt' if abs(float(svar_clean) - u['ratt_svar']) < 0.001 else 'fel'
-                        elif u['svarstyp'] == 'fraction':
-                            svar_clean = input_svar.strip().replace(" ", "").replace(",", ".")
-                            status = 'ratt' if Fraction(svar_clean) == u['ratt_svar'] else 'fel'
-                        elif u['svarstyp'] == 'ratio':
-                            svar_clean = input_svar.strip().replace(" ", "")
-                            if ":" not in svar_clean:
-                                status = 'format_ratio'
-                            else:
-                                status = 'ratt' if svar_clean == str(u['ratt_svar']) else 'fel'
-                        elif u['svarstyp'] == 'string_math':
-                            svar_clean = input_svar.replace(" ", "").lower()
-                            ratt_clean = str(u['ratt_svar']).replace(" ", "").lower()
-                            if svar_clean.startswith("+"): svar_clean = svar_clean[1:]
-                            if svar_clean.startswith("1x"): svar_clean = "x" + svar_clean[2:]
-                            if svar_clean.startswith("-1x"): svar_clean = "-x" + svar_clean[3:]
-                            svar_clean = svar_clean.replace("+1x", "+x").replace("-1x", "-x")
-                            status = 'ratt' if svar_clean == ratt_clean else 'fel'
-                        elif u['svarstyp'] == 'kalkyl_formel':
-                            svar_clean = input_svar.strip().replace(" ", "").lower()
-                            if not svar_clean.startswith("="):
-                                status = 'format_saknar_likamed'
-                            else:
-                                godkanda = [s.lower() for s in u.get('ratt_svar_lista', [])]
-                                status = 'ratt' if svar_clean in godkanda else 'fel'
-                    except ValueError: status = 'format'
-                else: status = 'tom'
-                    
-            elif u['input_typ'] in ['radio', 'selectbox']:
-                if input_svar is not None and input_svar != 'Välj svar...':
-                    status = 'ratt' if str(input_svar).strip() == str(u['ratt_svar']).strip() else 'fel'
-                else: status = 'tom'
-                    
-            st.session_state.svar_status = status
-            st.rerun()
-            
-    with k2:
-        if st.button("Nästa uppgift", use_container_width=True):
+    rattat = st.session_state.get('rattat', False)
+    status = st.session_state.get('svar_status', None)
+
+    if rattat and status == 'ratt':
+        st.success("✅ Helt rätt! Snyggt jobbat.")
+        if st.button("Nästa uppgift", type="primary", use_container_width=True, key=f"next_{uid}"):
             generera_ny_uppgift()
             st.rerun()
+    else:
+        # Om eleven inte svarat rätt än, visa svarsformuläret
+        with st.form(key=f"form_{uid}"):
+            input_svar = None
+            if u['input_typ'] == 'flera_text':
+                input_svar = []
+                for i in range(len(u['ratt_svar'])):
+                    etikett = f"Svar {i+1}:" if len(u['ratt_svar']) > 1 else "Ditt svar:"
+                    input_svar.append(st.text_input(etikett, key=f"input_{uid}_{i}"))
+            elif u['input_typ'] == 'text':
+                input_svar = st.text_input("Ditt svar:", key=f"input_text_{uid}")
+            elif u['input_typ'] == 'radio':
+                input_svar = st.radio("Alternativ:", u['alternativ'], index=None, label_visibility="collapsed", key=f"input_radio_{uid}")
+            elif u['input_typ'] == 'selectbox':
+                input_svar = st.selectbox("Välj ett alternativ:", u['alternativ'], label_visibility="collapsed", key=f"input_select_{uid}")
             
-    if st.session_state.rattat:
-        status = st.session_state.svar_status
-        if status == 'ratt':
-            st.success("✅ Helt rätt! Snyggt jobbat.")
-        elif status == 'fel':
-            if u['svarstyp'] == 'array_float':
-                ratt_txt = ' och '.join([f"{a:g}".replace('.', ',') for a in u['ratt_svar']])
-            elif u['svarstyp'] == 'fraction':
-                ratt_txt = f"{u['ratt_svar'].numerator}/{u['ratt_svar'].denominator}"
-            elif u['svarstyp'] in ['float', 'procent']:
-                ratt_txt = f"{u['ratt_svar']:g}".replace('.', ',')
-            elif u['svarstyp'] == 'kalkyl_formel':
-                ratt_txt = u['ratt_svar_visning']
-            elif u['svarstyp'] in ['string_math', 'ratio']:
-                ratt_txt = str(u['ratt_svar'])
-            else:
-                ratt_txt = str(u['ratt_svar'])
+            st.write("")
+            submit_btn = st.form_submit_button("Rätta svar", use_container_width=True)
+            
+            # Vid klick eller Enter
+            if submit_btn:
+                st.session_state.rattat = True
+                st.session_state.svar_status = ratta_svar(u, input_svar)
+                st.rerun()
+
+        # Feedback för fel och format visas under formuläret
+        if rattat and status != 'ratt':
+            if status == 'fel':
+                if u['svarstyp'] == 'array_float':
+                    ratt_txt = ' och '.join([f"{a:g}".replace('.', ',') for a in u['ratt_svar']])
+                elif u['svarstyp'] == 'fraction':
+                    ratt_txt = f"{u['ratt_svar'].numerator}/{u['ratt_svar'].denominator}"
+                elif u['svarstyp'] in ['float', 'procent']:
+                    ratt_txt = f"{u['ratt_svar']:g}".replace('.', ',')
+                elif u['svarstyp'] == 'kalkyl_formel':
+                    ratt_txt = u['ratt_svar_visning']
+                else:
+                    ratt_txt = str(u['ratt_svar'])
+                    
+                if u.get('suffix'): ratt_txt += f" {u['suffix']}"
+                if u['svarstyp'] == 'procent': ratt_txt += " %"
                 
-            if u.get('suffix'): ratt_txt += f" {u['suffix']}"
-            if u['svarstyp'] == 'procent': ratt_txt += " %"
+                st.error(f"❌ Tyvärr fel. Rätt svar var:\n\n {ratt_txt}")
+            elif status == 'format':
+                if u['svarstyp'] in ['float', 'procent']:
+                    st.warning("⚠️ Svaret är i fel format (skriv bara siffror/decimaltal, t.ex. 1,25).")
+                elif u['svarstyp'] == 'int':
+                    st.warning("⚠️ Svaret ska vara ett heltal.")
+                elif u['svarstyp'] == 'fraction':
+                    st.warning("⚠️ Skriv svaret som ett bråk, till exempel 3/8.")
+                elif u['svarstyp'] == 'string_math':
+                    st.warning("⚠️ Ditt uttryck är tyvärr felaktigt formaterat och kan inte rättas matematiskt.")
+                else:
+                    st.warning("⚠️ Svaret är i fel format.")
+            elif status == 'format_ratio':
+                st.warning("⚠️ Svara med ett kolon mellan siffrorna, till exempel 3:4.")
+            elif status == 'format_saknar_likamed':
+                st.warning("⚠️ Formler i kalkylark måste alltid börja med ett likamedstecken (=).")
+            elif status == 'tom':
+                if u['input_typ'] in ['radio', 'selectbox']:
+                    st.warning("Vänligen välj ett alternativ i listan.")
+                else:
+                    st.warning("Vänligen fyll i ett svar innan du rättar.")
             
-            st.error(f"❌ Tyvärr fel. Rätt svar var:\n\n {ratt_txt}")
-        elif status == 'format':
-            if u['svarstyp'] in ['float', 'procent']:
-                st.warning("⚠️ Svaret är i fel format (skriv bara siffror/decimaltal, t.ex. 1,25).")
-            elif u['svarstyp'] == 'int':
-                st.warning("⚠️ Svaret ska vara ett heltal.")
-            elif u['svarstyp'] == 'fraction':
-                st.warning("⚠️ Skriv svaret som ett bråk, till exempel 3/8.")
-            else:
-                st.warning("⚠️ Svaret är i fel format.")
-        elif status == 'format_ratio':
-            st.warning("⚠️ Svara med ett kolon mellan siffrorna, till exempel 3:4.")
-        elif status == 'format_saknar_likamed':
-            st.warning("⚠️ Formler i kalkylark måste alltid börja med ett likamedstecken (=).")
-        elif status == 'tom':
-            if u['input_typ'] in ['radio', 'selectbox']:
-                st.warning("Vänligen välj ett alternativ i listan.")
-            else:
-                st.warning("Vänligen fyll i ett svar innan du rättar.")
+            # En "hoppa över"-knapp om de tröttnar på att gissa
+            st.write("")
+            if st.button("Hoppa över / Nästa uppgift", use_container_width=True, key=f"skip_{uid}"):
+                generera_ny_uppgift()
+                st.rerun()
