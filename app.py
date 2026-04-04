@@ -1182,25 +1182,31 @@ def skapa_problemlosning_uppgift(niva):
             engangs = random.randint(5, 8) * 10 - 1
             klipp = engangs * 10 - random.randint(10, 20) * 10
             
-            info = f"I simhallen kostar en engångsentré {engangs} kr. Man kan också köpa ett rabattkort för 10 gånger som kostar {klipp} kr.<br><br>En person beräknar följande:<br><b>(10 &middot; {engangs} - {klipp}) / 10</b>"
-            
-            ratt = "Hur mycket man i snitt sparar per badtillfälle med rabattkortet."
-            alts = [
-                ratt,
-                "Vad ett bad kostar per gång med rabattkortet.",
-                "Hur många gånger man måste bada för att tjäna in rabattkortet.",
-                "Hur mycket rabatt man får totalt för alla 10 gånger."
+            # Skapa olika möjliga beräkningar och deras korrekta förklaringar
+            varianter = [
+                (f"(10 &middot; {engangs} - {klipp}) / 10", "Hur mycket man i snitt sparar per badtillfälle med rabattkortet."),
+                (f"{klipp} / 10", "Vad ett bad kostar per gång med rabattkortet."),
+                (f"10 &middot; {engangs} - {klipp}", "Hur mycket rabatt man får totalt för alla 10 gånger."),
+                (f"{klipp} / {engangs}", "Hur många gånger man måste bada för att tjäna in rabattkortet.")
             ]
+            
+            # Slumpa fram vilken beräkning eleven får se den här gången
+            valt_uttryck, ratt_svar_text = random.choice(varianter)
+            
+            info = f"I simhallen kostar en engångsentré {engangs} kr. Man kan också köpa ett rabattkort för 10 gånger som kostar {klipp} kr.<br><br>En person beräknar följande:<br><b>{valt_uttryck}</b>"
+            
+            # Alla förklaringar från listan ovan blir våra svarsalternativ
+            alts = [v[1] for v in varianter]
             random.shuffle(alts)
             
             return {
                 "info_box_blue": info,
                 "fraga": "Förklara vad personen har beräknat genom att välja rätt svarsalternativ.",
-                "ratt_svar": ratt,
+                "ratt_svar": ratt_svar_text,
                 "alternativ": alts,
                 "input_typ": "radio",
                 "svarstyp": "string",
-                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
+                "undertext": "Läs uttrycket noggrant och fundera på vad uträkningen faktiskt ger för svar.<br>Lös uppgiften med huvudräkning (utan miniräknare)."
             }
 
 # ==========================================
