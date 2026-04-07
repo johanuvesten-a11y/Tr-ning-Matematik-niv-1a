@@ -1204,7 +1204,7 @@ def skapa_problemlosning_uppgift(niva):
                 "input_typ": "text",
                 "svarstyp": "int",
                 "suffix": "pass",
-                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
+                "undertext": "Lös uppgiften på papper (utan miniräknare)."
             }
 
         elif typ == 'vattenlackage':
