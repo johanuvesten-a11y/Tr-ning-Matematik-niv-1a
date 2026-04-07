@@ -978,6 +978,7 @@ def rita_stat_graf(x, y):
 
 def skapa_stat_uppgift(niva=1):
     typ = random.choice(['spridning', 'konf_overlapp', 'konf_baklanges', 'konf_urval', 'konf_falskt'])
+    
     if typ == 'spridning':
         num_points = random.randint(40, 60)
         x = np.random.uniform(10, 90, num_points)
@@ -988,6 +989,7 @@ def skapa_stat_uppgift(niva=1):
         elif korr == 'Svag negativ': y = -1.5 * x + 150 + np.random.normal(0, 25, num_points)
         else: y = np.random.uniform(10, 90, num_points)
         return {"info_text_italic": "Kika på spridningsdiagrammet ovan.", "plotly_fig": rita_stat_graf(x, y), "fraga": "Vilken typ av korrelation visar diagrammet?", "ratt_svar": korr, "alternativ": ['Välj svar...', 'Stark positiv', 'Svag positiv', 'Stark negativ', 'Svag negativ', 'Ingen korrelation'], "input_typ": "selectbox", "svarstyp": "string"}
+        
     elif typ == 'konf_overlapp':
         A = random.randint(14, 25)
         B, fm = A - random.randint(1, 3), random.randint(2, 4)
@@ -996,18 +998,46 @@ def skapa_stat_uppgift(niva=1):
         alts = [ratt, "Parti A är garanterat större än Parti B." if overlapp else "Vi kan inte vara säkra på vilket parti som är störst, eftersom felmarginalerna överlappar.", "Parti A har ökat mer än Parti B sedan förra valet.", f"Parti A kommer att få exakt {A} % av rösterna i valet."]
         random.shuffle(alts)
         return {"info_box_purple": f"En väljarbarometer visar att Parti A får {A} % och Parti B får {B} % av väljarstödet. Felmarginalen är ±{fm} procentenheter för båda partierna vid 95 % konfidensgrad.", "fraga": "Vilken slutsats kan dras med 95 % säkerhet?", "ratt_svar": ratt, "alternativ": alts, "input_typ": "radio", "svarstyp": "string"}
+        
     elif typ == 'konf_baklanges':
         resultat, fm = round(random.uniform(4.0, 12.0), 1), round(random.uniform(1.5, 3.5), 1)
         ratt = f"Resultatet var {f'{resultat:g}'.replace('.', ',')} % med en felmarginal på ±{f'{fm:g}'.replace('.', ',')} procentenheter."
         alts = [ratt, f"Resultatet var {f'{round(resultat+fm, 1):g}'.replace('.', ',')} % med en felmarginal på ±{f'{round(fm*2, 1):g}'.replace('.', ',')} procentenheter.", f"Resultatet var {f'{round(resultat-fm, 1):g}'.replace('.', ',')} % med en felmarginal på ±{f'{round(resultat+fm, 1):g}'.replace('.', ',')} procentenheter.", f"Resultatet var {f'{resultat:g}'.replace('.', ',')} % med en felmarginal på ±{f'{round(fm/2, 1):g}'.replace('.', ',')} procentenheter."]
         random.shuffle(alts)
         return {"info_box_purple": f"Ett 95 % konfidensintervall för andelen defekta produkter i en fabrik anges till {f'{round(resultat-fm, 1):g}'.replace('.', ',')}-{f'{round(resultat+fm, 1):g}'.replace('.', ',')}%.", "fraga": "Vad var resultatet i själva stickprovet, och vad var felmarginalen?", "ratt_svar": ratt, "alternativ": alts, "input_typ": "radio", "svarstyp": "string"}
+        
     elif typ == 'konf_urval':
+        # DYNAMISK LOGIK: Slumpa mellan 4 olika scenarier (alltid 95 % konfidensgrad)
+        scenario = random.choice(['minska_fm', 'öka_n_effekt', 'minska_n_effekt', 'jamfora_tva_n'])
         fm = round(random.uniform(3.0, 5.0), 1)
-        ratt = "Fråga betydligt fler personer i nästa undersökning."
-        alts = [ratt, "Fråga färre personer så att risken för felräkning minskar.", "Ändra konfidensgraden till 100 % istället för 95 %.", "Bara fråga personer som de vet är insatta i politiken."]
+        
+        if scenario == 'minska_fm':
+            ratt = "Fråga betydligt fler personer i nästa undersökning."
+            alts = [ratt, "Fråga färre personer så att risken för felräkning minskar.", "Bara fråga personer som de vet är insatta i ämnet.", "Ställa frågan på ett annat sätt så att fler svarar ja."]
+            info = f"En tidning publicerar en opinionsundersökning men tycker att felmarginalen på ±{f'{fm:g}'.replace('.', ',')} procentenheter gör resultatet för osäkert. De vill ha ett snävare (mindre) konfidensintervall nästa månad."
+            fraga = "Vad är det bästa sättet för dem att minska felmarginalen rent statistiskt?"
+            
+        elif scenario == 'öka_n_effekt':
+            ratt = "Felmarginalen minskar och intervallet blir snävare."
+            alts = [ratt, "Felmarginalen ökar och intervallet blir bredare.", "Felmarginalen påverkas inte alls av antalet tillfrågade.", "Resultatet i själva stickprovet ändras."]
+            info = "Ett undersökningsföretag brukar fråga 1 000 personer i sina mätningar. Till nästa mätning bestämmer de sig för att ställa samma fråga till 3 000 personer istället. Båda beräknas med 95 % konfidensgrad."
+            fraga = "Vad händer med felmarginalen när de ökar antalet tillfrågade på detta sätt?"
+            
+        elif scenario == 'minska_n_effekt':
+            ratt = "Felmarginalen ökar (intervallet blir bredare)."
+            alts = [ratt, "Felmarginalen minskar (intervallet blir snävare).", "Felmarginalen påverkas inte, så länge det är exakt samma fråga.", "Undersökningen blir helt ogiltig och kan inte användas alls."]
+            info = "En forskare skickar ut en enkät till 2 000 personer, men får en väldigt låg svarsfrekvens och bara 400 personer svarar. Hon beräknar ett 95 % konfidensintervall baserat på de 400 svaren."
+            fraga = "Hur blir felmarginalen nu, jämfört med om alla 2 000 hade svarat?"
+            
+        elif scenario == 'jamfora_tva_n':
+            ratt = "Undersökning A har en större felmarginal än Undersökning B."
+            alts = [ratt, "Undersökning B har en större felmarginal än Undersökning A.", "De har exakt samma felmarginal eftersom båda har 95 % konfidensgrad.", "Det går inte att säga vilken felmarginal som är störst utan att veta vad folk svarade."]
+            info = "Två olika tidningar gör varsin undersökning om samma sak. Båda använder 95 % konfidensgrad. Undersökning A frågar 500 slumpmässigt valda personer. Undersökning B frågar 2 500 slumpmässigt valda personer."
+            fraga = "Vilket påstående om undersökningarnas felmarginal är sant?"
+
         random.shuffle(alts)
-        return {"info_box_purple": f"En tidning publicerar en opinionsundersökning men tycker att felmarginalen på ±{f'{fm:g}'.replace('.', ',')} % gör resultatet för osäkert. De vill ha ett snävare (mindre) konfidensintervall nästa månad.", "fraga": "Vad är det bästa sättet för dem att minska felmarginalen rent statistiskt?", "ratt_svar": ratt, "alternativ": alts, "input_typ": "radio", "svarstyp": "string"}
+        return {"info_box_purple": info, "fraga": fraga, "ratt_svar": ratt, "alternativ": alts, "input_typ": "radio", "svarstyp": "string"}
+        
     elif typ == 'konf_falskt':
         resultat, fm = random.randint(55, 75), random.randint(2, 4)
         ratt = f"Mellan {resultat - fm} % och {resultat + fm} % av eleverna *som tillfrågades* vill ha längre raster."
