@@ -131,6 +131,11 @@ def ratta_svar(u, input_svar):
                     else:
                         godkanda = [s.lower() for s in u.get('ratt_svar_lista', [])]
                         return 'ratt' if svar_clean in godkanda else 'fel'
+                        
+                elif u['svarstyp'] == 'string':
+                    svar_clean = str(input_svar).strip()
+                    return 'ratt' if svar_clean.lower() == str(u['ratt_svar']).strip().lower() else 'fel'
+
             except ValueError: 
                 return 'format'
         else: 
@@ -1052,7 +1057,7 @@ def skapa_problemlosning_uppgift(niva):
         typ = random.choice([
             'hyra_fordon', 'vardeminskning', 'pannkakor_proportion', 'valuta_omvandling', 
             'jamfora_abonnemang', 'vattenlackage', 'upprepad_procent_rea', 
-            'enhetsomvandling_regn', 'formel_kokpunkt'
+            'enhetsomvandling_regn', 'formel_kokpunkt', 'enkel_tidszon_resa'
         ])
         
         if typ == 'hyra_fordon':
@@ -1120,14 +1125,12 @@ def skapa_problemlosning_uppgift(niva):
             valuta_val = random.choice([
                 ("USD", 10, random.choice([100, 250, 500, 1000])),
                 ("EUR", 11, random.choice([110, 220, 330, 550])),
-                ("GBP", 12, random.choice([120, 240, 600, 1200])),
-                ("NOK", 1.1, random.choice([110, 220, 550, 1100]))
+                ("GBP", 12, random.choice([120, 240, 600, 1200]))
             ])
             valuta, kurs, sek_belopp = valuta_val
-            kurs_str = "1,10" if kurs == 1.1 else str(kurs)
             svar = int(sek_belopp / kurs)
             
-            info = f"Aktuell valutakurs är att 1 {valuta} kostar {kurs_str} SEK."
+            info = f"Aktuell valutakurs är att 1 {valuta} kostar {kurs} SEK."
             return {
                 "info_box_blue": info,
                 "fraga": f"Du växlar {sek_belopp} SEK. Hur många {valuta} får du?",
@@ -1136,6 +1139,54 @@ def skapa_problemlosning_uppgift(niva):
                 "svarstyp": "int",
                 "suffix": valuta,
                 "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
+            }
+
+        elif typ == 'enkel_tidszon_resa':
+            resmal_lista = [
+                {"stad": "London", "bas_tim": 2, "bas_min": 30, "tidsskillnad": -1},
+                {"stad": "New York", "bas_tim": 8, "bas_min": 30, "tidsskillnad": -6},
+                {"stad": "Tokyo", "bas_tim": 13, "bas_min": 20, "tidsskillnad": 8},
+                {"stad": "Bangkok", "bas_tim": 11, "bas_min": 0, "tidsskillnad": 6},
+                {"stad": "Dubai", "bas_tim": 6, "bas_min": 10, "tidsskillnad": 3}
+            ]
+
+            destination = random.choice(resmal_lista)
+            avresa_h = random.randint(6, 22)
+            avresa_m = random.choice([0, 10, 20, 30, 40, 50])
+
+            extra_min = random.choice([-20, -10, 0, 10, 20, 30])
+            total_restid_m = destination["bas_tim"] * 60 + destination["bas_min"] + extra_min
+
+            restid_h = total_restid_m // 60
+            restid_m_rest = total_restid_m % 60
+
+            start_minuter = avresa_h * 60 + avresa_m
+            ankomst_svensk_tid = start_minuter + total_restid_m
+            ankomst_lokal_tid = ankomst_svensk_tid + (destination["tidsskillnad"] * 60)
+            ankomst_lokal_tid = ankomst_lokal_tid % (24 * 60)
+
+            ankomst_h = ankomst_lokal_tid // 60
+            ankomst_m = ankomst_lokal_tid % 60
+
+            avresa_str = f"{avresa_h:02d}:{avresa_m:02d}"
+            restid_str = f"{restid_h}h {restid_m_rest}min"
+            
+            if destination['tidsskillnad'] > 0:
+                diff_str = f"+{destination['tidsskillnad']}h"
+            else:
+                diff_str = f"{destination['tidsskillnad']}h"
+
+            info = f"Du reser från Stockholm kl. {avresa_str} och resan till {destination['stad']} tar {restid_str}."
+            fraga = f"Vad är klockan lokalt i {destination['stad']} när du landar om tidsskillnaden är {diff_str}? (Svara i formatet HH:MM)"
+            svar = f"{ankomst_h:02d}:{ankomst_m:02d}"
+
+            return {
+                "info_box_blue": info,
+                "fraga": fraga,
+                "ratt_svar": svar,
+                "input_typ": "text",
+                "svarstyp": "string",
+                "undertext": "Svara med klockslag i formatet HH:MM (till exempel 08:30 eller 15:00)."
             }
 
         elif typ == 'jamfora_abonnemang':
