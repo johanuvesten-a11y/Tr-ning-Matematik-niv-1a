@@ -1049,7 +1049,7 @@ def skapa_problemlosning_uppgift(niva):
     namn_lista = ["Charlie", "Kim", "Ali", "Maja", "Sami", "Robin", "Nilo", "Alex", "Noa", "Elsa", "Viktor"]
     
     if niva == 1:
-        typ = random.choice(['hyra_fordon', 'vardeminskning', 'pannkakor_proportion', 'valuta_omvandling'])
+        typ = random.choice(['hyra_fordon', 'vardeminskning', 'pannkakor_proportion', 'valuta_omvandling', 'jamfora_abonnemang', 'vattenlackage', 'upprepad_procent_rea'])
         
         if typ == 'hyra_fordon':
             namn = random.choice(namn_lista)
@@ -1140,8 +1140,55 @@ def skapa_problemlosning_uppgift(niva):
                 "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
             }
 
+        elif typ == 'jamfora_abonnemang':
+            R_B = random.choice([30, 40, 50])
+            R_A = R_B + random.choice([20, 30, 40])
+            visits = random.choice([4, 5, 6, 8, 10])
+            F_A = random.choice([100, 150, 200, 250])
+            F_B = F_A + visits * (R_A - R_B)
+            
+            info = f"Du funderar på att skaffa gymkort.<br><br>&bull; <b>Gym A</b> tar {F_A} kr i fast månadsavgift och sedan {R_A} kr per träningspass.<br>&bull; <b>Gym B</b> tar {F_B} kr i fast månadsavgift och sedan {R_B} kr per träningspass."
+            return {
+                "info_box_blue": info,
+                "fraga": "Vid exakt hur många träningspass under en månad kostar de båda gymmen lika mycket?",
+                "ratt_svar": visits,
+                "input_typ": "text",
+                "svarstyp": "int",
+                "suffix": "pass",
+                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
+            }
+
+        elif typ == 'vattenlackage':
+            start_vol = random.randint(10, 50) * 10
+            leak = random.randint(2, 8)
+            info = f"En vattentunna innehåller från början {start_vol} liter vatten. Det har gått hål i botten och tunnan läcker därefter {leak} liter per minut."
+            return {
+                "info_box_blue": info,
+                "fraga": "Skriv ett algebraiskt uttryck för volymen vatten (i liter) som finns kvar i tunnan efter t minuter.",
+                "ratt_svar": f"{start_vol} - {leak}*t",
+                "input_typ": "text",
+                "svarstyp": "string_math",
+                "undertext": "Använd t som variabel. Lös uppgiften med huvudräkning (utan miniräknare)."
+            }
+
+        elif typ == 'upprepad_procent_rea':
+            rea1 = random.choice([20, 30, 40])
+            rea2 = random.choice([10, 20, 25])
+            rabatt_total = 100 - 100 * (1 - rea1/100.0) * (1 - rea2/100.0)
+            
+            info = f"En klädbutik har en stor utförsäljning med {rea1} % rabatt på alla varor i butiken. Eftersom du är VIP-medlem får du dessutom ytterligare {rea2} % rabatt i kassan på det redan sänkta priset."
+            return {
+                "info_box_blue": info,
+                "fraga": "Hur stor blir den TOTALA rabatten i procent från varans ursprungspris?",
+                "ratt_svar": int(round(rabatt_total)),
+                "input_typ": "text",
+                "svarstyp": "procent",
+                "suffix": "%",
+                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
+            }
+
     else:
-        typ = random.choice(['pizza_brak', 'algebraisk_forstaelse', 'monster_stickor', 'tolka_uttryck_rabatt'])
+        typ = random.choice(['pizza_brak', 'algebraisk_forstaelse', 'monster_stickor', 'tolka_uttryck_rabatt', 'tidsvinst_hastighet', 'area_uttryck'])
         
         if typ == 'pizza_brak':
             namn1, namn2 = random.sample(namn_lista, 2)
@@ -1237,6 +1284,47 @@ def skapa_problemlosning_uppgift(niva):
                 "input_typ": "radio",
                 "svarstyp": "string",
                 "undertext": "Läs uttrycket noggrant och fundera på vad uträkningen faktiskt ger för svar.<br>Lös uppgiften med huvudräkning (utan miniräknare)."
+            }
+
+        elif typ == 'tidsvinst_hastighet':
+            combos = [
+                (30, 60, 90, 10),
+                (40, 80, 120, 10),
+                (60, 90, 120, 10),
+                (20, 60, 80, 5),
+                (10, 40, 60, 5)
+            ]
+            s, v1, v2, t = random.choice(combos)
+            info = f"I en tidningsartikel presenteras en formel för att beräkna tidsskillnaden <i>t</i> (i minuter) om man kör en viss sträcka <i>s</i> (i km) med två olika hastigheter:<br><br><b>t = (1/v<sub>1</sub> - 1/v<sub>2</sub>) &middot; s &middot; 60</b><br><br>Du brukar köra till jobbet med hastigheten {v1} km/h, men funderar på hur mycket tid du tjänar på att istället köra {v2} km/h. Sträckan till jobbet är {s} km."
+            return {
+                "info_box_blue": info,
+                "fraga": "Hur många minuter tjänar du på att köra i den snabbare hastigheten?",
+                "ratt_svar": t,
+                "input_typ": "text",
+                "svarstyp": "int",
+                "suffix": "min",
+                "undertext": "Lös uppgiften med papper och penna."
+            }
+
+        elif typ == 'area_uttryck':
+            L = random.randint(2, 6) * 10
+            info = f"En bonde ska bygga en rektangulär hage till sina djur. Hagen ska byggas mot en lång, rak ladugårdsvägg, så bonden behöver bara bygga staket på tre av sidorna. Bonden har totalt {L} meter staket att använda.<br><br>Sidorna som är vinkelräta (går rakt ut) från väggen kallas för <i>x</i>."
+            
+            ratt = f"x({L} - 2x)"
+            alt1 = f"x({L} - x)"
+            alt2 = f"x(2x - {L})"
+            alt3 = f"x(\\frac{{{L}}}{{2}} - x)"
+            alts = [f"${ratt}$", f"${alt1}$", f"${alt2}$", f"${alt3}$"]
+            random.shuffle(alts)
+            
+            return {
+                "info_box_blue": info,
+                "fraga": "Vilket av följande uttryck beskriver hagens area (i kvadratmeter) beroende på x?",
+                "ratt_svar": f"${ratt}$",
+                "alternativ": alts,
+                "input_typ": "radio",
+                "svarstyp": "string",
+                "undertext": "Börja gärna med att rita en figur på papper."
             }
 
 # ==========================================
