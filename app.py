@@ -1049,7 +1049,11 @@ def skapa_problemlosning_uppgift(niva):
     namn_lista = ["Charlie", "Kim", "Ali", "Maja", "Sami", "Robin", "Nilo", "Alex", "Noa", "Elsa", "Viktor"]
     
     if niva == 1:
-        typ = random.choice(['hyra_fordon', 'vardeminskning', 'pannkakor_proportion', 'valuta_omvandling', 'jamfora_abonnemang', 'vattenlackage', 'upprepad_procent_rea'])
+        typ = random.choice([
+            'hyra_fordon', 'vardeminskning', 'pannkakor_proportion', 'valuta_omvandling', 
+            'jamfora_abonnemang', 'vattenlackage', 'upprepad_procent_rea', 
+            'enhetsomvandling_regn', 'formel_kokpunkt'
+        ])
         
         if typ == 'hyra_fordon':
             namn = random.choice(namn_lista)
@@ -1094,14 +1098,9 @@ def skapa_problemlosning_uppgift(niva):
             }
             
         elif typ == 'pannkakor_proportion':
-            # Anpassat för enkel huvudräkning 
             kombinationer = [
-                (4, 200, 12), # 3 gånger så mycket
-                (6, 300, 18), # 3 gånger så mycket
-                (4, 150, 20), # 5 gånger så mycket
-                (5, 250, 15), # 3 gånger så mycket
-                (2, 150, 10), # 5 gånger så mycket
-                (4, 250, 8)   # 2 gånger så mycket
+                (4, 200, 12), (6, 300, 18), (4, 150, 20),
+                (5, 250, 15), (2, 150, 10), (4, 250, 8)
             ]
             personer_start, mjol, personer_mal = random.choice(kombinationer)
             svar = int((mjol / personer_start) * personer_mal)
@@ -1118,7 +1117,6 @@ def skapa_problemlosning_uppgift(niva):
             }
             
         elif typ == 'valuta_omvandling':
-            # Anpassat för enkel huvudräkning
             valuta_val = random.choice([
                 ("USD", 10, random.choice([100, 250, 500, 1000])),
                 ("EUR", 11, random.choice([110, 220, 330, 550])),
@@ -1187,8 +1185,53 @@ def skapa_problemlosning_uppgift(niva):
                 "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
             }
 
-    else:
-        typ = random.choice(['pizza_brak', 'algebraisk_forstaelse', 'monster_stickor', 'tolka_uttryck_rabatt', 'tidsvinst_hastighet', 'area_uttryck'])
+        elif typ == 'enhetsomvandling_regn':
+            area = random.choice([50, 100, 150, 200, 500])
+            regn = random.choice([2, 5, 8, 10, 12, 15])
+            svar = area * regn
+            info = f"Ett kraftigt regnoväder drar in och det faller {regn} mm regn över ett platt tak som har arean {area} m²."
+            return {
+                "info_box_blue": info,
+                "fraga": "Hur många liter vatten har det fallit på taket?",
+                "ratt_svar": svar,
+                "input_typ": "text",
+                "svarstyp": "int",
+                "suffix": "liter",
+                "undertext": "Tips: 1 liter är detsamma som 1 kubikdecimeter (dm³). Lös uppgiften med huvudräkning."
+            }
+
+        elif typ == 'formel_kokpunkt':
+            fraga_typ = random.choice(['hitta_t', 'hitta_h'])
+            if fraga_typ == 'hitta_t':
+                h = random.choice([1500, 3000, 4500, 6000])
+                t = int(100 - h / 300)
+                info = f"Vattnets kokpunkt <i>t</i> (i °C) beror på höjden över havet <i>h</i> (i meter) enligt formeln:<br><br><b>t = 100 - h/300</b><br><br>Du befinner dig på ett berg på {formatera_kr(h)} meters höjd."
+                fraga = "Vid vilken temperatur kokar vattnet där du är?"
+                svar = t
+                suffix = "°C"
+            else:
+                t = random.choice([80, 85, 90, 95])
+                h = (100 - t) * 300
+                info = f"Vattnets kokpunkt <i>t</i> (i °C) beror på höjden över havet <i>h</i> (i meter) enligt formeln:<br><br><b>t = 100 - h/300</b><br><br>Du kokar vatten uppe på ett berg och märker att det börjar koka redan vid {t} °C."
+                fraga = "På ungefär vilken höjd över havet befinner du dig?"
+                svar = h
+                suffix = "meter"
+                
+            return {
+                "info_box_blue": info,
+                "fraga": fraga,
+                "ratt_svar": svar,
+                "input_typ": "text",
+                "svarstyp": "int",
+                "suffix": suffix,
+                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
+            }
+
+    else: # Nivå 2
+        typ = random.choice([
+            'pizza_brak', 'algebraisk_forstaelse', 'monster_stickor', 'tolka_uttryck_rabatt', 
+            'tidsvinst_hastighet', 'area_uttryck', 'medelfart', 'relativ_procent', 'valgorenhet'
+        ])
         
         if typ == 'pizza_brak':
             namn1, namn2 = random.sample(namn_lista, 2)
@@ -1214,7 +1257,6 @@ def skapa_problemlosning_uppgift(niva):
             proc_okning = random.choice([15, 20, 25, 30, 40])
             dec_okning = round(proc_okning / 100.0, 2)
             
-            # Använder html (<i> och <b>) för att det garanterat ska bli snyggt och läsbart inuti den blå lådan
             info = f"{namn1} väger <i>a</i> kg och {namn2} väger <i>b</i> kg. Du vet att följande samband gäller:<br><br><b>a + {str(dec_okning).replace('.', ',')}a = b</b>"
             
             ratt1 = f"{namn2} väger {proc_okning} % mer än {namn1}"
@@ -1259,20 +1301,15 @@ def skapa_problemlosning_uppgift(niva):
             engangs = random.randint(5, 8) * 10 - 1
             klipp = engangs * 10 - random.randint(10, 20) * 10
             
-            # Skapa olika möjliga beräkningar och deras korrekta förklaringar
             varianter = [
                 (f"(10 &middot; {engangs} - {klipp}) / 10", "Hur mycket man i snitt sparar per badtillfälle med rabattkortet."),
                 (f"{klipp} / 10", "Vad ett bad kostar per gång med rabattkortet."),
                 (f"10 &middot; {engangs} - {klipp}", "Hur mycket rabatt man får totalt för alla 10 gånger."),
                 (f"{klipp} / {engangs}", "Hur många gånger man måste bada för att tjäna in rabattkortet.")
             ]
-            
-            # Slumpa fram vilken beräkning eleven får se den här gången
             valt_uttryck, ratt_svar_text = random.choice(varianter)
             
             info = f"I simhallen kostar en engångsentré {engangs} kr. Man kan också köpa ett rabattkort för 10 gånger som kostar {klipp} kr.<br><br>En person beräknar följande:<br><b>{valt_uttryck}</b>"
-            
-            # Alla förklaringar från listan ovan blir våra svarsalternativ
             alts = [v[1] for v in varianter]
             random.shuffle(alts)
             
@@ -1288,11 +1325,8 @@ def skapa_problemlosning_uppgift(niva):
 
         elif typ == 'tidsvinst_hastighet':
             combos = [
-                (30, 60, 90, 10),
-                (40, 80, 120, 10),
-                (60, 90, 120, 10),
-                (20, 60, 80, 5),
-                (10, 40, 60, 5)
+                (30, 60, 90, 10), (40, 80, 120, 10), (60, 90, 120, 10),
+                (20, 60, 80, 5), (10, 40, 60, 5)
             ]
             s, v1, v2, t = random.choice(combos)
             info = f"I en tidningsartikel presenteras en formel för att beräkna tidsskillnaden <i>t</i> (i minuter) om man kör en viss sträcka <i>s</i> (i km) med två olika hastigheter:<br><br><b>t = (1/v<sub>1</sub> - 1/v<sub>2</sub>) &middot; s &middot; 60</b><br><br>Du brukar köra till jobbet med hastigheten {v1} km/h, men funderar på hur mycket tid du tjänar på att istället köra {v2} km/h. Sträckan till jobbet är {s} km."
@@ -1303,7 +1337,7 @@ def skapa_problemlosning_uppgift(niva):
                 "input_typ": "text",
                 "svarstyp": "int",
                 "suffix": "min",
-                "undertext": "Lös uppgiften med papper och penna."
+                "undertext": "Sätt in siffrorna i formeln och räkna. Lös uppgiften med papper och penna."
             }
 
         elif typ == 'area_uttryck':
@@ -1325,6 +1359,84 @@ def skapa_problemlosning_uppgift(niva):
                 "input_typ": "radio",
                 "svarstyp": "string",
                 "undertext": "Börja gärna med att rita en figur på papper."
+            }
+            
+        elif typ == 'medelfart':
+            s = random.choice([30, 60, 120])
+            v1 = random.choice([20, 30, 40, 60])
+            v2 = random.choice([10, 15, 20, 30])
+            
+            # Vi vill ha olika hastigheter och en snygg division
+            while v1 <= v2 or (s % v1 != 0) or (s % v2 != 0):
+                v1 = random.choice([20, 30, 40, 60])
+                v2 = random.choice([10, 15, 20, 30])
+            
+            t1 = s / v1
+            t2 = s / v2
+            tot_s = 2 * s
+            tot_t = t1 + t2
+            medelfart = int(tot_s / tot_t)
+            
+            namn = random.choice(namn_lista)
+            fordon = random.choice(['cyklar', 'kör moped', 'kör elsparkcykel'])
+            info = f"{namn} {fordon} till en ort som ligger {s} km bort. På ditvägen är medelhastigheten {v1} km/h. På hemvägen är det motvind och medelhastigheten blir bara {v2} km/h."
+            
+            return {
+                "info_box_blue": info,
+                "fraga": "Vad är medelhastigheten för HELA resan (dit och hem)?",
+                "ratt_svar": medelfart,
+                "input_typ": "text",
+                "svarstyp": "int",
+                "suffix": "km/h",
+                "undertext": "Tänk på att du måste räkna ut den totala tiden först. Lös gärna med huvudräkning."
+            }
+
+        elif typ == 'relativ_procent':
+            namn1, namn2, namn3 = random.sample(namn_lista, 3)
+            # Fasta snygga procentkombinationer som ger jämna svar
+            combos = [
+                (40, 20, 75),  # 140 / 80 = 1.75 (+75%)
+                (50, 25, 100), # 150 / 75 = 2.0 (+100%)
+                (20, 40, 100), # 120 / 60 = 2.0 (+100%)
+                (80, 10, 100), # 180 / 90 = 2.0 (+100%)
+                (10, 45, 100)  # 110 / 55 = 2.0 (+100%)
+            ]
+            p_mer, p_mindre, p_svar = random.choice(combos)
+            sak = random.choice(['vinner pengar i ett lotteri', 'får lön för ett sommarjobb', 'säljer jultidningar'])
+            
+            info = f"Tre vänner {sak}.<br><br>&bull; {namn1} får {p_mer} % <b>mer</b> än {namn2}.<br>&bull; {namn3} får {p_mindre} % <b>mindre</b> än {namn2}."
+            
+            return {
+                "info_box_blue": info,
+                "fraga": f"Hur många procent MER får {namn1} jämfört med {namn3}?",
+                "ratt_svar": p_svar,
+                "input_typ": "text",
+                "svarstyp": "int",
+                "suffix": "%",
+                "undertext": "Tips: Anta att den person de båda jämförs med får 100 kr, och räkna ut vad de andra får. Lös med huvudräkning."
+            }
+
+        elif typ == 'valgorenhet':
+            pop_milj = random.choice([5, 10, 20])
+            items = random.choice([50000, 100000, 200000])
+            price = random.choice([200, 400, 500])
+            effektivitet = random.choice([80, 50])
+            
+            total_items_cost = items * price
+            total_needed = total_items_cost / (effektivitet / 100.0)
+            per_person = int(total_needed / (pop_milj * 1000000))
+            
+            sak = random.choice(['nödpaket', 'vaccindoser', 'varma filtar'])
+            info = f"I ett land med {pop_milj} miljoner invånare startas en insamling för att köpa {formatera_kr(items)} {sak}. Varje styck kostar {price} kr.<br><br>På grund av administrativa kostnader går dock bara {effektivitet} % av de insamlade pengarna till själva inköpen (resten försvinner på vägen)."
+            
+            return {
+                "info_box_blue": info,
+                "fraga": "Hur mycket måste varje invånare i landet i genomsnitt skänka för att målet ska nås?",
+                "ratt_svar": per_person,
+                "input_typ": "text",
+                "svarstyp": "int",
+                "suffix": "kr",
+                "undertext": "Håll koll på nollorna! Lös gärna med papper och penna."
             }
 
 # ==========================================
