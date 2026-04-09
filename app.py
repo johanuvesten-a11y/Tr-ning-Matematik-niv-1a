@@ -1103,9 +1103,15 @@ def skapa_problemlosning_uppgift(niva):
             }
             
         elif typ == 'pannkakor_proportion':
+            # Anpassat för tvåstegs huvudräkning (hitta en smart mellanlandning)
             kombinationer = [
-                (4, 200, 12), (6, 300, 18), (4, 150, 20),
-                (5, 250, 15), (2, 150, 10), (4, 250, 8)
+                (4, 200, 6),   # 200 / 2 * 3 = 300
+                (6, 300, 4),   # 300 / 3 * 2 = 200
+                (8, 400, 6),   # 400 / 4 * 3 = 300
+                (6, 400, 9),   # 400 / 2 * 3 = 600
+                (10, 500, 15), # 500 / 2 * 3 = 750
+                (4, 200, 10),  # 200 / 2 * 5 = 500
+                (6, 150, 10)   # 150 / 3 * 5 = 250
             ]
             personer_start, mjol, personer_mal = random.choice(kombinationer)
             svar = int((mjol / personer_start) * personer_mal)
@@ -1118,27 +1124,32 @@ def skapa_problemlosning_uppgift(niva):
                 "input_typ": "text",
                 "svarstyp": "int",
                 "suffix": "gram",
-                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
+                "undertext": "Tips: Försök hitta en smart mellanlandning (t.ex. vad 2 eller 3 portioner kräver) innan du räknar ut slutsamman.\nLös uppgiften med huvudräkning (utan miniräknare)."
             }
             
         elif typ == 'valuta_omvandling':
-            valuta_val = random.choice([
-                ("USD", 10, random.choice([100, 250, 500, 1000])),
-                ("EUR", 11, random.choice([110, 220, 330, 550])),
-                ("GBP", 12, random.choice([120, 240, 600, 1200]))
-            ])
-            valuta, kurs, sek_belopp = valuta_val
-            svar = int(sek_belopp / kurs)
+            # Anpassat för tvåstegs huvudräkning 
+            namn1, namn2 = random.sample(namn_lista, 2)
+            valuta_kombos = [
+                ("thailändska baht", "THB", 750, 3000, 500, 2000),
+                ("danska kronor", "DKK", 600, 400, 900, 600),
+                ("euro", "EUR", 800, 80, 600, 60),
+                ("amerikanska dollar", "USD", 1500, 150, 1000, 100),
+                ("brittiska pund", "GBP", 1200, 100, 900, 75),
+                ("tjeckiska koruna", "CZK", 400, 1000, 600, 1500),
+                ("japanska yen", "JPY", 600, 8000, 900, 12000)
+            ]
+            valuta_namn, valuta_kod, sek_A, val_A, sek_B, val_B = random.choice(valuta_kombos)
             
-            info = f"Aktuell valutakurs är att 1 {valuta} kostar {kurs} SEK."
+            info = f"{namn1} växlar {sek_A} kr till {valuta_namn} ({valuta_kod}) och får {formatera_kr(val_A)} {valuta_kod}.<br><br>{namn2} växlar {sek_B} kr till samma kurs."
             return {
                 "info_box_blue": info,
-                "fraga": f"Du växlar {sek_belopp} SEK. Hur många {valuta} får du?",
-                "ratt_svar": svar,
+                "fraga": f"Hur mycket får {namn2}?",
+                "ratt_svar": val_B,
                 "input_typ": "text",
                 "svarstyp": "int",
-                "suffix": valuta,
-                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
+                "suffix": valuta_kod,
+                "undertext": "Tips: Hitta en smart 'mellanlandning'. Vad får man för t.ex. 200 kr eller 250 kr?\nLös uppgiften med huvudräkning (utan miniräknare)."
             }
 
         elif typ == 'enkel_tidszon_resa':
