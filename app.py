@@ -1057,7 +1057,7 @@ def skapa_problemlosning_uppgift(niva):
         typ = random.choice([
             'hyra_fordon', 'vardeminskning', 'pannkakor_proportion', 'valuta_omvandling', 
             'jamfora_abonnemang', 'vattenlackage', 'upprepad_procent_rea', 
-            'enhetsomvandling_regn', 'formel_kokpunkt', 'enkel_tidszon_resa'
+            'enhetsomvandling_regn', 'formel_kokpunkt', 'enkel_tidszon_resa', 'jamforpris'
         ])
         
         if typ == 'hyra_fordon':
@@ -1147,6 +1147,30 @@ def skapa_problemlosning_uppgift(niva):
                 "input_typ": "text",
                 "svarstyp": "int",
                 "suffix": valuta_kod,
+                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
+            }
+            
+        elif typ == 'jamforpris':
+            vara = random.choice(['lösgodis', 'kaffebönor', 'naturgodis', 'teblad', 'brända mandlar'])
+            combos = [
+                (150, 24, 160),
+                (300, 42, 140),
+                (120, 18, 150),
+                (250, 35, 140),
+                (400, 36, 90),
+                (200, 17, 85),
+                (150, 21, 140)
+            ]
+            vikt, pris, kilopris = random.choice(combos)
+            
+            info = f"En påse med {vara} som väger {vikt} gram kostar {pris} kr."
+            return {
+                "info_box_blue": info,
+                "fraga": "Vad är priset per kilogram (kg)?",
+                "ratt_svar": kilopris,
+                "input_typ": "text",
+                "svarstyp": "int",
+                "suffix": "kr/kg",
                 "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
             }
 
@@ -1257,7 +1281,7 @@ def skapa_problemlosning_uppgift(niva):
                 "input_typ": "text",
                 "svarstyp": "int",
                 "suffix": "liter",
-                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
+                "undertext": "Tips: 1 liter är detsamma som 1 kubikdecimeter (dm³). Lös uppgiften med huvudräkning."
             }
 
         elif typ == 'formel_kokpunkt':
@@ -1448,7 +1472,7 @@ def skapa_problemlosning_uppgift(niva):
                 "input_typ": "text",
                 "svarstyp": "int",
                 "suffix": "km/h",
-                "undertext": "Lös gärna med huvudräkning."
+                "undertext": "Tänk på att du måste räkna ut den totala tiden först. Lös gärna med huvudräkning."
             }
 
         elif typ == 'relativ_procent':
@@ -1496,7 +1520,7 @@ def skapa_problemlosning_uppgift(niva):
                 "input_typ": "text",
                 "svarstyp": "int",
                 "suffix": "kr",
-                "undertext": "Lös gärna med papper och penna."
+                "undertext": "Håll koll på nollorna! Lös gärna med papper och penna."
             }
 
 # ==========================================
