@@ -1103,7 +1103,6 @@ def skapa_problemlosning_uppgift(niva):
             }
             
         elif typ == 'pannkakor_proportion':
-            # Anpassat för tvåstegs huvudräkning (hitta en smart mellanlandning)
             kombinationer = [
                 (4, 200, 6),   # 200 / 2 * 3 = 300
                 (6, 300, 4),   # 300 / 3 * 2 = 200
@@ -1124,11 +1123,10 @@ def skapa_problemlosning_uppgift(niva):
                 "input_typ": "text",
                 "svarstyp": "int",
                 "suffix": "gram",
-                "undertext": "Tips: Försök hitta en smart mellanlandning (t.ex. vad 2 eller 3 portioner kräver) innan du räknar ut slutsamman.\nLös uppgiften med huvudräkning (utan miniräknare)."
+                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
             }
             
         elif typ == 'valuta_omvandling':
-            # Anpassat för tvåstegs huvudräkning 
             namn1, namn2 = random.sample(namn_lista, 2)
             valuta_kombos = [
                 ("thailändska baht", "THB", 750, 3000, 500, 2000),
@@ -1149,7 +1147,7 @@ def skapa_problemlosning_uppgift(niva):
                 "input_typ": "text",
                 "svarstyp": "int",
                 "suffix": valuta_kod,
-                "undertext": "Tips: Hitta en smart 'mellanlandning'. Vad får man för t.ex. 200 kr eller 250 kr?\nLös uppgiften med huvudräkning (utan miniräknare)."
+                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
             }
 
         elif typ == 'enkel_tidszon_resa':
@@ -1259,7 +1257,7 @@ def skapa_problemlosning_uppgift(niva):
                 "input_typ": "text",
                 "svarstyp": "int",
                 "suffix": "liter",
-                "undertext": "Tips: 1 liter är detsamma som 1 kubikdecimeter (dm³). Lös uppgiften med huvudräkning."
+                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
             }
 
         elif typ == 'formel_kokpunkt':
@@ -1450,7 +1448,7 @@ def skapa_problemlosning_uppgift(niva):
                 "input_typ": "text",
                 "svarstyp": "int",
                 "suffix": "km/h",
-                "undertext": "Tänk på att du måste räkna ut den totala tiden först. Lös gärna med huvudräkning."
+                "undertext": "Lös gärna med huvudräkning."
             }
 
         elif typ == 'relativ_procent':
@@ -1475,7 +1473,7 @@ def skapa_problemlosning_uppgift(niva):
                 "input_typ": "text",
                 "svarstyp": "int",
                 "suffix": "%",
-                "undertext": "Tips: Anta att den person de båda jämförs med får 100 kr, och räkna ut vad de andra får. Lös med huvudräkning."
+                "undertext": "Lös med huvudräkning."
             }
 
         elif typ == 'valgorenhet':
@@ -1498,7 +1496,7 @@ def skapa_problemlosning_uppgift(niva):
                 "input_typ": "text",
                 "svarstyp": "int",
                 "suffix": "kr",
-                "undertext": "Håll koll på nollorna! Lös gärna med papper och penna."
+                "undertext": "Lös gärna med papper och penna."
             }
 
 # ==========================================
