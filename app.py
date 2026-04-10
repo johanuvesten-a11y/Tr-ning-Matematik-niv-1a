@@ -728,10 +728,31 @@ def skapa_lan_uppgift(niva):
             ar, amort = random.choice([2, 3, 4, 5, 10]), random.choice([500, 1000, 1500, 2000, 2500])
             return {"info_box_blue": f"Du lånar {formatera_kr(amort * ar * 12)} kr som ska betalas tillbaka med rak amortering under {ar} år.", "fraga": "Hur mycket ska du amortera varje månad? (Svara i kr)", "ratt_svar": amort, "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
         elif typ in ['kalkylblad_varde', 'kalkylblad_formel']:
-            kapital = random.choice([60000, 120000, 240000])
+            p_komb = random.choice([(60000, 5), (120000, 5), (120000, 10), (240000, 10), (240000, 20)])
+            kapital, ar = p_komb
             ranta = random.choice([3, 4, 5, 6])
-            amort = random.choice([1000, 2000, 3000])
+            amort = int(kapital / (ar * 12))
             manadsranta_kr = int(round(kapital * (ranta / 100) / 12))
+            
+            subtyper = ['C2_ranta', 'E2_tot', 'D2_amort', 'tid_manader', 'F2_tid_ar']
+            if typ == 'kalkylblad_varde':
+                subtyper.remove('F2_tid_ar')
+            
+            subtyp = random.choice(subtyper)
+            
+            # Förbered vilka celler som ska visas som text eller [tom]
+            C2_val, D2_val, E2_val, F2_val = "[tom]", "[tom]", "[tom]", str(ar)
+            
+            if subtyp == 'C2_ranta':
+                D2_val = formatera_kr(amort)
+            elif subtyp == 'E2_tot':
+                C2_val = formatera_kr(manadsranta_kr)
+                D2_val = formatera_kr(amort)
+            elif subtyp == 'D2_amort':
+                pass # F2_val är ar, D2 är [tom]
+            elif subtyp in ['tid_manader', 'F2_tid_ar']:
+                D2_val = formatera_kr(amort)
+                F2_val = "[tom]"
             
             tabell_html = f"""
             <div style="overflow-x: auto; margin-top: 10px; margin-bottom: 20px;">
@@ -744,6 +765,7 @@ def skapa_lan_uppgift(niva):
                             <th style="padding: 8px; border: 1px solid #ccc; text-align: center; color: #333;">C</th>
                             <th style="padding: 8px; border: 1px solid #ccc; text-align: center; color: #333;">D</th>
                             <th style="padding: 8px; border: 1px solid #ccc; text-align: center; color: #333;">E</th>
+                            <th style="padding: 8px; border: 1px solid #ccc; text-align: center; color: #333;">F</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -752,47 +774,60 @@ def skapa_lan_uppgift(niva):
                             <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center;">Lånebelopp</td>
                             <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center;">Räntesats</td>
                             <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center;">Räntekostnad<br>/mån</td>
-                            <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center;">Amortering</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center;">Amortering<br>/mån</td>
                             <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center;">Månads-<br>kostnad</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center;">Återbet.tid<br>(år)</td>
                         </tr>
                         <tr>
                             <th style="background-color: #f1f3f4; padding: 8px; border: 1px solid #ccc; text-align: center; color: #333;">2</th>
                             <td style="padding: 8px; border: 1px solid #ccc; text-align: center;">{formatera_kr(kapital)}</td>
                             <td style="padding: 8px; border: 1px solid #ccc; text-align: center;">{ranta} %</td>
-                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center; color: gray; font-style: italic;">[tom]</td>
-                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center;">{formatera_kr(amort)}</td>
-                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center; color: gray; font-style: italic;">[tom]</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center; color: {'#333' if C2_val != '[tom]' else 'gray'}; font-style: {'normal' if C2_val != '[tom]' else 'italic'};">{C2_val}</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center; color: {'#333' if D2_val != '[tom]' else 'gray'}; font-style: {'normal' if D2_val != '[tom]' else 'italic'};">{D2_val}</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center; color: {'#333' if E2_val != '[tom]' else 'gray'}; font-style: {'normal' if E2_val != '[tom]' else 'italic'};">{E2_val}</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center; color: {'#333' if F2_val != '[tom]' else 'gray'}; font-style: {'normal' if F2_val != '[tom]' else 'italic'};">{F2_val}</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
             """
             
-            subtyp = random.choice(['C2', 'E2'])
-            
             if typ == 'kalkylblad_varde':
-                if subtyp == 'C2':
+                if subtyp == 'C2_ranta':
                     return {
                         "info_box_blue": "Titta på kalkylarket nedan:",
                         "html_table": tabell_html,
                         "fraga": "I cell C2 skriver du in formeln: `=A2*B2/12`. Vilket värde kommer att visas i cell C2 när du trycker på Enter? (Svara i kr)",
                         "ratt_svar": manadsranta_kr,
-                        "input_typ": "text",
-                        "svarstyp": "int",
-                        "suffix": "kr"
+                        "input_typ": "text", "svarstyp": "int", "suffix": "kr"
                     }
-                else:
+                elif subtyp == 'E2_tot':
                     return {
                         "info_box_blue": f"Titta på kalkylarket nedan. Tänk dig att du redan har räknat ut att räntekostnaden i cell C2 blev {formatera_kr(manadsranta_kr)} kr.",
                         "html_table": tabell_html,
                         "fraga": "I cell E2 skriver du in formeln: `=C2+D2`. Vilket värde kommer att visas i cell E2? (Svara i kr)",
                         "ratt_svar": manadsranta_kr + amort,
-                        "input_typ": "text",
-                        "svarstyp": "int",
-                        "suffix": "kr"
+                        "input_typ": "text", "svarstyp": "int", "suffix": "kr"
                     }
-            else: # formel
-                if subtyp == 'C2':
+                elif subtyp == 'D2_amort':
+                    return {
+                        "info_box_blue": "Titta på kalkylarket nedan:",
+                        "html_table": tabell_html,
+                        "fraga": f"Lånet ska betalas tillbaka med samma summa varje månad under den tid som står i cell F2. Hur stor blir amorteringen per månad? (Svara i kr)",
+                        "ratt_svar": amort,
+                        "input_typ": "text", "svarstyp": "int", "suffix": "kr"
+                    }
+                elif subtyp == 'tid_manader':
+                    return {
+                        "info_box_blue": "Titta på kalkylarket nedan:",
+                        "html_table": tabell_html,
+                        "fraga": "Om du amorterar det belopp som står i cell D2 varje månad, hur många MÅNADER kommer det ta innan hela lånet är noll?",
+                        "ratt_svar": ar * 12,
+                        "input_typ": "text", "svarstyp": "int", "suffix": "månader"
+                    }
+                    
+            elif typ == 'kalkylblad_formel':
+                if subtyp == 'C2_ranta':
                     return {
                         "info_box_blue": "Titta på kalkylarket nedan:",
                         "html_table": tabell_html,
@@ -804,10 +839,9 @@ def skapa_lan_uppgift(niva):
                         ],
                         "ratt_svar_visning": "=A2*B2/12",
                         "ratt_svar": "=A2*B2/12",
-                        "input_typ": "text",
-                        "svarstyp": "kalkyl_formel"
+                        "input_typ": "text", "svarstyp": "kalkyl_formel"
                     }
-                else:
+                elif subtyp == 'E2_tot':
                     return {
                         "info_box_blue": "Titta på kalkylarket nedan:",
                         "html_table": tabell_html,
@@ -815,8 +849,42 @@ def skapa_lan_uppgift(niva):
                         "ratt_svar_lista": ['=c2+d2', '=d2+c2'],
                         "ratt_svar_visning": "=C2+D2",
                         "ratt_svar": "=C2+D2",
-                        "input_typ": "text",
-                        "svarstyp": "kalkyl_formel"
+                        "input_typ": "text", "svarstyp": "kalkyl_formel"
+                    }
+                elif subtyp == 'D2_amort':
+                    return {
+                        "info_box_blue": "Titta på kalkylarket nedan:",
+                        "html_table": tabell_html,
+                        "fraga": "Vilken formel ska du skriva in i cell D2 för att räkna ut amorteringen per månad? Tänk på att löptiden i F2 anges i år.",
+                        "ratt_svar_lista": [
+                            '=a2/(f2*12)', '=a2/(12*f2)', '=(a2/f2)/12', '=(a2/12)/f2', 
+                            '=a2/f2/12', '=a2/12/f2'
+                        ],
+                        "ratt_svar_visning": "=A2/(F2*12)",
+                        "ratt_svar": "=A2/(F2*12)",
+                        "input_typ": "text", "svarstyp": "kalkyl_formel"
+                    }
+                elif subtyp == 'tid_manader':
+                    return {
+                        "info_box_blue": "Titta på kalkylarket nedan:",
+                        "html_table": tabell_html,
+                        "fraga": "Du vill räkna ut hur många MÅNADER det tar att betala av hela lånet om du amorterar det belopp som står i cell D2. Vilken formel använder du?",
+                        "ratt_svar_lista": ['=a2/d2'],
+                        "ratt_svar_visning": "=A2/D2",
+                        "ratt_svar": "=A2/D2",
+                        "input_typ": "text", "svarstyp": "kalkyl_formel"
+                    }
+                elif subtyp == 'F2_tid_ar':
+                    return {
+                        "info_box_blue": "Titta på kalkylarket nedan:",
+                        "html_table": tabell_html,
+                        "fraga": "Vilken formel kan du skriva i cell F2 för att räkna ut hur många ÅR lånet ska betalas tillbaka på, om du amorterar det belopp som står i D2 varje månad?",
+                        "ratt_svar_lista": [
+                            '=(a2/d2)/12', '=a2/(d2*12)', '=(a2/12)/d2', '=a2/d2/12', '=a2/12/d2', '=a2/(12*d2)'
+                        ],
+                        "ratt_svar_visning": "=(A2/D2)/12",
+                        "ratt_svar": "=(A2/D2)/12",
+                        "input_typ": "text", "svarstyp": "kalkyl_formel"
                     }
     else:
         typ = random.choice(['manadskostnad_1', 'manadskostnad_2', 'snabblan'])
@@ -1281,7 +1349,7 @@ def skapa_problemlosning_uppgift(niva):
                 "input_typ": "text",
                 "svarstyp": "int",
                 "suffix": "liter",
-                "undertext": "Tips: 1 liter är detsamma som 1 kubikdecimeter (dm³). Lös uppgiften med huvudräkning."
+                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
             }
 
         elif typ == 'formel_kokpunkt':
