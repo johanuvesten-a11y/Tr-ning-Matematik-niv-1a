@@ -1349,7 +1349,7 @@ def skapa_problemlosning_uppgift(niva):
                 "input_typ": "text",
                 "svarstyp": "int",
                 "suffix": "liter",
-                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
+                "undertext": "Tips: 1 liter är detsamma som 1 kubikdecimeter (dm³). Lös uppgiften med huvudräkning."
             }
 
         elif typ == 'formel_kokpunkt':
@@ -1514,14 +1514,13 @@ def skapa_problemlosning_uppgift(niva):
             }
             
         elif typ == 'medelfart':
-            s = random.choice([30, 60, 120])
-            v1 = random.choice([20, 30, 40, 60])
-            v2 = random.choice([10, 15, 20, 30])
-            
-            # Vi vill ha olika hastigheter och en snygg division
-            while v1 <= v2 or (s % v1 != 0) or (s % v2 != 0):
-                v1 = random.choice([20, 30, 40, 60])
-                v2 = random.choice([10, 15, 20, 30])
+            combos = [
+                (30, 15, 10), # s=30, v1=15, v2=10 => medel=12
+                (60, 30, 20), # s=60, v1=30, v2=20 => medel=24
+                (24, 24, 12), # s=24, v1=24, v2=12 => medel=16
+                (60, 20, 12)  # s=60, v1=20, v2=12 => medel=15
+            ]
+            s, v1, v2 = random.choice(combos)
             
             t1 = s / v1
             t2 = s / v2
@@ -1579,7 +1578,7 @@ def skapa_problemlosning_uppgift(niva):
             per_person = int(total_needed / (pop_milj * 1000000))
             
             sak = random.choice(['nödpaket', 'vaccindoser', 'varma filtar'])
-            info = f"I ett land med {pop_milj} miljoner invånare startas en insamling för att köpa {formatera_kr(items)} {sak}. Varje styck kostar {price} kr.<br><br>På grund av administrativa kostnader går dock bara {effektivitet} % av de insamlade pengarna till själva inköpen (resten försvinner på vägen)."
+            info = f"I ett land med {pop_milj} miljoner invånare startas en insamling för att köpa {formatera_kr(items)} {sak}. De kostar {price} kr styck.<br><br>På grund av administrativa kostnader går dock bara {effektivitet} % av de insamlade pengarna till själva inköpen."
             
             return {
                 "info_box_blue": info,
