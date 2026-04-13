@@ -171,6 +171,7 @@ def visa_infobox(text: str, style: str):
     border_color, bg_color = colors.get(style, ('#333', '#f4f4f4'))
     st.markdown(f"<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: {bg_color}; padding: 25px; border-radius: 10px; border-left: 6px solid {border_color};'>{text}</div>", unsafe_allow_html=True)
 
+
 def hantera_svar():
     """Callback som hanterar inmatning och rättning on-click."""
     st.session_state.rattat = True
@@ -185,6 +186,7 @@ def hantera_svar():
             input_svar = 'Välj svar...' if u.input_typ == 'selectbox' else ""
             
     st.session_state.svar_status = ratta_svar(u, input_svar)
+
 
 # ==========================================
 # 2. MATEMATIKGENERATORER (Returnerar data)
@@ -743,36 +745,36 @@ def skapa_lan_uppgift(niva):
             
             tabell_html = f"""
             <div style="overflow-x: auto; margin-top: 10px; margin-bottom: 20px;">
-                <table style="width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 14px; background-color: white; border: 1px solid #ccc;">
+                <table style="width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 14px; background-color: white; color: black; border: 1px solid #ccc;">
                     <thead>
                         <tr style="background-color: #f1f3f4; border-bottom: 2px solid #ccc;">
-                            <th style="padding: 8px; border: 1px solid #ccc; width: 40px;"></th>
-                            <th style="padding: 8px; border: 1px solid #ccc; text-align: center; color: #333;">A</th>
-                            <th style="padding: 8px; border: 1px solid #ccc; text-align: center; color: #333;">B</th>
-                            <th style="padding: 8px; border: 1px solid #ccc; text-align: center; color: #333;">C</th>
-                            <th style="padding: 8px; border: 1px solid #ccc; text-align: center; color: #333;">D</th>
-                            <th style="padding: 8px; border: 1px solid #ccc; text-align: center; color: #333;">E</th>
-                            <th style="padding: 8px; border: 1px solid #ccc; text-align: center; color: #333;">F</th>
+                            <th style="padding: 8px; border: 1px solid #ccc; width: 40px; color: black;"></th>
+                            <th style="padding: 8px; border: 1px solid #ccc; text-align: center; color: black;">A</th>
+                            <th style="padding: 8px; border: 1px solid #ccc; text-align: center; color: black;">B</th>
+                            <th style="padding: 8px; border: 1px solid #ccc; text-align: center; color: black;">C</th>
+                            <th style="padding: 8px; border: 1px solid #ccc; text-align: center; color: black;">D</th>
+                            <th style="padding: 8px; border: 1px solid #ccc; text-align: center; color: black;">E</th>
+                            <th style="padding: 8px; border: 1px solid #ccc; text-align: center; color: black;">F</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <th style="background-color: #f1f3f4; padding: 8px; border: 1px solid #ccc; text-align: center; color: #333;">1</th>
-                            <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center;">Lånebelopp</td>
-                            <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center;">Räntesats</td>
-                            <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center;">Räntekostnad<br>/mån</td>
-                            <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center;">Amortering<br>/mån</td>
-                            <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center;">Månads-<br>kostnad</td>
-                            <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center;">Återbet.tid<br>(år)</td>
+                            <th style="background-color: #f1f3f4; padding: 8px; border: 1px solid #ccc; text-align: center; color: black;">1</th>
+                            <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center; color: black;">Lånebelopp</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center; color: black;">Räntesats</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center; color: black;">Räntekostnad<br>/mån</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center; color: black;">Amortering<br>/mån</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center; color: black;">Månads-<br>kostnad</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; text-align: center; color: black;">Återbet.tid<br>(år)</td>
                         </tr>
                         <tr>
-                            <th style="background-color: #f1f3f4; padding: 8px; border: 1px solid #ccc; text-align: center; color: #333;">2</th>
-                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center;">{formatera_kr(kapital)}</td>
-                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center;">{ranta}\xa0%</td>
-                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center; color: {'#333' if C2_val != '[tom]' else 'gray'}; font-style: {'normal' if C2_val != '[tom]' else 'italic'};">{C2_val}</td>
-                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center; color: {'#333' if D2_val != '[tom]' else 'gray'}; font-style: {'normal' if D2_val != '[tom]' else 'italic'};">{D2_val}</td>
-                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center; color: {'#333' if E2_val != '[tom]' else 'gray'}; font-style: {'normal' if E2_val != '[tom]' else 'italic'};">{E2_val}</td>
-                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center; color: {'#333' if F2_val != '[tom]' else 'gray'}; font-style: {'normal' if F2_val != '[tom]' else 'italic'};">{F2_val}</td>
+                            <th style="background-color: #f1f3f4; padding: 8px; border: 1px solid #ccc; text-align: center; color: black;">2</th>
+                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center; color: black;">{formatera_kr(kapital)}</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center; color: black;">{ranta}\xa0%</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center; color: {'black' if C2_val != '[tom]' else 'gray'}; font-style: {'normal' if C2_val != '[tom]' else 'italic'};">{C2_val}</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center; color: {'black' if D2_val != '[tom]' else 'gray'}; font-style: {'normal' if D2_val != '[tom]' else 'italic'};">{D2_val}</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center; color: {'black' if E2_val != '[tom]' else 'gray'}; font-style: {'normal' if E2_val != '[tom]' else 'italic'};">{E2_val}</td>
+                            <td style="padding: 8px; border: 1px solid #ccc; text-align: center; color: {'black' if F2_val != '[tom]' else 'gray'}; font-style: {'normal' if F2_val != '[tom]' else 'italic'};">{F2_val}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -877,7 +879,10 @@ def rita_traddiagram(grenar, farg1, farg2):
         fig.add_trace(go.Scatter(x=[nodes_x[start], nodes_x[end]], y=[nodes_y[start], nodes_y[end]], mode='lines', line=dict(color='black', width=2), hoverinfo='skip'))
         forskjutning = 0.65
         fig.add_annotation(x=nodes_x[start] + forskjutning * (nodes_x[end] - nodes_x[start]), y=nodes_y[start] + forskjutning * (nodes_y[end] - nodes_y[start]), text=f"<b>{grenar[i]}</b>", showarrow=False, font=dict(size=18, color='red' if grenar[i] == 'x' else '#0056b3'), bgcolor="white", borderpad=2)
-    fig.add_trace(go.Scatter(x=nodes_x, y=nodes_y, mode='markers+text', marker=dict(size=40, color='white', line=dict(color='black', width=2)), text=[f"<b>{lbl}</b>" for lbl in ["Start", farg1, farg2, farg1, farg2, farg1, farg2]], textposition="middle center", hoverinfo='skip'))
+    
+    # FIX: textfont=dict(color='black') så de inte blir vita i mörkt läge
+    fig.add_trace(go.Scatter(x=nodes_x, y=nodes_y, mode='markers+text', marker=dict(size=40, color='white', line=dict(color='black', width=2)), text=[f"<b>{lbl}</b>" for lbl in ["Start", farg1, farg2, farg1, farg2, farg1, farg2]], textposition="middle center", textfont=dict(color='black', size=14), hoverinfo='skip'))
+    
     fig.add_annotation(x=-0.05, y=0.5, text="<b>Dragning 1</b>", showarrow=False, font=dict(size=14, color="gray"), xanchor="right")
     fig.add_annotation(x=-0.05, y=0, text="<b>Dragning 2</b>", showarrow=False, font=dict(size=14, color="gray"), xanchor="right")
     fig.update_layout(xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[-0.3, 1.05]), yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[-0.2, 1.1]), margin=dict(l=10, r=10, t=10, b=10), height=400, plot_bgcolor='white', showlegend=False, hovermode=False, dragmode=False)
@@ -1352,7 +1357,7 @@ def skapa_problemlosning_uppgift(niva):
                 (f"{klipp} / {engangs}", "Hur många gånger man måste bada för att tjäna in rabattkortet.")
             ]
             valt_uttryck, ratt_svar_text = random.choice(varianter)
-            info = f"I simhallen kostar en engångsentré {engangs}\xa0kr. Man kan också köpa ett rabattkort för 10\xa0gånger som kostar {klipp}\xa0kr.<br><br>En person beräknar följande:<br><b>{valt_uttryck}</b>"
+            info = f"I simhallen kostar en engångsentré {engangs}\xa0kr. Man kan också köpa ett rabattkort för 10 gånger som kostar {klipp}\xa0kr.<br><br>En person beräknar följande:<br><b>{valt_uttryck}</b>"
             alts = [v[1] for v in varianter]
             random.shuffle(alts)
             return Uppgift(info_box_text=info, info_box_style="blue", fraga="Förklara vad personen har beräknat genom att välja rätt svarsalternativ.", ratt_svar=ratt_svar_text, alternativ=alts, input_typ="radio", svarstyp="string", undertext="Läs uttrycket noggrant och fundera på vad uträkningen faktiskt ger för svar.<br>Lös uppgiften med huvudräkning (utan miniräknare).")
@@ -1496,10 +1501,10 @@ with col_vanster:
             trace_y = u.trace_y,
             trace_alla_x = u.trace_alla_x
         )
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False}, theme=None)
         
     if u.plotly_fig is not None:
-        st.plotly_chart(u.plotly_fig, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(u.plotly_fig, use_container_width=True, config={'displayModeBar': False}, theme=None)
 
     if u.info_text:
         st.markdown(f"<div style='text-align: center; font-size: 20px; color: gray; margin-top: 50px;'>{u.info_text}</div>", unsafe_allow_html=True)
