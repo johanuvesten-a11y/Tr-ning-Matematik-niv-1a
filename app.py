@@ -1014,18 +1014,33 @@ def skapa_stat_uppgift(niva=1):
         random.shuffle(alts)
         return Uppgift(info_box_text=f"En undersökning visar att {resultat} % av eleverna på en stor skola vill ha längre raster. Undersökningen har en felmarginal på ±{fm} procentenheter vid 95 % konfidensgrad.", info_box_style="purple", fraga="Vilket av följande påståenden är FALSKT (felaktigt)?", ratt_svar=ratt, alternativ=alts, input_typ="radio", svarstyp="string")
 
-def rita_mönster_kuber(max_fig=4):
-    """Ritar isometriska kuber som ett plotlymönster."""
+def rita_mönster_kuber(max_fig=4, typ=1):
+    """Ritar isometriska kuber som ett plotlymönster baserat på vald typ."""
     fig = go.Figure()
     offset_u = 0
     
     for n in range(1, max_fig + 1):
         kuber = []
-        for x in range(n):
-            for y in range(n):
-                kuber.append((x, y, 0, 'vit'))
-                if x + y <= n - 2:
-                    kuber.append((x, y, 1, 'grå'))
+        if typ == 1: # Trappan
+            for x in range(n):
+                for y in range(n):
+                    kuber.append((x, y, 0, 'vit'))
+                    if x + y <= n - 2:
+                        kuber.append((x, y, 1, 'grå'))
+        elif typ == 2: # Pyramiden
+            for x in range(n + 1):
+                for y in range(n + 1):
+                    kuber.append((x, y, 0, 'vit'))
+            for x in range(n):
+                for y in range(n):
+                    kuber.append((x + 0.5, y + 0.5, 1, 'grå'))
+        elif typ == 3: # Delad kvadrat
+            for x in range(n):
+                for y in range(n):
+                    if x >= y:
+                        kuber.append((x, y, 0, 'vit'))
+                    else:
+                        kuber.append((x, y, 0, 'grå'))
         
         # Painter's algorithm: sort back-to-front
         kuber.sort(key=lambda k: (k[0], k[1], k[2]))
@@ -1039,19 +1054,17 @@ def rita_mönster_kuber(max_fig=4):
             else:
                 c_top, c_left, c_right = '#888888', '#666666', '#444444'
                 
-            # Top
             fig.add_trace(go.Scatter(x=[u_c, u_c+1, u_c, u_c-1, u_c], y=[v_c+0.5, v_c, v_c-0.5, v_c, v_c+0.5], fill='toself', fillcolor=c_top, mode='lines', line=dict(color='#333', width=1), hoverinfo='skip'))
-            # Right
             fig.add_trace(go.Scatter(x=[u_c, u_c+1, u_c+1, u_c, u_c], y=[v_c-0.5, v_c, v_c-1, v_c-1.5, v_c-0.5], fill='toself', fillcolor=c_right, mode='lines', line=dict(color='#333', width=1), hoverinfo='skip'))
-            # Left
             fig.add_trace(go.Scatter(x=[u_c, u_c-1, u_c-1, u_c, u_c], y=[v_c-0.5, v_c, v_c-1, v_c-1.5, v_c-0.5], fill='toself', fillcolor=c_left, mode='lines', line=dict(color='#333', width=1), hoverinfo='skip'))
         
+        bredd = (n + 1) if typ == 2 else n
         fig.add_trace(go.Scatter(
-            x=[offset_u], y=[-n - 1.5], mode='text', text=[f"<b>Figur {n}</b>"], 
+            x=[offset_u], y=[-bredd - 1.0], mode='text', text=[f"<b>Figur {n}</b>"], 
             textfont=dict(size=16, color='black'), hoverinfo='skip'
         ))
         
-        offset_u += (2 * n) + 1 # Dynamisk förskjutning i sidled
+        offset_u += (2 * bredd) + 2
         
     fig.update_layout(
         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, visible=False),
@@ -1067,23 +1080,57 @@ def skapa_problemlosning_uppgift(niva):
         typ = random.choice([
             'hyra_fordon', 'vardeminskning', 'pannkakor_proportion', 'valuta_omvandling', 
             'jamfora_abonnemang', 'vattenlackage', 'upprepad_procent_rea', 
-            'enhetsomvandling_regn', 'formel_kokpunkt', 'enkel_tidszon_resa', 'jamforpris'
+            'enhetsomvandling_regn', 'formel_kokpunkt', 'enkel_tidszon_resa', 'jamforpris',
+            'monster_kuber_1'
         ])
         
-        if typ == 'hyra_fordon':
+        if typ == 'monster_kuber_1':
+            monster_typ = random.choice([1, 2, 3])
+            fig_graf = rita_mönster_kuber(4, monster_typ)
+            info = "Bilden visar ett mönster byggt av vita och grå kuber. Kika noga på hur mönstret växer från Figur 1 till Figur 4."
+            target_fig = random.choice([5, 6, 7])
+            fraga_fokus = random.choice(['vita', 'grå', 'totala'])
+            
+            if monster_typ == 1:
+                vita = target_fig**2
+                gra = int(target_fig * (target_fig - 1) / 2)
+                tot = vita + gra
+            elif monster_typ == 2:
+                vita = (target_fig + 1)**2
+                gra = target_fig**2
+                tot = vita + gra
+            else: # typ 3
+                tot = target_fig**2
+                vita = int(target_fig * (target_fig + 1) / 2)
+                gra = int(target_fig * (target_fig - 1) / 2)
+                
+            if fraga_fokus == 'vita':
+                svar = vita
+                fraga = f"Hur många VITA kuber kommer det att finnas i Figur {target_fig}?"
+            elif fraga_fokus == 'grå':
+                svar = gra
+                fraga = f"Hur många GRÅ kuber kommer det att finnas i Figur {target_fig}?"
+            else:
+                svar = tot
+                fraga = f"Hur många kuber kommer det att finnas TOTALT i Figur {target_fig}?"
+                
+            return Uppgift(
+                info_box_text=info, info_box_style="blue", plotly_fig=fig_graf,
+                fraga=fraga, ratt_svar=svar, input_typ="text", svarstyp="int",
+                undertext="Lös uppgiften på papper (utan miniräknare). Ett tips är att skriva upp en tabell."
+            )
+            
+        elif typ == 'hyra_fordon':
             namn = random.choice(namn_lista)
             fordon = random.choice(["bil", "minibuss", "skåpbil", "husbil"])
             start = random.randint(3, 10) * 100
             mil_kost = random.randint(2, 6) * 10
-            
             ratt = f"y = {mil_kost}x + {start}"
             alt1 = f"y = {start}x + {mil_kost}"
             alt2 = f"y = {mil_kost} + x + {start}"
             alt3 = f"y = {mil_kost}x + {start}x"
-            
             alts = [f"${ratt}$", f"${alt1}$", f"${alt2}$", f"${alt3}$"]
             random.shuffle(alts)
-            
             info = f"{namn} ska hyra en {fordon}. Startavgiften är {start} kr. Dessutom kostar det {mil_kost} kr för varje mil hen kör."
             return Uppgift(info_box_text=info, info_box_style="blue", fraga="Vilken formel beskriver den totala kostnaden y kr för x mil som körs?", ratt_svar=f"${ratt}$", alternativ=alts, input_typ="radio", svarstyp="string", undertext="Lös uppgiften med huvudräkning (utan miniräknare).")
             
@@ -1143,7 +1190,6 @@ def skapa_problemlosning_uppgift(niva):
             avresa_m = random.choice([0, 10, 20, 30, 40, 50])
             extra_min = random.choice([-20, -10, 0, 10, 20, 30])
             total_restid_m = destination["bas_tim"] * 60 + destination["bas_min"] + extra_min
-
             restid_h = total_restid_m // 60
             restid_m_rest = total_restid_m % 60
             start_minuter = avresa_h * 60 + avresa_m
@@ -1152,11 +1198,9 @@ def skapa_problemlosning_uppgift(niva):
             ankomst_lokal_tid = ankomst_lokal_tid % (24 * 60)
             ankomst_h = ankomst_lokal_tid // 60
             ankomst_m = ankomst_lokal_tid % 60
-
             avresa_str = f"{avresa_h:02d}:{avresa_m:02d}"
             restid_str = f"{restid_h}h {restid_m_rest}min"
             diff_str = f"+{destination['tidsskillnad']}h" if destination['tidsskillnad'] > 0 else f"{destination['tidsskillnad']}h"
-
             info = f"Du reser från Stockholm kl. {avresa_str} och resan till {destination['stad']} tar {restid_str}."
             fraga = f"Vad är klockan lokalt i {destination['stad']} när du landar om tidsskillnaden är {diff_str}? (Svara i formatet HH:MM)"
             svar = f"{ankomst_h:02d}:{ankomst_m:02d}"
@@ -1206,45 +1250,67 @@ def skapa_problemlosning_uppgift(niva):
 
     else: # Nivå 2
         typ = random.choice([
-            'pizza_brak', 'algebraisk_forstaelse', 'monster_stickor', 'monster_kuber', 'tolka_uttryck_rabatt', 
+            'pizza_brak', 'algebraisk_forstaelse', 'monster_stickor', 'monster_kuber_2', 'tolka_uttryck_rabatt', 
             'tidsvinst_hastighet', 'area_uttryck', 'medelfart', 'relativ_procent', 'valgorenhet'
         ])
         
-        if typ == 'monster_kuber':
-            fraga_typ = random.choice(['antal_gra', 'formel_vita', 'formel_total'])
-            fig_graf = rita_mönster_kuber(4)
+        if typ == 'monster_kuber_2':
+            monster_typ = random.choice([1, 2, 3])
+            fig_graf = rita_mönster_kuber(4, monster_typ)
             info = "Bilden visar ett mönster byggt av vita och grå kuber. Kika noga på hur mönstret växer från Figur 1 till Figur 4."
+            fraga_fokus = random.choice(['vita', 'grå', 'totala'])
             
-            if fraga_typ == 'antal_gra':
-                target_fig = random.choice([6, 7, 8])
-                svar = int(target_fig * (target_fig - 1) / 2)
-                return Uppgift(
-                    info_box_text=info, info_box_style="blue", plotly_fig=fig_graf,
-                    fraga=f"Hur många GRÅ kuber kommer det att finnas i Figur {target_fig}?",
-                    ratt_svar=svar, input_typ="text", svarstyp="int",
-                    undertext="Lös uppgiften på papper (utan miniräknare)."
-                )
-            elif fraga_typ == 'formel_vita':
-                return Uppgift(
-                    info_box_text=info, info_box_style="blue", plotly_fig=fig_graf,
-                    fraga="Skriv ett algebraiskt uttryck för antalet VITA kuber i figur n.",
-                    ratt_svar="n**2", input_typ="text", svarstyp="string_math",
-                    undertext="Lös uppgiften på papper (utan miniräknare). Använd n som variabel."
-                )
-            elif fraga_typ == 'formel_total':
-                ratt = "n^2 + \\frac{n(n-1)}{2}"
-                d1 = "n^2 + \\frac{n(n+1)}{2}"
-                d2 = "n^2 + n - 1"
-                d3 = "2n^2 - n"
-                alts = [f"${ratt}$", f"${d1}$", f"${d2}$", f"${d3}$"]
-                random.shuffle(alts)
-                return Uppgift(
-                    info_box_text=info, info_box_style="blue", plotly_fig=fig_graf,
-                    fraga="Vilket av följande algebraiska uttryck beskriver det TOTALA antalet kuber (vita och grå) i figur n?",
-                    ratt_svar=f"${ratt}$", alternativ=alts, input_typ="radio", svarstyp="string",
-                    undertext="Börja gärna med att ställa upp tabellvärden på ett papper."
-                )
+            if monster_typ == 1:
+                formel_vita = "n**2"
+                formel_gra = "\\frac{n(n-1)}{2}"
+                formel_tot = "n^2 + \\frac{n(n-1)}{2}"
+            elif monster_typ == 2:
+                formel_vita = "(n+1)**2"
+                formel_gra = "n**2"
+                formel_tot = "(n+1)^2 + n^2"
+            else: # typ 3
+                formel_tot = "n**2"
+                formel_vita = "\\frac{n(n+1)}{2}"
+                formel_gra = "\\frac{n(n-1)}{2}"
                 
+            if fraga_fokus == 'vita':
+                if monster_typ == 1:
+                    return Uppgift(info_box_text=info, info_box_style="blue", plotly_fig=fig_graf, fraga="Skriv ett algebraiskt uttryck för antalet VITA kuber i figur n.", ratt_svar=formel_vita, input_typ="text", svarstyp="string_math", undertext="Använd n som variabel.")
+                elif monster_typ == 2:
+                    return Uppgift(info_box_text=info, info_box_style="blue", plotly_fig=fig_graf, fraga="Skriv ett algebraiskt uttryck för antalet VITA kuber i figur n.", ratt_svar=formel_vita, input_typ="text", svarstyp="string_math", undertext="Använd n som variabel. T.ex. (n+2)^2")
+                else:
+                    ratt = formel_vita
+                    alts = [f"${ratt}$", f"$\\frac{{n(n-1)}}{{2}}$", f"$\\frac{{n^2}}{{2}}$", f"$n^2 + 1$"]
+                    random.shuffle(alts)
+                    return Uppgift(info_box_text=info, info_box_style="blue", plotly_fig=fig_graf, fraga="Vilket uttryck beskriver antalet VITA kuber i figur n?", ratt_svar=f"${ratt}$", alternativ=alts, input_typ="radio", svarstyp="string", undertext="Börja gärna med att ställa upp tabellvärden på ett papper.")
+            elif fraga_fokus == 'grå':
+                if monster_typ == 2:
+                    return Uppgift(info_box_text=info, info_box_style="blue", plotly_fig=fig_graf, fraga="Skriv ett algebraiskt uttryck för antalet GRÅ kuber i figur n.", ratt_svar=formel_gra, input_typ="text", svarstyp="string_math", undertext="Använd n som variabel.")
+                else: 
+                    ratt = formel_gra
+                    alts = [f"${ratt}$", f"$\\frac{{n(n+1)}}{{2}}$", f"$\\frac{{n^2}}{{2}}$", f"$n^2 - 1$"]
+                    random.shuffle(alts)
+                    return Uppgift(info_box_text=info, info_box_style="blue", plotly_fig=fig_graf, fraga="Vilket uttryck beskriver antalet GRÅ kuber i figur n?", ratt_svar=f"${ratt}$", alternativ=alts, input_typ="radio", svarstyp="string", undertext="Börja gärna med att ställa upp tabellvärden på ett papper.")
+            else: # totala
+                if monster_typ == 3:
+                    return Uppgift(info_box_text=info, info_box_style="blue", plotly_fig=fig_graf, fraga="Skriv ett algebraiskt uttryck för antalet kuber TOTALT i figur n.", ratt_svar=formel_tot, input_typ="text", svarstyp="string_math", undertext="Använd n som variabel.")
+                elif monster_typ == 1:
+                    ratt = formel_tot
+                    d1 = "n^2 + \\frac{n(n+1)}{2}"
+                    d2 = "n^2 + n - 1"
+                    d3 = "2n^2 - n"
+                    alts = [f"${ratt}$", f"${d1}$", f"${d2}$", f"${d3}$"]
+                    random.shuffle(alts)
+                    return Uppgift(info_box_text=info, info_box_style="blue", plotly_fig=fig_graf, fraga="Vilket uttryck beskriver antalet kuber TOTALT i figur n?", ratt_svar=f"${ratt}$", alternativ=alts, input_typ="radio", svarstyp="string", undertext="Börja gärna med att ställa upp tabellvärden på ett papper.")
+                else:
+                    ratt = formel_tot
+                    d1 = "n^2 + (n-1)^2"
+                    d2 = "2n^2 + 1"
+                    d3 = "(n+1)^2 + n"
+                    alts = [f"${ratt}$", f"${d1}$", f"${d2}$", f"${d3}$"]
+                    random.shuffle(alts)
+                    return Uppgift(info_box_text=info, info_box_style="blue", plotly_fig=fig_graf, fraga="Vilket uttryck beskriver antalet kuber TOTALT i figur n?", ratt_svar=f"${ratt}$", alternativ=alts, input_typ="radio", svarstyp="string", undertext="Börja gärna med att ställa upp tabellvärden på ett papper.")
+
         elif typ == 'pizza_brak':
             namn1, namn2 = random.sample(namn_lista, 2)
             A_den = random.choice([3, 4, 5])
@@ -1477,7 +1543,7 @@ with col_hoger:
             generera_ny_uppgift()
             st.rerun()
     else:
-        # Visar svarsformuläret och mappar onSubmit till callback-funktionen
+        # Visar svarsformuläret och mappar on_click till callback-funktionen
         with st.form(key=f"form_{uid}"):
             if u.input_typ == 'flera_text':
                 for i in range(len(u.ratt_svar)):
