@@ -6,6 +6,8 @@ import plotly.graph_objects as go
 from fractions import Fraction
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr, standard_transformations, implicit_multiplication_application
+from dataclasses import dataclass, field
+from typing import Optional, Any, Callable, List
 
 # --- Ställ in sidans layout till bred ---
 st.set_page_config(layout="wide", page_title="Matematikträning")
@@ -30,20 +32,49 @@ input[type="text"] {
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 0. HJÄLPFUNKTIONER FÖR FORMATERING & RÄTTNING
+# 0. DATAKLASS FÖR UPPGIFTER
+# ==========================================
+
+@dataclass
+class Uppgift:
+    fraga: str
+    ratt_svar: Any
+    input_typ: str
+    svarstyp: str
+    visnings_kategori: str = ""
+    
+    # Valfria fält (UI & Layout)
+    info_text: Optional[str] = None
+    latex_text: Optional[str] = None
+    info_box_text: Optional[str] = None
+    info_box_style: Optional[str] = None  # 'blue', 'green', 'pink', 'purple'
+    info_text_italic: Optional[str] = None
+    undertext: Optional[str] = None
+    html_table: Optional[str] = None
+    
+    # Valfria fält (Graf & Plotly)
+    graf_f: Optional[Callable] = None
+    q_type_vis: str = 'vis_none'
+    trace_x: Optional[float] = None
+    trace_y: Optional[float] = None
+    trace_alla_x: Optional[list] = None
+    plotly_fig: Optional[Any] = None
+    
+    # Valfria fält (Alternativ och speciell rättning)
+    alternativ: Optional[list] = None
+    ratt_svar_lista: Optional[list] = None
+    ratt_svar_visning: Optional[str] = None
+    suffix: Optional[str] = None
+
+# ==========================================
+# 1. HJÄLPFUNKTIONER (FORMATERING & RÄTTNING)
 # ==========================================
 
 def formatera_polynom(termer):
-    """
-    Hjälpfunktion för att formatera algebraiska termer till snygg text (t.ex. tar bort 1x, hanterar minus).
-    termer: En lista med tupler (koefficient, 'variabelsträng'), t.ex. [(3, 'x^2'), (-1, 'x'), (5, '')]
-    """
     res = ""
     for koeff, var in termer:
         if koeff == 0:
             continue
-        
-        # Formatera koefficienten (siffran)
         if var == "":
             term_str = str(abs(koeff))
         else:
@@ -51,113 +82,122 @@ def formatera_polynom(termer):
                 term_str = var
             else:
                 term_str = f"{abs(koeff)}{var}"
-        
-        # Hantera tecken och bygga ihop strängen
         if res == "":
-            if koeff < 0:
-                res += f"-{term_str}"
-            else:
-                res += term_str
+            if koeff < 0: res += f"-{term_str}"
+            else: res += term_str
         else:
-            if koeff < 0:
-                res += f" - {term_str}"
-            else:
-                res += f" + {term_str}"
-                
+            if koeff < 0: res += f" - {term_str}"
+            else: res += f" + {term_str}"
     return res if res != "" else "0"
 
 def formatera_kr(b): 
     return f"{int(round(b)):,}".replace(",", " ")
 
-def ratta_svar(u, input_svar):
-    """
-    Centraliserad logik för att rätta alla uppgiftstyper.
-    Returnerar status som en sträng: 'ratt', 'fel', 'format', 'format_ratio', 'format_saknar_likamed', 'tom'
-    """
-    if u['input_typ'] == 'flera_text':
+def ratta_svar(u: Uppgift, input_svar: Any) -> str:
+    if u.input_typ == 'flera_text':
         if all(s.strip() != "" for s in input_svar):
             try:
                 anv_svar_float = sorted([round(float(s.strip().replace(',', '.')), 4) for s in input_svar])
-                return 'ratt' if anv_svar_float == u['ratt_svar'] else 'fel'
+                return 'ratt' if anv_svar_float == u.ratt_svar else 'fel'
             except ValueError: 
                 return 'format'
         else: 
             return 'tom'
             
-    elif u['input_typ'] == 'text':
+    elif u.input_typ == 'text':
         if input_svar.strip() != "":
             try:
-                if u['svarstyp'] == 'int':
+                if u.svarstyp == 'int':
                     svar_clean = input_svar.strip().replace(" ", "")
-                    return 'ratt' if int(svar_clean) == u['ratt_svar'] else 'fel'
+                    return 'ratt' if int(svar_clean) == u.ratt_svar else 'fel'
                 
-                elif u['svarstyp'] in ['float', 'procent']:
+                elif u.svarstyp in ['float', 'procent']:
                     svar_clean = input_svar.strip().replace(",", ".").replace(" ", "").replace("%", "")
-                    return 'ratt' if abs(float(svar_clean) - float(u['ratt_svar'])) < 0.001 else 'fel'
+                    return 'ratt' if abs(float(svar_clean) - float(u.ratt_svar)) < 0.001 else 'fel'
                 
-                elif u['svarstyp'] == 'fraction':
+                elif u.svarstyp == 'fraction':
                     svar_clean = input_svar.strip().replace(" ", "").replace(",", ".")
-                    return 'ratt' if Fraction(svar_clean) == u['ratt_svar'] else 'fel'
+                    return 'ratt' if Fraction(svar_clean) == u.ratt_svar else 'fel'
                 
-                elif u['svarstyp'] == 'ratio':
+                elif u.svarstyp == 'ratio':
                     svar_clean = input_svar.strip().replace(" ", "")
-                    if ":" not in svar_clean:
-                        return 'format_ratio'
-                    else:
-                        return 'ratt' if svar_clean == str(u['ratt_svar']) else 'fel'
+                    if ":" not in svar_clean: return 'format_ratio'
+                    else: return 'ratt' if svar_clean == str(u.ratt_svar) else 'fel'
                 
-                elif u['svarstyp'] == 'string_math':
-                    # Ersätt vanliga knasigheter som komma och mellanslag
+                elif u.svarstyp == 'string_math':
                     svar_clean = input_svar.replace(",", ".").replace(" ", "").replace("^", "**")
                     try:
-                        # Använd sympy med "implicit_multiplication"
                         transformations = (standard_transformations + (implicit_multiplication_application,))
                         expr_elev = parse_expr(svar_clean, transformations=transformations)
-                        ratt_svar_str = str(u['ratt_svar']).replace(" ", "").replace("^", "**")
+                        ratt_svar_str = str(u.ratt_svar).replace(" ", "").replace("^", "**")
                         expr_facit = parse_expr(ratt_svar_str, transformations=transformations)
-                        
-                        # Förenkla skillnaden. Är den noll är uttrycken exakt likvärdiga.
-                        if sp.simplify(expr_elev - expr_facit) == 0:
-                            return 'ratt'
-                        else:
-                            return 'fel'
+                        if sp.simplify(expr_elev - expr_facit) == 0: return 'ratt'
+                        else: return 'fel'
                     except Exception:
                         return 'format'
                 
-                elif u['svarstyp'] == 'kalkyl_formel':
+                elif u.svarstyp == 'kalkyl_formel':
                     svar_clean = input_svar.strip().replace(" ", "").lower()
-                    if not svar_clean.startswith("="):
-                        return 'format_saknar_likamed'
+                    if not svar_clean.startswith("="): return 'format_saknar_likamed'
                     else:
-                        godkanda = [s.lower() for s in u.get('ratt_svar_lista', [])]
+                        godkanda = [s.lower() for s in (u.ratt_svar_lista or [])]
                         return 'ratt' if svar_clean in godkanda else 'fel'
                         
-                elif u['svarstyp'] == 'string':
+                elif u.svarstyp == 'string':
                     svar_clean = str(input_svar).strip()
-                    return 'ratt' if svar_clean.lower() == str(u['ratt_svar']).strip().lower() else 'fel'
+                    return 'ratt' if svar_clean.lower() == str(u.ratt_svar).strip().lower() else 'fel'
 
             except ValueError: 
                 return 'format'
         else: 
             return 'tom'
             
-    elif u['input_typ'] in ['radio', 'selectbox']:
+    elif u.input_typ in ['radio', 'selectbox']:
         if input_svar is not None and input_svar != 'Välj svar...':
-            return 'ratt' if str(input_svar).strip() == str(u['ratt_svar']).strip() else 'fel'
+            return 'ratt' if str(input_svar).strip() == str(u.ratt_svar).strip() else 'fel'
         else: 
             return 'tom'
     
     return 'fel'
 
+def visa_infobox(text: str, style: str):
+    colors = {
+        'blue': ('#0056b3', '#f8f9fa'),
+        'green': ('#28a745', '#e9ecef'),
+        'pink': ('#e83e8c', '#fce4ec'),
+        'purple': ('#8B008B', '#f3e5f5')
+    }
+    border_color, bg_color = colors.get(style, ('#333', '#f4f4f4'))
+    st.markdown(f"<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: {bg_color}; padding: 25px; border-radius: 10px; border-left: 6px solid {border_color};'>{text}</div>", unsafe_allow_html=True)
+
+
+def hantera_svar():
+    """Callback som hanterar inmatning och rättning on-submit."""
+    st.session_state.rattat = True
+    u = st.session_state.aktiv_uppgift
+    uid = st.session_state.uppgift_id
+    
+    if u.input_typ == 'flera_text':
+        input_svar = [st.session_state.get(f"input_{uid}_{i}", "") for i in range(len(u.ratt_svar))]
+    else:
+        input_svar = st.session_state.get(f"input_single_{uid}")
+        if input_svar is None:
+            input_svar = 'Välj svar...' if u.input_typ == 'selectbox' else ""
+            
+    st.session_state.svar_status = ratta_svar(u, input_svar)
+
+
 # ==========================================
-# 1. MATEMATIKGENERATORER (Returnerar data)
+# 2. MATEMATIKGENERATORER (Returnerar data)
 # ==========================================
 
-def generera_funktion():
+def generera_deterministisk_funktion():
     typ = random.choice(['linjar', 'kvadratisk', 'kubisk', 'exponential', 'sinus'])
     if typ == 'linjar':
         k = random.choice([-2, -1.5, -1, -0.5, 0.5, 1, 1.5, 2])
-        m = random.randint(-4, 4)
+        x_target = random.randint(-5, 5)
+        y_target = random.randint(-5, 5)
+        m = y_target - k * x_target
         return lambda x: k * x + m
     elif typ == 'kvadratisk':
         a = random.choice([-1, -0.5, 0.5, 1])
@@ -186,61 +226,40 @@ def rita_plotly_graf(f, visa_facit=False, q_vis_type='vis_none', trace_x=None, t
     fig = go.Figure()
     x_plot = np.linspace(-10, 10, 400)
     y_plot = f(x_plot)
-    fig.add_trace(go.Scatter(
-        x=x_plot, y=y_plot, mode='lines', line=dict(color='blue', width=2), hoverinfo='skip'
-    ))
+    fig.add_trace(go.Scatter(x=x_plot, y=y_plot, mode='lines', line=dict(color='blue', width=2), hoverinfo='skip'))
     if visa_facit:
         if q_vis_type == 'vis_find_y':
             tx, ty = trace_x, trace_y
-            fig.add_trace(go.Scatter(
-                x=[tx, tx, 0], y=[0, ty, ty], mode='lines+markers', line=dict(color='red', dash='dash', width=2), 
-                marker=dict(size=8, color='red'), showlegend=False, hoverinfo='skip'
-            ))
+            fig.add_trace(go.Scatter(x=[tx, tx, 0], y=[0, ty, ty], mode='lines+markers', line=dict(color='red', dash='dash', width=2), marker=dict(size=8, color='red'), showlegend=False, hoverinfo='skip'))
         elif q_vis_type == 'vis_find_x':
             ty = trace_y
             ax_list = trace_alla_x
             if ax_list:
                 min_ax, max_ax = min(ax_list + [0]), max(ax_list + [0])
-                fig.add_trace(go.Scatter(
-                    x=[min_ax, max_ax], y=[ty, ty], mode='lines', line=dict(color='red', dash='dash', width=2), showlegend=False, hoverinfo='skip'
-                ))
+                fig.add_trace(go.Scatter(x=[min_ax, max_ax], y=[ty, ty], mode='lines', line=dict(color='red', dash='dash', width=2), showlegend=False, hoverinfo='skip'))
                 for ax_v in ax_list:
-                    fig.add_trace(go.Scatter(
-                        x=[ax_v, ax_v], y=[ty, 0], mode='lines+markers', line=dict(color='red', dash='dash', width=2), 
-                        marker=dict(size=8, color='red'), showlegend=False, hoverinfo='skip'
-                    ))
+                    fig.add_trace(go.Scatter(x=[ax_v, ax_v], y=[ty, 0], mode='lines+markers', line=dict(color='red', dash='dash', width=2), marker=dict(size=8, color='red'), showlegend=False, hoverinfo='skip'))
 
     tick_vals = [-10, -5, 5, 10]
-    fig.add_trace(go.Scatter(
-        x=tick_vals, y=[-0.6]*4, mode='text', text=[str(v) for v in tick_vals], textposition='bottom center', showlegend=False, hoverinfo='skip', textfont=dict(color='black', size=14)
-    ))
-    fig.add_trace(go.Scatter(
-        x=[-0.6]*4, y=tick_vals, mode='text', text=[str(v) for v in tick_vals], textposition='middle left', showlegend=False, hoverinfo='skip', textfont=dict(color='black', size=14)
-    ))
-    fig.add_trace(go.Scatter(
-        x=[-0.4], y=[-0.6], mode='text', text=['0'], textposition='bottom left', showlegend=False, hoverinfo='skip', textfont=dict(color='black', size=14)
-    ))
+    fig.add_trace(go.Scatter(x=tick_vals, y=[-0.6]*4, mode='text', text=[str(v) for v in tick_vals], textposition='bottom center', showlegend=False, hoverinfo='skip', textfont=dict(color='black', size=14)))
+    fig.add_trace(go.Scatter(x=[-0.6]*4, y=tick_vals, mode='text', text=[str(v) for v in tick_vals], textposition='middle left', showlegend=False, hoverinfo='skip', textfont=dict(color='black', size=14)))
+    fig.add_trace(go.Scatter(x=[-0.4], y=[-0.6], mode='text', text=['0'], textposition='bottom left', showlegend=False, hoverinfo='skip', textfont=dict(color='black', size=14)))
 
-    axis_layout = dict(
-        range=[-10.8, 10.8], zeroline=True, zerolinewidth=3, zerolinecolor='black', showgrid=True, gridwidth=2, gridcolor='#cccccc', 
-        minor=dict(dtick=1, gridwidth=2, gridcolor='#e0e0e0'), showticklabels=False, fixedrange=True 
-    )
+    axis_layout = dict(range=[-10.8, 10.8], zeroline=True, zerolinewidth=3, zerolinecolor='black', showgrid=True, gridwidth=2, gridcolor='#cccccc', minor=dict(dtick=1, gridwidth=2, gridcolor='#e0e0e0'), showticklabels=False, fixedrange=True)
     pil_inst = dict(showarrow=True, arrowhead=2, arrowsize=1, arrowwidth=2, arrowcolor='black')
     
-    fig.update_layout(
-        xaxis=axis_layout, yaxis=axis_layout, showlegend=False, margin=dict(l=20, r=20, t=20, b=20), height=550, plot_bgcolor='white', hovermode=False, dragmode=False,
+    fig.update_layout(xaxis=axis_layout, yaxis=axis_layout, showlegend=False, margin=dict(l=20, r=20, t=20, b=20), height=550, plot_bgcolor='white', hovermode=False, dragmode=False,
         annotations=[
             dict(x=10.8, y=0, ax=9.8, ay=0, xref='x', yref='y', axref='x', ayref='y', **pil_inst),
             dict(x=10.8, y=-0.5, text="x", showarrow=False, xref='x', yref='y', font=dict(size=16, color='black')),
             dict(x=0, y=10.8, ax=0, ay=9.8, xref='x', yref='y', axref='x', ayref='y', **pil_inst),
             dict(x=-0.5, y=10.8, text="y", showarrow=False, xref='x', yref='y', font=dict(size=16, color='black'))
-        ]
-    )
+        ])
     return fig
 
 def skapa_graf_uppgift(niva):
-    for _ in range(100): 
-        f = generera_funktion()
+    while True: 
+        f = generera_deterministisk_funktion()
         giltiga_punkter = []
         for x_val in [i / 2 for i in range(-16, 17)]:
             y_val = f(x_val)
@@ -254,28 +273,22 @@ def skapa_graf_uppgift(niva):
             fraga_typ = random.choice(['hitta_y', 'hitta_x'])
             if fraga_typ == 'hitta_y':
                 fraga = f"Bestäm f({target_x:g})"
-                ratt_svar = [target_y]
-                q_type_vis = 'vis_find_y'
-                return {
-                    "graf_f": f, "q_type_vis": q_type_vis, "trace_x": target_x, "trace_y": target_y,
-                    "fraga": fraga.replace('.', ','), "ratt_svar": [round(ans, 4) + 0.0 for ans in ratt_svar],
-                    "input_typ": "flera_text", "svarstyp": "array_float"
-                }
+                return Uppgift(
+                    graf_f=f, q_type_vis='vis_find_y', trace_x=target_x, trace_y=target_y,
+                    fraga=fraga.replace('.', ','), ratt_svar=[round(target_y, 4) + 0.0],
+                    input_typ="flera_text", svarstyp="array_float"
+                )
             else:
-                target_y_snygg = target_y + 0.0 
                 alla_x = list(set([p[0] for p in giltiga_punkter if p[1] == target_y]))
                 if len(alla_x) > 3: continue 
-                fraga = f"Bestäm ett värde på x så att f(x) = {target_y_snygg:g}"
-                ratt_svar = sorted(alla_x)
-                q_type_vis = 'vis_find_x'
-                return {
-                    "graf_f": f, "q_type_vis": q_type_vis, "trace_y": target_y, "trace_alla_x": alla_x,
-                    "fraga": fraga.replace('.', ','), "ratt_svar": [round(ans, 4) + 0.0 for ans in ratt_svar],
-                    "input_typ": "flera_text", "svarstyp": "array_float"
-                }
+                fraga = f"Bestäm ett värde på x så att f(x) = {target_y + 0.0:g}"
+                return Uppgift(
+                    graf_f=f, q_type_vis='vis_find_x', trace_y=target_y, trace_alla_x=alla_x,
+                    fraga=fraga.replace('.', ','), ratt_svar=[round(ans, 4) + 0.0 for ans in sorted(alla_x)],
+                    input_typ="flera_text", svarstyp="array_float"
+                )
         else:
             fraga_typ = random.choice(['f_x_plus_c', 'f_f_c', 'f_a_op_f_b', 'f_kx'])
-            q_type_vis = 'vis_none'
 
             if fraga_typ == 'f_x_plus_c':
                 hel_punkter = [p for p in giltiga_punkter if round(p[1], 4).is_integer()]
@@ -287,7 +300,7 @@ def skapa_graf_uppgift(niva):
                 if len(alla_mål_x) > 3: continue 
                 fraga = f"Bestäm x om f(x {c_str}) = {target_y + 0.0:g}"
                 ratt_svar = sorted([tx - c for tx in alla_mål_x])
-                return {"graf_f": f, "q_type_vis": 'vis_find_x', "trace_y": target_y, "trace_alla_x": alla_mål_x, "fraga": fraga.replace('.', ','), "ratt_svar": [round(ans, 4) + 0.0 for ans in ratt_svar], "input_typ": "flera_text", "svarstyp": "array_float"}
+                return Uppgift(graf_f=f, q_type_vis='vis_find_x', trace_y=target_y, trace_alla_x=alla_mål_x, fraga=fraga.replace('.', ','), ratt_svar=[round(ans, 4) + 0.0 for ans in ratt_svar], input_typ="flera_text", svarstyp="array_float")
                 
             elif fraga_typ == 'f_f_c':
                 valid_c = []
@@ -300,7 +313,7 @@ def skapa_graf_uppgift(niva):
                 c = random.choice(valid_c)
                 ratt_svar = [round(f(round(f(c), 4)), 4)]
                 fraga = f"Bestäm f(f({c}))"
-                return {"graf_f": f, "q_type_vis": q_type_vis, "fraga": fraga.replace('.', ','), "ratt_svar": [round(ans, 4) + 0.0 for ans in ratt_svar], "input_typ": "flera_text", "svarstyp": "array_float"}
+                return Uppgift(graf_f=f, fraga=fraga.replace('.', ','), ratt_svar=[round(ans, 4) + 0.0 for ans in ratt_svar], input_typ="flera_text", svarstyp="array_float")
                 
             elif fraga_typ == 'f_a_op_f_b':
                 hel_punkter = [p for p in giltiga_punkter if round(p[1], 4).is_integer() and round(p[0], 4).is_integer()]
@@ -309,8 +322,7 @@ def skapa_graf_uppgift(niva):
                 op = random.choice(['+', '-'])
                 svar = p1[1] + p2[1] if op == '+' else p1[1] - p2[1]
                 fraga = f"Bestäm f({p1[0]:g}) {op} f({p2[0]:g})"
-                ratt_svar = [svar]
-                return {"graf_f": f, "q_type_vis": q_type_vis, "fraga": fraga.replace('.', ','), "ratt_svar": [round(svar, 4) + 0.0], "input_typ": "flera_text", "svarstyp": "array_float"}
+                return Uppgift(graf_f=f, fraga=fraga.replace('.', ','), ratt_svar=[round(svar, 4) + 0.0], input_typ="flera_text", svarstyp="array_float")
                 
             elif fraga_typ == 'f_kx':
                 mål_y = random.choice([p[1] for p in giltiga_punkter])
@@ -320,7 +332,7 @@ def skapa_graf_uppgift(niva):
                 mojliga_svar = [x / k_val for x in alla_mål_x]
                 if all(round(s * 2, 4).is_integer() and abs(s) <= 20 for s in mojliga_svar):
                     fraga = f"Bestäm x om f({k_val:g}x) = {mål_y + 0.0:g}"
-                    return {"graf_f": f, "q_type_vis": 'vis_find_x', "trace_y": mål_y, "trace_alla_x": alla_mål_x, "fraga": fraga.replace('.', ','), "ratt_svar": [round(ans, 4) + 0.0 for ans in sorted(mojliga_svar)], "input_typ": "flera_text", "svarstyp": "array_float"}
+                    return Uppgift(graf_f=f, q_type_vis='vis_find_x', trace_y=mål_y, trace_alla_x=alla_mål_x, fraga=fraga.replace('.', ','), ratt_svar=[round(ans, 4) + 0.0 for ans in sorted(mojliga_svar)], input_typ="flera_text", svarstyp="array_float")
 
 def skapa_alg_func_uppgift(niva):
     while True:
@@ -349,7 +361,7 @@ def skapa_alg_func_uppgift(niva):
                     else: f_str = f"{k} \cdot {bas}^x"
                 
                 if abs(svar) <= 100:
-                    return {"info_text": "Givet funktionen:", "latex_text": f"f(x) = {f_str}", "fraga": f"Bestäm f({a})", "ratt_svar": svar, "input_typ": "text", "svarstyp": "int", "undertext": "Lös gärna på papper och skriv in ditt svar."}
+                    return Uppgift(info_text="Givet funktionen:", latex_text=f"f(x) = {f_str}", fraga=f"Bestäm f({a})", ratt_svar=svar, input_typ="text", svarstyp="int", undertext="Lös gärna på papper och skriv in ditt svar.")
                     
             elif typ == 'f_x_C_kvadrat':
                 x = random.randint(1, 10) 
@@ -359,7 +371,7 @@ def skapa_alg_func_uppgift(niva):
                 f_str = formatera_polynom([(k, 'x^2'), (m, '')])
                 
                 if abs(C) <= 300:
-                    return {"info_text": "Givet funktionen:", "latex_text": f"f(x) = {f_str}", "fraga": f"Bestäm det positiva värdet på x om f(x) = {C}", "ratt_svar": x, "input_typ": "text", "svarstyp": "int", "undertext": "Lös gärna på papper och skriv in ditt svar."}
+                    return Uppgift(info_text="Givet funktionen:", latex_text=f"f(x) = {f_str}", fraga=f"Bestäm det positiva värdet på x om f(x) = {C}", ratt_svar=x, input_typ="text", svarstyp="int", undertext="Lös gärna på papper och skriv in ditt svar.")
                     
             else: # Linjär
                 b = random.choice([1, 1, 2, 3, 4]) 
@@ -377,7 +389,7 @@ def skapa_alg_func_uppgift(niva):
                     f_str = f"{term_x}{m_str}"
                 
                 if abs(x) <= 100 and abs(C) <= 100:
-                    return {"info_text": "Givet funktionen:", "latex_text": f"f(x) = {f_str}", "fraga": f"Bestäm x om f(x) = {C}", "ratt_svar": x, "input_typ": "text", "svarstyp": "int", "undertext": "Lös gärna på papper och skriv in ditt svar."}
+                    return Uppgift(info_text="Givet funktionen:", latex_text=f"f(x) = {f_str}", fraga=f"Bestäm x om f(x) = {C}", ratt_svar=x, input_typ="text", svarstyp="int", undertext="Lös gärna på papper och skriv in ditt svar.")
                     
         else: # Niva 2 
             def formatera_linjar(k, m):
@@ -391,12 +403,12 @@ def skapa_alg_func_uppgift(niva):
                     a = random.randint(-8, 8)
                     svar = k*(k*a + m) + m
                     if abs(svar) <= 150:
-                        return {"info_text": "Givet funktionen:", "latex_text": f"f(x) = {formatera_linjar(k, m)}", "fraga": f"Bestäm f(f({a}))", "ratt_svar": svar, "input_typ": "text", "svarstyp": "int", "undertext": "Lös gärna på papper och skriv in ditt svar."}
+                        return Uppgift(info_text="Givet funktionen:", latex_text=f"f(x) = {formatera_linjar(k, m)}", fraga=f"Bestäm f(f({a}))", ratt_svar=svar, input_typ="text", svarstyp="int", undertext="Lös gärna på papper och skriv in ditt svar.")
                 else:
                     x = random.randint(-12, 12)
                     C = k*(k*x + m) + m
                     if abs(x) <= 100 and abs(C) <= 150:
-                        return {"info_text": "Givet funktionen:", "latex_text": f"f(x) = {formatera_linjar(k, m)}", "fraga": f"Bestäm x om f(f(x)) = {C}", "ratt_svar": x, "input_typ": "text", "svarstyp": "int", "undertext": "Lös gärna på papper och skriv in ditt svar."}
+                        return Uppgift(info_text="Givet funktionen:", latex_text=f"f(x) = {formatera_linjar(k, m)}", fraga=f"Bestäm x om f(f(x)) = {C}", ratt_svar=x, input_typ="text", svarstyp="int", undertext="Lös gärna på papper och skriv in ditt svar.")
             elif typ == 'f_g_a':
                 k1 = random.choice([-4, -3, -2, -1, 2, 3, 4])
                 m1 = random.randint(-10, 10)
@@ -404,7 +416,7 @@ def skapa_alg_func_uppgift(niva):
                 m2 = random.randint(-10, 10)
                 a = random.randint(-5, 5)
                 svar = k1*(k2*a + m2) + m1
-                return {"info_text": "Givet funktionen:", "latex_text": f"f(x) = {formatera_linjar(k1, m1)} \\quad \\text{{och}} \\quad g(x) = {formatera_linjar(k2, m2)}", "fraga": f"Bestäm f(g({a}))", "ratt_svar": svar, "input_typ": "text", "svarstyp": "int", "undertext": "Lös gärna på papper och skriv in ditt svar."}
+                return Uppgift(info_text="Givet funktionen:", latex_text=f"f(x) = {formatera_linjar(k1, m1)} \\quad \\text{{och}} \\quad g(x) = {formatera_linjar(k2, m2)}", fraga=f"Bestäm f(g({a}))", ratt_svar=svar, input_typ="text", svarstyp="int", undertext="Lös gärna på papper och skriv in ditt svar.")
             elif typ == 'f_likamed_g':
                 x = random.randint(-10, 10)
                 k1 = random.choice([-5, -4, -3, -2, 2, 3, 4, 5])
@@ -412,7 +424,7 @@ def skapa_alg_func_uppgift(niva):
                 if k1 == k2: continue 
                 m1 = random.randint(-15, 15)
                 m2 = (k1 - k2)*x + m1 
-                return {"info_text": "Givet funktionen:", "latex_text": f"f(x) = {formatera_linjar(k1, m1)} \\quad \\text{{och}} \\quad g(x) = {formatera_linjar(k2, m2)}", "fraga": "Bestäm x om f(x) = g(x)", "ratt_svar": x, "input_typ": "text", "svarstyp": "int", "undertext": "Lös gärna på papper och skriv in ditt svar."}
+                return Uppgift(info_text="Givet funktionen:", latex_text=f"f(x) = {formatera_linjar(k1, m1)} \\quad \\text{{och}} \\quad g(x) = {formatera_linjar(k2, m2)}", fraga="Bestäm x om f(x) = g(x)", ratt_svar=x, input_typ="text", svarstyp="int", undertext="Lös gärna på papper och skriv in ditt svar.")
 
 def skapa_ekv_uppgift(niva):
     def formatera_sida(k, m):
@@ -502,15 +514,12 @@ def skapa_ekv_uppgift(niva):
                 D_str = f"+ {D}" if D > 0 else (f"- {-D}" if D < 0 else "")
                 ekv = f"(x {A_str})(x {B_str}) = x^2 {C_str} {D_str}".strip()
 
-        return {
-            "info_text": "Lös ekvationen:",
-            "latex_text": ekv,
-            "fraga": "Vad är x? (Svara med ett heltal):",
-            "ratt_svar": x,
-            "input_typ": "text",
-            "svarstyp": "int",
-            "undertext": "Lös gärna på papper och skriv in ditt svar."
-        }
+        return Uppgift(
+            info_text="Lös ekvationen:", latex_text=ekv,
+            fraga="Vad är x? (Svara med ett heltal):", ratt_svar=x,
+            input_typ="text", svarstyp="int",
+            undertext="Lös gärna på papper och skriv in ditt svar."
+        )
 
 def skapa_alg_uttryck_uppgift(niva):
     def formatera_svar(k2, k, m):
@@ -534,7 +543,7 @@ def skapa_alg_uttryck_uppgift(niva):
                 else:
                     fraga = "Hur många deciliter (dl) färdigblandad saft får du totalt?"
                     svar = total
-                return {"info_box_blue": info, "fraga": fraga, "ratt_svar": svar, "input_typ": "text", "svarstyp": "int", "suffix": "dl", "undertext": "Svara med ett heltal."}
+                return Uppgift(info_box_text=info, info_box_style="blue", fraga=fraga, ratt_svar=svar, input_typ="text", svarstyp="int", suffix="dl", undertext="Svara med ett heltal.")
                 
             elif typ == 'forhallande_forenkla':
                 A, B = random.randint(2, 6), random.randint(2, 6)
@@ -548,7 +557,7 @@ def skapa_alg_uttryck_uppgift(niva):
                 else:
                     info = f"I en fruktskål ligger {killar} äpplen och {tjejer} päron."
                     fraga = "Vilket är förhållandet mellan antalet äpplen och päron?"
-                return {"info_box_blue": info, "fraga": fraga, "ratt_svar": f"{A}:{B}", "input_typ": "text", "svarstyp": "ratio", "undertext": "Svara på enklaste form med ett kolon (t.ex. 2:3)."}
+                return Uppgift(info_box_text=info, info_box_style="blue", fraga=fraga, ratt_svar=f"{A}:{B}", input_typ="text", svarstyp="ratio", undertext="Svara på enklaste form med ett kolon (t.ex. 2:3).")
                 
             elif typ == 'minus_parentes':
                 c = random.choice([2, 3, 4])
@@ -602,7 +611,7 @@ def skapa_alg_uttryck_uppgift(niva):
                 else:
                     fraga = "Hur många kronor får den som får den MINSTA andelen?"
                     svar = min(A, B) * k
-                return {"info_box_blue": info, "fraga": fraga, "ratt_svar": svar, "input_typ": "text", "svarstyp": "int", "suffix": "kr", "undertext": "Svara med ett heltal."}
+                return Uppgift(info_box_text=info, info_box_style="blue", fraga=fraga, ratt_svar=svar, input_typ="text", svarstyp="int", suffix="kr", undertext="Svara med ett heltal.")
 
             elif typ == 'forhallande_tre_parter':
                 A, B, C = random.randint(1, 4), random.randint(1, 4), random.randint(1, 4)
@@ -623,17 +632,15 @@ def skapa_alg_uttryck_uppgift(niva):
                     vald_del = random.choice(delar)
                     fraga = f"Hur många kg {vald_del[0]} ska du använda?"
                     suffix = "kg"
-                return {"info_box_blue": info, "fraga": fraga, "ratt_svar": vald_del[1], "input_typ": "text", "svarstyp": "int", "suffix": suffix, "undertext": "Svara med ett heltal."}
+                return Uppgift(info_box_text=info, info_box_style="blue", fraga=fraga, ratt_svar=vald_del[1], input_typ="text", svarstyp="int", suffix=suffix, undertext="Svara med ett heltal.")
 
             elif typ == 'likhet_parentes':
                 while True:
                     A = random.choice([2, 3, 4, 5])
                     D = random.choice([2, 3, 4, 5])
                     if A == D: continue
-                    
                     E = random.choice([-5, -4, -3, -2, 2, 3, 4, 5])
                     F = random.choice([-10, -9, -8, -7, -6, -5, -4, -3, -2, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-                    
                     if (D * E) % A == 0 and (D * F) % A == 0:
                         B = (D * E) // A
                         C = (D * F) // A
@@ -643,16 +650,7 @@ def skapa_alg_uttryck_uppgift(niva):
                 HL = f"{D}( \dots )"
                 alg_uttryck_str = f"{VL} = {HL}"
                 svar_ratt = formatera_polynom([(E, 'x'), (F, '')])
-                
-                return {
-                    "info_text": "Skriv ett uttryck i parentesen så att likheten gäller:",
-                    "latex_text": alg_uttryck_str,
-                    "undertext": "Svara på formen ax + b (t.ex. 6x - 15).",
-                    "fraga": "Vad ska stå i parentesen?",
-                    "ratt_svar": svar_ratt,
-                    "input_typ": "text",
-                    "svarstyp": "string_math"
-                }
+                return Uppgift(info_text="Skriv ett uttryck i parentesen så att likheten gäller:", latex_text=alg_uttryck_str, undertext="Svara på formen ax + b (t.ex. 6x - 15).", fraga="Vad ska stå i parentesen?", ratt_svar=svar_ratt, input_typ="text", svarstyp="string_math")
 
             elif typ == 'faktorisera_avancerat':
                 c, a = random.choice([2, 3, 4, 5]), random.choice([2, 3, 4, 5])
@@ -703,30 +701,25 @@ def skapa_alg_uttryck_uppgift(niva):
             
     random.shuffle(alternativ)
 
-    return {
-        "info_text": "Förenkla uttrycket:" if typ != 'faktorisera' and typ != 'faktorisera_avancerat' else "Faktorisera uttrycket så långt som möjligt:",
-        "latex_text": alg_uttryck_str,
-        "undertext": "Lös gärna på papper och välj ditt svar.",
-        "fraga": "Välj rätt alternativ:",
-        "ratt_svar": svar_ratt_latex,
-        "alternativ": alternativ,
-        "input_typ": "radio",
-        "svarstyp": "string"
-    }
+    return Uppgift(
+        info_text="Förenkla uttrycket:" if typ != 'faktorisera' and typ != 'faktorisera_avancerat' else "Faktorisera uttrycket så långt som möjligt:",
+        latex_text=alg_uttryck_str, undertext="Lös gärna på papper och välj ditt svar.",
+        fraga="Välj rätt alternativ:", ratt_svar=svar_ratt_latex, alternativ=alternativ,
+        input_typ="radio", svarstyp="string"
+    )
 
 def skapa_lan_uppgift(niva):
-    
     if niva == 1:
         typ = random.choice(['arsranta', 'manadsranta', 'rak_amortering', 'kalkylblad_varde', 'kalkylblad_formel'])
         if typ == 'arsranta':
             kapital, ranta = random.choice([15000, 20000, 35000, 50000, 80000, 150000]), random.choice([3, 4, 5, 6, 7, 8])
-            return {"info_box_blue": f"Du lånar {formatera_kr(kapital)} kr av banken med en årsränta på {ranta} %.", "fraga": "Hur mycket får du betala i ränta under det första året? (Svara i kr)", "ratt_svar": int(round(kapital * (ranta / 100))), "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
+            return Uppgift(info_box_text=f"Du lånar {formatera_kr(kapital)} kr av banken med en årsränta på {ranta} %.", info_box_style="blue", fraga="Hur mycket får du betala i ränta under det första året? (Svara i kr)", ratt_svar=int(round(kapital * (ranta / 100))), input_typ="text", svarstyp="int", suffix="kr")
         elif typ == 'manadsranta':
             kapital, ranta = random.choice([12000, 24000, 36000, 60000, 120000]), random.choice([3, 4, 5, 6, 7, 8])
-            return {"info_box_blue": f"Du tar ett lån på {formatera_kr(kapital)} kr. Årsräntan är {ranta} %.", "fraga": "Hur stor blir räntekostnaden för den allra första månaden? (Svara i kr)", "ratt_svar": int(round((kapital * (ranta / 100)) / 12)), "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
+            return Uppgift(info_box_text=f"Du tar ett lån på {formatera_kr(kapital)} kr. Årsräntan är {ranta} %.", info_box_style="blue", fraga="Hur stor blir räntekostnaden för den allra första månaden? (Svara i kr)", ratt_svar=int(round((kapital * (ranta / 100)) / 12)), input_typ="text", svarstyp="int", suffix="kr")
         elif typ == 'rak_amortering':
             ar, amort = random.choice([2, 3, 4, 5, 10]), random.choice([500, 1000, 1500, 2000, 2500])
-            return {"info_box_blue": f"Du lånar {formatera_kr(amort * ar * 12)} kr som ska betalas tillbaka med rak amortering under {ar} år.", "fraga": "Hur mycket ska du amortera varje månad? (Svara i kr)", "ratt_svar": amort, "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
+            return Uppgift(info_box_text=f"Du lånar {formatera_kr(amort * ar * 12)} kr som ska betalas tillbaka med rak amortering under {ar} år.", info_box_style="blue", fraga="Hur mycket ska du amortera varje månad? (Svara i kr)", ratt_svar=amort, input_typ="text", svarstyp="int", suffix="kr")
         elif typ in ['kalkylblad_varde', 'kalkylblad_formel']:
             p_komb = random.choice([(60000, 5), (120000, 5), (120000, 10), (240000, 10), (240000, 20)])
             kapital, ar = p_komb
@@ -735,21 +728,16 @@ def skapa_lan_uppgift(niva):
             manadsranta_kr = int(round(kapital * (ranta / 100) / 12))
             
             subtyper = ['C2_ranta', 'E2_tot', 'D2_amort', 'tid_manader', 'F2_tid_ar']
-            if typ == 'kalkylblad_varde':
-                subtyper.remove('F2_tid_ar')
-            
+            if typ == 'kalkylblad_varde': subtyper.remove('F2_tid_ar')
             subtyp = random.choice(subtyper)
             
-            # Förbered vilka celler som ska visas som text eller [tom]
             C2_val, D2_val, E2_val, F2_val = "[tom]", "[tom]", "[tom]", str(ar)
             
-            if subtyp == 'C2_ranta':
-                D2_val = formatera_kr(amort)
+            if subtyp == 'C2_ranta': D2_val = formatera_kr(amort)
             elif subtyp == 'E2_tot':
                 C2_val = formatera_kr(manadsranta_kr)
                 D2_val = formatera_kr(amort)
-            elif subtyp == 'D2_amort':
-                pass # F2_val är ar, D2 är [tom]
+            elif subtyp == 'D2_amort': pass 
             elif subtyp in ['tid_manader', 'F2_tid_ar']:
                 D2_val = formatera_kr(amort)
                 F2_val = "[tom]"
@@ -793,99 +781,17 @@ def skapa_lan_uppgift(niva):
             """
             
             if typ == 'kalkylblad_varde':
-                if subtyp == 'C2_ranta':
-                    return {
-                        "info_box_blue": "Titta på kalkylarket nedan:",
-                        "html_table": tabell_html,
-                        "fraga": "I cell C2 skriver du in formeln: `=A2*B2/12`. Vilket värde kommer att visas i cell C2 när du trycker på Enter? (Svara i kr)",
-                        "ratt_svar": manadsranta_kr,
-                        "input_typ": "text", "svarstyp": "int", "suffix": "kr"
-                    }
-                elif subtyp == 'E2_tot':
-                    return {
-                        "info_box_blue": f"Titta på kalkylarket nedan. Tänk dig att du redan har räknat ut att räntekostnaden i cell C2 blev {formatera_kr(manadsranta_kr)} kr.",
-                        "html_table": tabell_html,
-                        "fraga": "I cell E2 skriver du in formeln: `=C2+D2`. Vilket värde kommer att visas i cell E2? (Svara i kr)",
-                        "ratt_svar": manadsranta_kr + amort,
-                        "input_typ": "text", "svarstyp": "int", "suffix": "kr"
-                    }
-                elif subtyp == 'D2_amort':
-                    return {
-                        "info_box_blue": "Titta på kalkylarket nedan:",
-                        "html_table": tabell_html,
-                        "fraga": f"Lånet ska betalas tillbaka med samma summa varje månad under den tid som står i cell F2. Hur stor blir amorteringen per månad? (Svara i kr)",
-                        "ratt_svar": amort,
-                        "input_typ": "text", "svarstyp": "int", "suffix": "kr"
-                    }
-                elif subtyp == 'tid_manader':
-                    return {
-                        "info_box_blue": "Titta på kalkylarket nedan:",
-                        "html_table": tabell_html,
-                        "fraga": "Om du amorterar det belopp som står i cell D2 varje månad, hur många MÅNADER kommer det ta innan hela lånet är noll?",
-                        "ratt_svar": ar * 12,
-                        "input_typ": "text", "svarstyp": "int", "suffix": "månader"
-                    }
+                if subtyp == 'C2_ranta': return Uppgift(info_box_text="Titta på kalkylarket nedan:", info_box_style="blue", html_table=tabell_html, fraga="I cell C2 skriver du in formeln: `=A2*B2/12`. Vilket värde kommer att visas i cell C2 när du trycker på Enter? (Svara i kr)", ratt_svar=manadsranta_kr, input_typ="text", svarstyp="int", suffix="kr")
+                elif subtyp == 'E2_tot': return Uppgift(info_box_text=f"Titta på kalkylarket nedan. Tänk dig att du redan har räknat ut att räntekostnaden i cell C2 blev {formatera_kr(manadsranta_kr)} kr.", info_box_style="blue", html_table=tabell_html, fraga="I cell E2 skriver du in formeln: `=C2+D2`. Vilket värde kommer att visas i cell E2? (Svara i kr)", ratt_svar=manadsranta_kr + amort, input_typ="text", svarstyp="int", suffix="kr")
+                elif subtyp == 'D2_amort': return Uppgift(info_box_text="Titta på kalkylarket nedan:", info_box_style="blue", html_table=tabell_html, fraga="Lånet ska betalas tillbaka med samma summa varje månad under den tid som står i cell F2. Hur stor blir amorteringen per månad? (Svara i kr)", ratt_svar=amort, input_typ="text", svarstyp="int", suffix="kr")
+                elif subtyp == 'tid_manader': return Uppgift(info_box_text="Titta på kalkylarket nedan:", info_box_style="blue", html_table=tabell_html, fraga="Om du amorterar det belopp som står i cell D2 varje månad, hur många MÅNADER kommer det ta innan hela lånet är noll?", ratt_svar=ar * 12, input_typ="text", svarstyp="int", suffix="månader")
                     
             elif typ == 'kalkylblad_formel':
-                if subtyp == 'C2_ranta':
-                    return {
-                        "info_box_blue": "Titta på kalkylarket nedan:",
-                        "html_table": tabell_html,
-                        "fraga": "Vilken formel ska du skriva in i cell C2 för att kalkylarket ska räkna ut räntekostnaden för en månad?",
-                        "ratt_svar_lista": [
-                            '=a2*b2/12', '=b2*a2/12', '=a2*(b2/100)/12', '=(a2*b2)/12',
-                            '=a2/12*b2', '=b2/12*a2', '=a2*b2/100/12', '=(a2*b2/100)/12',
-                            '=b2*a2/100/12', '=a2*(b2/12)', '=(a2/12)*b2', '=(b2/12)*a2'
-                        ],
-                        "ratt_svar_visning": "=A2*B2/12",
-                        "ratt_svar": "=A2*B2/12",
-                        "input_typ": "text", "svarstyp": "kalkyl_formel"
-                    }
-                elif subtyp == 'E2_tot':
-                    return {
-                        "info_box_blue": "Titta på kalkylarket nedan:",
-                        "html_table": tabell_html,
-                        "fraga": "Vilken formel ska du skriva in i cell E2 för att kalkylarket ska räkna ut den totala månadskostnaden?",
-                        "ratt_svar_lista": ['=c2+d2', '=d2+c2'],
-                        "ratt_svar_visning": "=C2+D2",
-                        "ratt_svar": "=C2+D2",
-                        "input_typ": "text", "svarstyp": "kalkyl_formel"
-                    }
-                elif subtyp == 'D2_amort':
-                    return {
-                        "info_box_blue": "Titta på kalkylarket nedan:",
-                        "html_table": tabell_html,
-                        "fraga": "Vilken formel ska du skriva in i cell D2 för att räkna ut amorteringen per månad? Tänk på att löptiden i F2 anges i år.",
-                        "ratt_svar_lista": [
-                            '=a2/(f2*12)', '=a2/(12*f2)', '=(a2/f2)/12', '=(a2/12)/f2', 
-                            '=a2/f2/12', '=a2/12/f2'
-                        ],
-                        "ratt_svar_visning": "=A2/(F2*12)",
-                        "ratt_svar": "=A2/(F2*12)",
-                        "input_typ": "text", "svarstyp": "kalkyl_formel"
-                    }
-                elif subtyp == 'tid_manader':
-                    return {
-                        "info_box_blue": "Titta på kalkylarket nedan:",
-                        "html_table": tabell_html,
-                        "fraga": "Du vill räkna ut hur många MÅNADER det tar att betala av hela lånet om du amorterar det belopp som står i cell D2. Vilken formel använder du?",
-                        "ratt_svar_lista": ['=a2/d2'],
-                        "ratt_svar_visning": "=A2/D2",
-                        "ratt_svar": "=A2/D2",
-                        "input_typ": "text", "svarstyp": "kalkyl_formel"
-                    }
-                elif subtyp == 'F2_tid_ar':
-                    return {
-                        "info_box_blue": "Titta på kalkylarket nedan:",
-                        "html_table": tabell_html,
-                        "fraga": "Vilken formel kan du skriva i cell F2 för att räkna ut hur många ÅR lånet ska betalas tillbaka på, om du amorterar det belopp som står i D2 varje månad?",
-                        "ratt_svar_lista": [
-                            '=(a2/d2)/12', '=a2/(d2*12)', '=(a2/12)/d2', '=a2/d2/12', '=a2/12/d2', '=a2/(12*d2)'
-                        ],
-                        "ratt_svar_visning": "=(A2/D2)/12",
-                        "ratt_svar": "=(A2/D2)/12",
-                        "input_typ": "text", "svarstyp": "kalkyl_formel"
-                    }
+                if subtyp == 'C2_ranta': return Uppgift(info_box_text="Titta på kalkylarket nedan:", info_box_style="blue", html_table=tabell_html, fraga="Vilken formel ska du skriva in i cell C2 för att kalkylarket ska räkna ut räntekostnaden för en månad?", ratt_svar_lista=['=a2*b2/12', '=b2*a2/12', '=a2*(b2/100)/12', '=(a2*b2)/12', '=a2/12*b2', '=b2/12*a2', '=a2*b2/100/12', '=(a2*b2/100)/12', '=b2*a2/100/12', '=a2*(b2/12)', '=(a2/12)*b2', '=(b2/12)*a2'], ratt_svar_visning="=A2*B2/12", ratt_svar="=A2*B2/12", input_typ="text", svarstyp="kalkyl_formel")
+                elif subtyp == 'E2_tot': return Uppgift(info_box_text="Titta på kalkylarket nedan:", info_box_style="blue", html_table=tabell_html, fraga="Vilken formel ska du skriva in i cell E2 för att kalkylarket ska räkna ut den totala månadskostnaden?", ratt_svar_lista=['=c2+d2', '=d2+c2'], ratt_svar_visning="=C2+D2", ratt_svar="=C2+D2", input_typ="text", svarstyp="kalkyl_formel")
+                elif subtyp == 'D2_amort': return Uppgift(info_box_text="Titta på kalkylarket nedan:", info_box_style="blue", html_table=tabell_html, fraga="Vilken formel ska du skriva in i cell D2 för att räkna ut amorteringen per månad? Tänk på att löptiden i F2 anges i år.", ratt_svar_lista=['=a2/(f2*12)', '=a2/(12*f2)', '=(a2/f2)/12', '=(a2/12)/f2', '=a2/f2/12', '=a2/12/f2'], ratt_svar_visning="=A2/(F2*12)", ratt_svar="=A2/(F2*12)", input_typ="text", svarstyp="kalkyl_formel")
+                elif subtyp == 'tid_manader': return Uppgift(info_box_text="Titta på kalkylarket nedan:", info_box_style="blue", html_table=tabell_html, fraga="Du vill räkna ut hur många MÅNADER det tar att betala av hela lånet om du amorterar det belopp som står i cell D2. Vilken formel använder du?", ratt_svar_lista=['=a2/d2'], ratt_svar_visning="=A2/D2", ratt_svar="=A2/D2", input_typ="text", svarstyp="kalkyl_formel")
+                elif subtyp == 'F2_tid_ar': return Uppgift(info_box_text="Titta på kalkylarket nedan:", info_box_style="blue", html_table=tabell_html, fraga="Vilken formel kan du skriva i cell F2 för att räkna ut hur många ÅR lånet ska betalas tillbaka på, om du amorterar det belopp som står i D2 varje månad?", ratt_svar_lista=['=(a2/d2)/12', '=a2/(d2*12)', '=(a2/12)/d2', '=a2/d2/12', '=a2/12/d2', '=a2/(12*d2)'], ratt_svar_visning="=(A2/D2)/12", ratt_svar="=(A2/D2)/12", input_typ="text", svarstyp="kalkyl_formel")
     else:
         typ = random.choice(['manadskostnad_1', 'manadskostnad_2', 'snabblan'])
         if typ in ['manadskostnad_1', 'manadskostnad_2']:
@@ -893,13 +799,13 @@ def skapa_lan_uppgift(niva):
             ranta, avgift = random.choice(p["rantor"]), random.choice([25, 35, 45])
             if typ == 'manadskostnad_1':
                 svar = int(round(p["amort"] + (p["K"] * (ranta / 100)) / 12 + avgift))
-                return {"info_box_blue": f"Du köper en bil för {formatera_kr(p['K'])} kr på avbetalning. Lånet har rak amortering över {p['ar']} år och en årsränta på {ranta} %. Banken tar också ut en aviseringsavgift på {avgift} kr/månad.", "fraga": "Vad blir din TOTALA månadskostnad den första månaden? (Svara i kr)", "ratt_svar": svar, "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
+                return Uppgift(info_box_text=f"Du köper en bil för {formatera_kr(p['K'])} kr på avbetalning. Lånet har rak amortering över {p['ar']} år och en årsränta på {ranta} %. Banken tar också ut en aviseringsavgift på {avgift} kr/månad.", info_box_style="blue", fraga="Vad blir din TOTALA månadskostnad den första månaden? (Svara i kr)", ratt_svar=svar, input_typ="text", svarstyp="int", suffix="kr")
             else: 
                 svar = int(round(p["amort"] + ((p["K"] - p["amort"]) * (ranta / 100)) / 12 + avgift))
-                return {"info_box_blue": f"Du tar ett lån på {formatera_kr(p['K'])} kr med rak amortering över {p['ar']} år och en årsränta på {ranta} %. Aviseringsavgiften är {avgift} kr/månad.", "fraga": "När du ska betala din ANDRA faktura har lånet minskat. Vad blir din TOTALA månadskostnad den andra månaden? (Svara i kr)", "ratt_svar": svar, "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
+                return Uppgift(info_box_text=f"Du tar ett lån på {formatera_kr(p['K'])} kr med rak amortering över {p['ar']} år och en årsränta på {ranta} %. Aviseringsavgiften är {avgift} kr/månad.", info_box_style="blue", fraga="När du ska betala din ANDRA faktura har lånet minskat. Vad blir din TOTALA månadskostnad den andra månaden? (Svara i kr)", ratt_svar=svar, input_typ="text", svarstyp="int", suffix="kr")
         elif typ == 'snabblan':
             kapital, manadsranta, upplagg, avi = random.choice([3000, 4000, 5000, 8000]), random.choice([2, 3, 4, 5]), random.choice([295, 395, 495]), random.choice([35, 45, 55])
-            return {"info_box_blue": f"Du tar ett snabblån på {formatera_kr(kapital)} kr som ska betalas tillbaka i sin helhet efter exakt en månad. Uppläggningsavgiften är {upplagg} kr, aviseringsavgiften {avi} kr och månadsräntan är {manadsranta} %.", "fraga": "Hur mycket måste du totalt betala tillbaka när månaden är slut? (Svara i kr)", "ratt_svar": int(round(kapital + kapital * (manadsranta / 100) + upplagg + avi)), "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
+            return Uppgift(info_box_text=f"Du tar ett snabblån på {formatera_kr(kapital)} kr som ska betalas tillbaka i sin helhet efter exakt en månad. Uppläggningsavgiften är {upplagg} kr, aviseringsavgiften {avi} kr och månadsräntan är {manadsranta} %.", info_box_style="blue", fraga="Hur mycket måste du totalt betala tillbaka när månaden är slut? (Svara i kr)", ratt_svar=int(round(kapital + kapital * (manadsranta / 100) + upplagg + avi)), input_typ="text", svarstyp="int", suffix="kr")
 
 def skapa_ff_uppgift(niva):
     if niva == 1:
@@ -907,37 +813,34 @@ def skapa_ff_uppgift(niva):
         
         if typ == 'berakna_ff':
             riktning, procent = random.choice(['ökar', 'minskar']), round(random.uniform(1.5, 80.5), 1) if random.choice([True, False]) else random.randint(5, 80)
-            return {"info_box_green": f"Ett pris {riktning} med {f'{procent:g}'.replace('.', ',')} %.", "fraga": "Vad blir förändringsfaktorn? (Svara med decimaltal)", "ratt_svar": round(1 + (procent / 100) if riktning == 'ökar' else 1 - (procent / 100), 4), "input_typ": "text", "svarstyp": "float"}
+            return Uppgift(info_box_text=f"Ett pris {riktning} med {f'{procent:g}'.replace('.', ',')} %.", info_box_style="green", fraga="Vad blir förändringsfaktorn? (Svara med decimaltal)", ratt_svar=round(1 + (procent / 100) if riktning == 'ökar' else 1 - (procent / 100), 4), input_typ="text", svarstyp="float")
             
         elif typ == 'hitta_procent':
             riktning, procent = random.choice(['ökar', 'minskar']), round(random.uniform(1.5, 95.5), 1) if random.choice([True, False]) else random.randint(5, 95)
             ff = 1 + (procent / 100) if riktning == 'ökar' else 1 - (procent / 100)
-            return {"info_box_green": f"En förändringsfaktor är {f'{round(ff, 4):g}'.replace('.', ',')}.", "fraga": "Vilken procentuell förändring motsvarar detta? (En sänkning svaras med minus, t.ex. -12,5)", "ratt_svar": procent if riktning == 'ökar' else -procent, "input_typ": "text", "svarstyp": "procent"}
+            return Uppgift(info_box_text=f"En förändringsfaktor är {f'{round(ff, 4):g}'.replace('.', ',')}.", info_box_style="green", fraga="Vilken procentuell förändring motsvarar detta? (En sänkning svaras med minus, t.ex. -12,5)", ratt_svar=procent if riktning == 'ökar' else -procent, input_typ="text", svarstyp="procent")
             
         elif typ == 'nytt_pris':
             startpris, riktning, procent = random.choice([100, 200, 250, 400, 500, 800, 1000, 1500]), random.choice(['höjs', 'sänks']), random.choice([10, 15, 20, 25, 30, 40, 50, 12.5])
-            return {"info_box_green": f"En vara kostar {startpris} kr. Priset {riktning} med {f'{procent:g}'.replace('.', ',')} %.", "fraga": "Vad blir det nya priset? (Svara i hela kronor)", "ratt_svar": int(round(startpris * (1 + procent / 100))) if riktning == 'höjs' else int(round(startpris * (1 - procent / 100))), "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
+            return Uppgift(info_box_text=f"En vara kostar {startpris} kr. Priset {riktning} med {f'{procent:g}'.replace('.', ',')} %.", info_box_style="green", fraga="Vad blir det nya priset? (Svara i hela kronor)", ratt_svar=int(round(startpris * (1 + procent / 100))) if riktning == 'höjs' else int(round(startpris * (1 - procent / 100))), input_typ="text", svarstyp="int", suffix="kr")
             
         elif typ == 'index_berakna':
             P0 = random.choice([50, 100, 200, 250, 400, 500])
             idx_val = random.choice([110, 120, 125, 130, 140, 150])
             P1 = int(P0 * idx_val / 100)
-            info = f"Ett basår kostade en specifik vara {P0} kr. Några år senare kostar samma vara {P1} kr."
-            return {"info_box_green": info, "fraga": "Vilket index har varan det senare året? (Svara med ett heltal)", "ratt_svar": idx_val, "input_typ": "text", "svarstyp": "int"}
+            return Uppgift(info_box_text=f"Ett basår kostade en specifik vara {P0} kr. Några år senare kostar samma vara {P1} kr.", info_box_style="green", fraga="Vilket index har varan det senare året? (Svara med ett heltal)", ratt_svar=idx_val, input_typ="text", svarstyp="int")
             
         elif typ == 'index_nytt_varde':
             P0 = random.choice([100, 200, 500, 1000, 2000, 5000])
             idx_val = random.choice([112, 115, 120, 130, 140, 150])
             P1 = int(P0 * idx_val / 100)
-            info = f"En vara kostade {P0} kr under basåret (då index alltid är 100). Ett senare år är index för varan {idx_val}."
-            return {"info_box_green": info, "fraga": "Vad kostar varan det senare året? (Svara i kr)", "ratt_svar": P1, "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
+            return Uppgift(info_box_text=f"En vara kostade {P0} kr under basåret (då index alltid är 100). Ett senare år är index för varan {idx_val}.", info_box_style="green", fraga="Vad kostar varan det senare året? (Svara i kr)", ratt_svar=P1, input_typ="text", svarstyp="int", suffix="kr")
             
         elif typ == 'index_procentuell_forandring':
             ans = random.choice(range(5, 155, 5)) 
             i1 = random.randint(5, 15) * 20 
             i2 = int(round(i1 * (1 + ans / 100.0)))
-            info = f"Index för en viss vara var {i1} år 1 och {i2} år 2."
-            return {"info_box_green": info, "fraga": "Med hur många procent ökade priset från år 1 till år 2?", "ratt_svar": ans, "input_typ": "text", "svarstyp": "procent"}
+            return Uppgift(info_box_text=f"Index för en viss vara var {i1} år 1 och {i2} år 2.", info_box_style="green", fraga="Med hur många procent ökade priset från år 1 till år 2?", ratt_svar=ans, input_typ="text", svarstyp="procent")
             
     else:
         typ = random.choice(['hitta_gammalt', 'upprepad_procent', 'index_byta_basar', 'index_reallon'])
@@ -945,20 +848,19 @@ def skapa_ff_uppgift(niva):
         if typ == 'hitta_gammalt':
             gammalt_pris, procent, riktning = random.choice([400, 500, 800, 1000, 1200, 1500, 2000]), random.choice([10, 20, 25, 30, 40, 50]), random.choice(['höjs', 'sänks'])
             nytt_pris = int(round(gammalt_pris * (1 + procent / 100))) if riktning == 'höjs' else int(round(gammalt_pris * (1 - procent / 100)))
-            return {"info_box_green": f"Efter att priset på en vara {riktning} med {procent} % kostar den nu {nytt_pris} kr.", "fraga": "Vad kostade varan från början? (Svara i hela kronor)", "ratt_svar": gammalt_pris, "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
+            return Uppgift(info_box_text=f"Efter att priset på en vara {riktning} med {procent} % kostar den nu {nytt_pris} kr.", info_box_style="green", fraga="Vad kostade varan från början? (Svara i hela kronor)", ratt_svar=gammalt_pris, input_typ="text", svarstyp="int", suffix="kr")
             
         elif typ == 'upprepad_procent':
             p1, p2 = random.choice([10, 20, 25, 30]), random.choice([10, 20, 25, 30])
             r1, r2 = random.choice(['ökar', 'minskar']), random.choice(['ökar', 'minskar'])
             f1 = (1 + p1/100) if r1 == 'ökar' else (1 - p1/100)
             f2 = (1 + p2/100) if r2 == 'ökar' else (1 - p2/100)
-            return {"info_box_green": f"Priset på en produkt {r1} först med {p1} % och {r2} därefter med {p2} %.", "fraga": "Vad är den totala förändringsfaktorn för båda ändringarna tillsammans? (Svara med decimaltal)", "ratt_svar": round(f1 * f2, 4), "input_typ": "text", "svarstyp": "float"}
+            return Uppgift(info_box_text=f"Priset på en produkt {r1} först med {p1} % och {r2} därefter med {p2} %.", info_box_style="green", fraga="Vad är den totala förändringsfaktorn för båda ändringarna tillsammans? (Svara med decimaltal)", ratt_svar=round(f1 * f2, 4), input_typ="text", svarstyp="float")
             
         elif typ == 'index_byta_basar':
             komb = [(120, 144, 120), (120, 150, 125), (125, 150, 120), (140, 168, 120), (150, 180, 120), (150, 195, 130)]
             old_i2, old_i3, new_i3 = random.choice(komb)
-            info = f"I en indextabell är index 100 för år 1, {old_i2} för år 2, och {old_i3} för år 3. Man bestämmer sig sedan för att byta basår till år 2."
-            return {"info_box_green": info, "fraga": "Vilket index får år 3 i den nya tabellen?", "ratt_svar": new_i3, "input_typ": "text", "svarstyp": "int"}
+            return Uppgift(info_box_text=f"I en indextabell är index 100 för år 1, {old_i2} för år 2, och {old_i3} för år 3. Man bestämmer sig sedan för att byta basår till år 2.", info_box_style="green", fraga="Vilket index får år 3 i den nya tabellen?", ratt_svar=new_i3, input_typ="text", svarstyp="int")
             
         elif typ == 'index_reallon':
             kpi = random.choice([110, 120, 125, 140, 150])
@@ -966,8 +868,7 @@ def skapa_ff_uppgift(niva):
             base_lon = random.choice([20000, 25000, 30000, 35000])
             new_lon = int(base_lon * (kpi/100) * lon_faktor)
             reallon = int(new_lon / (kpi / 100))
-            info = f"År 1 är KPI 100 och din månadslön är {base_lon} kr. År 2 är KPI {kpi} och din lön har ökat till {new_lon} kr."
-            return {"info_box_green": info, "fraga": "Vad är din lön år 2 omräknad till penningvärdet för år 1 (så kallad reallön)?", "ratt_svar": reallon, "input_typ": "text", "svarstyp": "int", "suffix": "kr"}
+            return Uppgift(info_box_text=f"År 1 är KPI 100 och din månadslön är {base_lon} kr. År 2 är KPI {kpi} och din lön har ökat till {new_lon} kr.", info_box_style="green", fraga="Vad är din lön år 2 omräknad till penningvärdet för år 1 (så kallad reallön)?", ratt_svar=reallon, input_typ="text", svarstyp="int", suffix="kr")
 
 def rita_traddiagram(grenar, farg1, farg2):
     fig = go.Figure()
@@ -993,7 +894,7 @@ def skapa_slump_uppgift(niva):
             gren_texter = [f"{p.numerator}/{p.denominator}" for p in [p1, p2, p3, p4, p5, p6]]
             fraga_val = random.choice(['två röda', 'två blå', 'exakt en av varje färg'])
             ratt_svar = p1 * p3 if fraga_val == 'två röda' else (p2 * p6 if fraga_val == 'två blå' else (p1 * p4) + (p2 * p5))
-            return {"info_box_pink": f"I en påse finns {A} röda och {B} blå kulor. Träddiagrammet visar vad som kan hända om du drar två kulor utan återläggning.", "plotly_fig": rita_traddiagram(gren_texter, "Röd", "Blå"), "fraga": f"Vad är sannolikheten att du drar {fraga_val}? (Svara i bråkform)", "ratt_svar": ratt_svar, "input_typ": "text", "svarstyp": "fraction", "undertext": "Svara i bråkform med ett snedstreck (t.ex. 3/8). Bråket behöver inte vara förkortat maximalt."}
+            return Uppgift(info_box_text=f"I en påse finns {A} röda och {B} blå kulor. Träddiagrammet visar vad som kan hända om du drar två kulor utan återläggning.", info_box_style="pink", plotly_fig=rita_traddiagram(gren_texter, "Röd", "Blå"), fraga=f"Vad är sannolikheten att du drar {fraga_val}? (Svara i bråkform)", ratt_svar=ratt_svar, input_typ="text", svarstyp="fraction", undertext="Svara i bråkform med ett snedstreck (t.ex. 3/8). Bråket behöver inte vara förkortat maximalt.")
         elif typ == 'trad_saknas':
             A, B = random.randint(3, 7), random.randint(3, 7)
             tot = A + B
@@ -1002,44 +903,44 @@ def skapa_slump_uppgift(niva):
             saknad_idx = random.randint(0, 5)
             ratt_svar = fractions[saknad_idx]
             gren_texter[saknad_idx] = "x"
-            return {"info_box_pink": f"I en påse finns {A} röda och {B} blå kulor. Du drar två kulor utan återläggning.", "plotly_fig": rita_traddiagram(gren_texter, "Röd", "Blå"), "fraga": "Ett värde i träddiagrammet har bytts ut mot 'x'. Vilket bråktal ska stå istället för x i diagrammet?", "ratt_svar": ratt_svar, "input_typ": "text", "svarstyp": "fraction", "undertext": "Svara i bråkform med ett snedstreck (t.ex. 3/8). Bråket behöver inte vara förkortat maximalt."}
+            return Uppgift(info_box_text=f"I en påse finns {A} röda och {B} blå kulor. Du drar två kulor utan återläggning.", info_box_style="pink", plotly_fig=rita_traddiagram(gren_texter, "Röd", "Blå"), fraga="Ett värde i träddiagrammet har bytts ut mot 'x'. Vilket bråktal ska stå istället för x i diagrammet?", ratt_svar=ratt_svar, input_typ="text", svarstyp="fraction", undertext="Svara i bråkform med ett snedstreck (t.ex. 3/8). Bråket behöver inte vara förkortat maximalt.")
         elif typ == 'flerval_uppstallning':
             A, B = random.randint(3, 7), random.randint(3, 7)
             tot = A + B
             ratt = f"\\frac{{{A}}}{{{tot}}} \\cdot \\frac{{{A-1}}}{{{tot-1}}}"
             alt = [ratt, f"\\frac{{{A}}}{{{tot}}} \\cdot \\frac{{{A}}}{{{tot}}}", f"\\frac{{{A}}}{{{tot}}} + \\frac{{{A-1}}}{{{tot-1}}}", f"\\frac{{{A}}}{{{tot}}} \\cdot \\frac{{{A-1}}}{{{tot}}}"]
             random.shuffle(alt)
-            return {"info_box_pink": f"I en påse finns {A} röda och {B} gröna godisbitar. Du drar två godisbitar slumpmässigt utan att titta.", "fraga": "Vilken beräkning ger sannolikheten att du får två röda godisbitar?", "ratt_svar": f"${ratt}$", "alternativ": [f"${a}$" for a in alt], "input_typ": "radio", "svarstyp": "string", "undertext": "Välj det alternativ som visar rätt uträkning."}
+            return Uppgift(info_box_text=f"I en påse finns {A} röda och {B} gröna godisbitar. Du drar två godisbitar slumpmässigt utan att titta.", info_box_style="pink", fraga="Vilken beräkning ger sannolikheten att du får två röda godisbitar?", ratt_svar=f"${ratt}$", alternativ=[f"${a}$" for a in alt], input_typ="radio", svarstyp="string", undertext="Välj det alternativ som visar rätt uträkning.")
         elif typ == 'berakna_enkla':
             tot = random.randint(4, 12)
             vinst, nit = 1, tot - 1
-            return {"info_box_pink": f"Ett lyckohjul har {tot} lika stora fält. Endast {vinst} av fälten ger vinst och {nit} ger nit. Du snurrar hjulet två gånger.", "fraga": "Vad är sannolikheten att du vinner på båda snurren?", "ratt_svar": Fraction(vinst, tot) * Fraction(vinst, tot), "input_typ": "text", "svarstyp": "fraction", "undertext": "Svara i bråkform med ett snedstreck (t.ex. 3/8). Bråket behöver inte vara förkortat maximalt."}
+            return Uppgift(info_box_text=f"Ett lyckohjul har {tot} lika stora fält. Endast {vinst} av fälten ger vinst och {nit} ger nit. Du snurrar hjulet två gånger.", info_box_style="pink", fraga="Vad är sannolikheten att du vinner på båda snurren?", ratt_svar=Fraction(vinst, tot) * Fraction(vinst, tot), input_typ="text", svarstyp="fraction", undertext="Svara i bråkform med ett snedstreck (t.ex. 3/8). Bråket behöver inte vara förkortat maximalt.")
         elif typ == 'enkel_dragning':
             farg1_plur, farg1_sing = random.choice([('röda', 'röd'), ('gröna', 'grön'), ('blåa', 'blå')])
             farg2_plur, farg2_sing = random.choice([('gula', 'gul'), ('svarta', 'svart'), ('vita', 'vit')])
             A, B = random.randint(3, 8), random.randint(3, 8)
-            return {"info_box_pink": f"I en påse finns {A} {farg1_plur} och {B} {farg2_plur} kulor. Du drar en kula utan att titta.", "fraga": f"Vad är sannolikheten att du drar en {farg1_sing} kula?", "ratt_svar": Fraction(A, A+B), "input_typ": "text", "svarstyp": "fraction", "undertext": "Svara i bråkform med ett snedstreck (t.ex. 3/8). Bråket behöver inte vara förkortat maximalt."}
+            return Uppgift(info_box_text=f"I en påse finns {A} {farg1_plur} och {B} {farg2_plur} kulor. Du drar en kula utan att titta.", info_box_style="pink", fraga=f"Vad är sannolikheten att du drar en {farg1_sing} kula?", ratt_svar=Fraction(A, A+B), input_typ="text", svarstyp="fraction", undertext="Svara i bråkform med ett snedstreck (t.ex. 3/8). Bråket behöver inte vara förkortat maximalt.")
         elif typ == 'tarning_mynt':
             tarning_events = [("ett jämnt tal", Fraction(3, 6)), ("ett udda tal", Fraction(3, 6)), ("mer än 4", Fraction(2, 6)), ("mindre än 3", Fraction(2, 6)), ("mer än 2", Fraction(4, 6)), ("mindre än 5", Fraction(4, 6))] + [(f"en {i}:a", Fraction(1, 6)) for i in range(1, 7)]
             valt_tarning_event, tarning_prob = random.choice(tarning_events)
             target_mynt = random.choice(['krona', 'klave'])
-            return {"info_box_pink": "Du kastar en vanlig sexsidig tärning och singlar ett mynt.", "fraga": f"Vad är sannolikheten att du får {valt_tarning_event} och {target_mynt}?", "ratt_svar": tarning_prob * Fraction(1, 2), "input_typ": "text", "svarstyp": "fraction", "undertext": "Svara i bråkform med ett snedstreck (t.ex. 3/8). Bråket behöver inte vara förkortat maximalt."}
+            return Uppgift(info_box_text="Du kastar en vanlig sexsidig tärning och singlar ett mynt.", info_box_style="pink", fraga=f"Vad är sannolikheten att du får {valt_tarning_event} och {target_mynt}?", ratt_svar=tarning_prob * Fraction(1, 2), input_typ="text", svarstyp="fraction", undertext="Svara i bråkform med ett snedstreck (t.ex. 3/8). Bråket behöver inte vara förkortat maximalt.")
     else:
         typ = random.choice(['komplement_oberoende', 'komplement_beroende', 'flera_vagar', 'tarning_summa'])
         if typ == 'komplement_oberoende':
             kast = random.choice([3, 4])
-            return {"info_box_pink": f"Du kastar en vanlig sexsidig tärning {kast} gånger i rad.", "fraga": "Vad är sannolikheten att du slår minst en sexa?", "ratt_svar": Fraction(1, 1) - (Fraction(5, 6) ** kast), "input_typ": "text", "svarstyp": "fraction", "undertext": "Svara i bråkform med ett snedstreck (t.ex. 3/8). Bråket behöver inte vara förkortat maximalt."}
+            return Uppgift(info_box_text=f"Du kastar en vanlig sexsidig tärning {kast} gånger i rad.", info_box_style="pink", fraga="Vad är sannolikheten att du slår minst en sexa?", ratt_svar=Fraction(1, 1) - (Fraction(5, 6) ** kast), input_typ="text", svarstyp="fraction", undertext="Svara i bråkform med ett snedstreck (t.ex. 3/8). Bråket behöver inte vara förkortat maximalt.")
         elif typ == 'komplement_beroende':
             vinst, nit = random.randint(2, 4), random.randint(8, 15)
             tot = vinst + nit
-            return {"info_box_pink": f"I en skål ligger {tot} lotter. {vinst} är vinstlotter och {nit} är nitlotter. Du drar två lotter utan att titta.", "fraga": "Vad är sannolikheten att du får minst en vinstlott?", "ratt_svar": Fraction(1, 1) - (Fraction(nit, tot) * Fraction(nit-1, tot-1)), "input_typ": "text", "svarstyp": "fraction", "undertext": "Svara i bråkform med ett snedstreck (t.ex. 3/8). Bråket behöver inte vara förkortat maximalt."}
+            return Uppgift(info_box_text=f"I en skål ligger {tot} lotter. {vinst} är vinstlotter och {nit} är nitlotter. Du drar två lotter utan att titta.", info_box_style="pink", fraga="Vad är sannolikheten att du får minst en vinstlott?", ratt_svar=Fraction(1, 1) - (Fraction(nit, tot) * Fraction(nit-1, tot-1)), input_typ="text", svarstyp="fraction", undertext="Svara i bråkform med ett snedstreck (t.ex. 3/8). Bråket behöver inte vara förkortat maximalt.")
         elif typ == 'flera_vagar':
             A, B = random.randint(3, 6), random.randint(3, 6)
-            return {"info_box_pink": f"I en ask finns {A} röda och {B} blå bollar. Du drar två bollar slumpmässigt utan återläggning.", "fraga": "Vad är sannolikheten att du får exakt en av varje färg?", "ratt_svar": Fraction(2 * A * B, (A + B) * (A + B - 1)), "input_typ": "text", "svarstyp": "fraction", "undertext": "Svara i bråkform med ett snedstreck (t.ex. 3/8). Bråket behöver inte vara förkortat maximalt."}
+            return Uppgift(info_box_text=f"I en ask finns {A} röda och {B} blå bollar. Du drar två bollar slumpmässigt utan återläggning.", info_box_style="pink", fraga="Vad är sannolikheten att du får exakt en av varje färg?", ratt_svar=Fraction(2 * A * B, (A + B) * (A + B - 1)), input_typ="text", svarstyp="fraction", undertext="Svara i bråkform med ett snedstreck (t.ex. 3/8). Bråket behöver inte vara förkortat maximalt.")
         elif typ == 'tarning_summa':
             summan = random.randint(4, 10)
             gynsamma = sum(1 for i in range(1, 7) for j in range(1, 7) if i + j == summan)
-            return {"info_box_pink": "Du kastar två vanliga sexsidiga tärningar.", "fraga": f"Vad är sannolikheten att tärningarnas summa blir exakt {summan}?", "ratt_svar": Fraction(gynsamma, 36), "input_typ": "text", "svarstyp": "fraction", "undertext": "Svara i bråkform med ett snedstreck (t.ex. 3/8). Bråket behöver inte vara förkortat maximalt."}
+            return Uppgift(info_box_text="Du kastar två vanliga sexsidiga tärningar.", info_box_style="pink", fraga=f"Vad är sannolikheten att tärningarnas summa blir exakt {summan}?", ratt_svar=Fraction(gynsamma, 36), input_typ="text", svarstyp="fraction", undertext="Svara i bråkform med ett snedstreck (t.ex. 3/8). Bråket behöver inte vara förkortat maximalt.")
 
 def rita_stat_graf(x, y):
     fig = go.Figure()
@@ -1061,7 +962,7 @@ def skapa_stat_uppgift(niva=1):
         elif korr == 'Stark negativ': y = -1.5 * x + 150 + np.random.normal(0, 6, num_points)
         elif korr == 'Svag negativ': y = -1.5 * x + 150 + np.random.normal(0, 25, num_points)
         else: y = np.random.uniform(10, 90, num_points)
-        return {"info_text_italic": "Kika på spridningsdiagrammet ovan.", "plotly_fig": rita_stat_graf(x, y), "fraga": "Vilken typ av korrelation visar diagrammet?", "ratt_svar": korr, "alternativ": ['Välj svar...', 'Stark positiv', 'Svag positiv', 'Stark negativ', 'Svag negativ', 'Ingen korrelation'], "input_typ": "selectbox", "svarstyp": "string"}
+        return Uppgift(info_text_italic="Kika på spridningsdiagrammet ovan.", plotly_fig=rita_stat_graf(x, y), fraga="Vilken typ av korrelation visar diagrammet?", ratt_svar=korr, alternativ=['Välj svar...', 'Stark positiv', 'Svag positiv', 'Stark negativ', 'Svag negativ', 'Ingen korrelation'], input_typ="selectbox", svarstyp="string")
         
     elif typ == 'konf_overlapp':
         A = random.randint(14, 25)
@@ -1070,38 +971,33 @@ def skapa_stat_uppgift(niva=1):
         ratt = "Vi kan inte vara helt säkra på vilket parti som är störst, eftersom felmarginalerna överlappar." if overlapp else "Parti A är med största sannolikhet större än Parti B, eftersom felmarginalerna inte överlappar."
         alts = [ratt, "Parti A är garanterat större än Parti B." if overlapp else "Vi kan inte vara säkra på vilket parti som är störst, eftersom felmarginalerna överlappar.", "Parti A har ökat mer än Parti B sedan förra valet.", f"Parti A kommer att få exakt {A} % av rösterna i valet."]
         random.shuffle(alts)
-        return {"info_box_purple": f"En väljarbarometer visar att Parti A får {A} % och Parti B får {B} % av väljarstödet. Felmarginalen är ±{fm} procentenheter för båda partierna vid 95 % konfidensgrad.", "fraga": "Vilken slutsats kan dras med 95 % säkerhet?", "ratt_svar": ratt, "alternativ": alts, "input_typ": "radio", "svarstyp": "string"}
+        return Uppgift(info_box_text=f"En väljarbarometer visar att Parti A får {A} % och Parti B får {B} % av väljarstödet. Felmarginalen är ±{fm} procentenheter för båda partierna vid 95 % konfidensgrad.", info_box_style="purple", fraga="Vilken slutsats kan dras med 95 % säkerhet?", ratt_svar=ratt, alternativ=alts, input_typ="radio", svarstyp="string")
         
     elif typ == 'konf_baklanges':
         resultat, fm = round(random.uniform(4.0, 12.0), 1), round(random.uniform(1.5, 3.5), 1)
         ratt = f"Resultatet var {f'{resultat:g}'.replace('.', ',')} % med en felmarginal på ±{f'{fm:g}'.replace('.', ',')} procentenheter."
         alts = [ratt, f"Resultatet var {f'{round(resultat+fm, 1):g}'.replace('.', ',')} % med en felmarginal på ±{f'{round(fm*2, 1):g}'.replace('.', ',')} procentenheter.", f"Resultatet var {f'{round(resultat-fm, 1):g}'.replace('.', ',')} % med en felmarginal på ±{f'{round(resultat+fm, 1):g}'.replace('.', ',')} procentenheter.", f"Resultatet var {f'{resultat:g}'.replace('.', ',')} % med en felmarginal på ±{f'{round(fm/2, 1):g}'.replace('.', ',')} procentenheter."]
         random.shuffle(alts)
-        return {"info_box_purple": f"Ett 95 % konfidensintervall för andelen defekta produkter i en fabrik anges till {f'{round(resultat-fm, 1):g}'.replace('.', ',')}-{f'{round(resultat+fm, 1):g}'.replace('.', ',')}%.", "fraga": "Vad var resultatet i själva stickprovet, och vad var felmarginalen?", "ratt_svar": ratt, "alternativ": alts, "input_typ": "radio", "svarstyp": "string"}
+        return Uppgift(info_box_text=f"Ett 95 % konfidensintervall för andelen defekta produkter i en fabrik anges till {f'{round(resultat-fm, 1):g}'.replace('.', ',')}-{f'{round(resultat+fm, 1):g}'.replace('.', ',')}%.", info_box_style="purple", fraga="Vad var resultatet i själva stickprovet, och vad var felmarginalen?", ratt_svar=ratt, alternativ=alts, input_typ="radio", svarstyp="string")
         
     elif typ == 'konf_urval':
-        # DYNAMISK LOGIK: Slumpa mellan 4 olika scenarier (alltid 95 % konfidensgrad)
         scenario = random.choice(['minska_fm', 'öka_n_effekt', 'minska_n_effekt', 'jamfora_tva_n'])
         fm = round(random.uniform(3.0, 5.0), 1)
-        
         if scenario == 'minska_fm':
             ratt = "Fråga betydligt fler personer i nästa undersökning."
             alts = [ratt, "Fråga färre personer så att risken för felräkning minskar.", "Bara fråga personer som de vet är insatta i ämnet.", "Ställa frågan på ett annat sätt så att fler svarar ja."]
             info = f"En tidning publicerar en opinionsundersökning men tycker att felmarginalen på ±{f'{fm:g}'.replace('.', ',')} procentenheter gör resultatet för osäkert. De vill ha ett snävare (mindre) konfidensintervall nästa månad."
             fraga = "Vad är det bästa sättet för dem att minska felmarginalen rent statistiskt?"
-            
         elif scenario == 'öka_n_effekt':
             ratt = "Felmarginalen minskar och intervallet blir snävare."
             alts = [ratt, "Felmarginalen ökar och intervallet blir bredare.", "Felmarginalen påverkas inte alls av antalet tillfrågade.", "Resultatet i själva stickprovet ändras."]
             info = "Ett undersökningsföretag brukar fråga 1 000 personer i sina mätningar. Till nästa mätning bestämmer de sig för att ställa samma fråga till 3 000 personer istället. Båda beräknas med 95 % konfidensgrad."
             fraga = "Vad händer med felmarginalen när de ökar antalet tillfrågade på detta sätt?"
-            
         elif scenario == 'minska_n_effekt':
             ratt = "Felmarginalen ökar (intervallet blir bredare)."
             alts = [ratt, "Felmarginalen minskar (intervallet blir snävare).", "Felmarginalen påverkas inte, så länge det är exakt samma fråga.", "Undersökningen blir helt ogiltig och kan inte användas alls."]
             info = "En forskare skickar ut en enkät till 2 000 personer, men får en väldigt låg svarsfrekvens och bara 400 personer svarar. Hon beräknar ett 95 % konfidensintervall baserat på de 400 svaren."
             fraga = "Hur blir felmarginalen nu, jämfört med om alla 2 000 hade svarat?"
-            
         elif scenario == 'jamfora_tva_n':
             ratt = "Undersökning A har en större felmarginal än Undersökning B."
             alts = [ratt, "Undersökning B har en större felmarginal än Undersökning A.", "De har exakt samma felmarginal eftersom båda har 95 % konfidensgrad.", "Det går inte att säga vilken felmarginal som är störst utan att veta vad folk svarade."]
@@ -1109,14 +1005,14 @@ def skapa_stat_uppgift(niva=1):
             fraga = "Vilket påstående om undersökningarnas felmarginal är sant?"
 
         random.shuffle(alts)
-        return {"info_box_purple": info, "fraga": fraga, "ratt_svar": ratt, "alternativ": alts, "input_typ": "radio", "svarstyp": "string"}
+        return Uppgift(info_box_text=info, info_box_style="purple", fraga=fraga, ratt_svar=ratt, alternativ=alts, input_typ="radio", svarstyp="string")
         
     elif typ == 'konf_falskt':
         resultat, fm = random.randint(55, 75), random.randint(2, 4)
         ratt = f"Mellan {resultat - fm} % och {resultat + fm} % av eleverna *som tillfrågades* vill ha längre raster."
         alts = [ratt, f"Det sanna värdet för hela skolan ligger med 95 % säkerhet mellan {resultat - fm} % och {resultat + fm} %.", f"I det faktiska stickprovet svarade exakt {resultat} % att de vill ha längre raster.", "Även om intervallet är brett, finns det en risk att det sanna värdet ligger utanför intervallet."]
         random.shuffle(alts)
-        return {"info_box_purple": f"En undersökning visar att {resultat} % av eleverna på en stor skola vill ha längre raster. Undersökningen har en felmarginal på ±{fm} procentenheter vid 95 % konfidensgrad.", "fraga": "Vilket av följande påståenden är FALSKT (felaktigt)?", "ratt_svar": ratt, "alternativ": alts, "input_typ": "radio", "svarstyp": "string"}
+        return Uppgift(info_box_text=f"En undersökning visar att {resultat} % av eleverna på en stor skola vill ha längre raster. Undersökningen har en felmarginal på ±{fm} procentenheter vid 95 % konfidensgrad.", info_box_style="purple", fraga="Vilket av följande påståenden är FALSKT (felaktigt)?", ratt_svar=ratt, alternativ=alts, input_typ="radio", svarstyp="string")
 
 def skapa_problemlosning_uppgift(niva):
     namn_lista = ["Charlie", "Kim", "Ali", "Maja", "Sami", "Robin", "Nilo", "Alex", "Noa", "Elsa", "Viktor"]
@@ -1143,56 +1039,25 @@ def skapa_problemlosning_uppgift(niva):
             random.shuffle(alts)
             
             info = f"{namn} ska hyra en {fordon}. Startavgiften är {start} kr. Dessutom kostar det {mil_kost} kr för varje mil hen kör."
-            return {
-                "info_box_blue": info,
-                "fraga": "Vilken formel beskriver den totala kostnaden y kr för x mil som körs?",
-                "ratt_svar": f"${ratt}$",
-                "alternativ": alts,
-                "input_typ": "radio",
-                "svarstyp": "string",
-                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
-            }
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Vilken formel beskriver den totala kostnaden y kr för x mil som körs?", ratt_svar=f"${ratt}$", alternativ=alts, input_typ="radio", svarstyp="string", undertext="Lös uppgiften med huvudräkning (utan miniräknare).")
             
         elif typ == 'vardeminskning':
             fordon = random.choice(["bil", "båt", "husvagn", "traktor", "motorcykel"])
             pris = random.randint(15, 60) * 10000
             procent = random.randint(10, 25)
             ff = round((100 - procent) / 100.0, 2)
-            
             info = f"En {fordon} kostar {formatera_kr(pris)} kr i inköpspris. Värdet minskar med {procent} % per år."
-            
-            return {
-                "info_box_blue": info,
-                "fraga": "Skriv ett uttryck som beskriver värdet i kronor x år efter inköp.",
-                "ratt_svar": f"{pris}*{ff}**x",
-                "input_typ": "text",
-                "svarstyp": "string_math",
-                "undertext": "Ange uttrycket med x som variabel och ^ för upphöjt till (t.ex. 500*0,8^x).\nLös uppgiften med huvudräkning (utan miniräknare)."
-            }
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Skriv ett uttryck som beskriver värdet i kronor x år efter inköp.", ratt_svar=f"{pris}*{ff}**x", input_typ="text", svarstyp="string_math", undertext="Ange uttrycket med x som variabel och ^ för upphöjt till (t.ex. 500*0,8^x).\nLös uppgiften med huvudräkning (utan miniräknare).")
             
         elif typ == 'pannkakor_proportion':
             kombinationer = [
-                (4, 200, 6),   # 200 / 2 * 3 = 300
-                (6, 300, 4),   # 300 / 3 * 2 = 200
-                (8, 400, 6),   # 400 / 4 * 3 = 300
-                (6, 400, 9),   # 400 / 2 * 3 = 600
-                (10, 500, 15), # 500 / 2 * 3 = 750
-                (4, 200, 10),  # 200 / 2 * 5 = 500
-                (6, 150, 10)   # 150 / 3 * 5 = 250
+                (4, 200, 6), (6, 300, 4), (8, 400, 6), (6, 400, 9), 
+                (10, 500, 15), (4, 200, 10), (6, 150, 10)
             ]
             personer_start, mjol, personer_mal = random.choice(kombinationer)
             svar = int((mjol / personer_start) * personer_mal)
-            
             info = f"Ett recept för {personer_start} portioner kräver {mjol} gram mjöl."
-            return {
-                "info_box_blue": info,
-                "fraga": f"Hur mycket mjöl krävs om man ska laga {personer_mal} portioner?",
-                "ratt_svar": svar,
-                "input_typ": "text",
-                "svarstyp": "int",
-                "suffix": "gram",
-                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
-            }
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga=f"Hur mycket mjöl krävs om man ska laga {personer_mal} portioner?", ratt_svar=svar, input_typ="text", svarstyp="int", suffix="gram", undertext="Lös uppgiften med huvudräkning (utan miniräknare).")
             
         elif typ == 'valuta_omvandling':
             namn1, namn2 = random.sample(namn_lista, 2)
@@ -1206,41 +1071,18 @@ def skapa_problemlosning_uppgift(niva):
                 ("japanska yen", "JPY", 600, 8000, 900, 12000)
             ]
             valuta_namn, valuta_kod, sek_A, val_A, sek_B, val_B = random.choice(valuta_kombos)
-            
             info = f"{namn1} växlar {sek_A} kr till {valuta_namn} ({valuta_kod}) och får {formatera_kr(val_A)} {valuta_kod}.<br><br>{namn2} växlar {sek_B} kr till samma kurs."
-            return {
-                "info_box_blue": info,
-                "fraga": f"Hur mycket får {namn2}?",
-                "ratt_svar": val_B,
-                "input_typ": "text",
-                "svarstyp": "int",
-                "suffix": valuta_kod,
-                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
-            }
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga=f"Hur mycket får {namn2}?", ratt_svar=val_B, input_typ="text", svarstyp="int", suffix=valuta_kod, undertext="Lös uppgiften med huvudräkning (utan miniräknare).")
             
         elif typ == 'jamforpris':
             vara = random.choice(['lösgodis', 'kaffebönor', 'naturgodis', 'teblad', 'brända mandlar'])
             combos = [
-                (150, 24, 160),
-                (300, 42, 140),
-                (120, 18, 150),
-                (250, 35, 140),
-                (400, 36, 90),
-                (200, 17, 85),
-                (150, 21, 140)
+                (150, 24, 160), (300, 42, 140), (120, 18, 150),
+                (250, 35, 140), (400, 36, 90), (200, 17, 85), (150, 21, 140)
             ]
             vikt, pris, kilopris = random.choice(combos)
-            
             info = f"En påse med {vara} som väger {vikt} gram kostar {pris} kr."
-            return {
-                "info_box_blue": info,
-                "fraga": "Vad är priset per kilogram (kg)?",
-                "ratt_svar": kilopris,
-                "input_typ": "text",
-                "svarstyp": "int",
-                "suffix": "kr/kg",
-                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
-            }
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Vad är priset per kilogram (kg)?", ratt_svar=kilopris, input_typ="text", svarstyp="int", suffix="kr/kg", undertext="Lös uppgiften med huvudräkning (utan miniräknare).")
 
         elif typ == 'enkel_tidszon_resa':
             resmal_lista = [
@@ -1250,45 +1092,29 @@ def skapa_problemlosning_uppgift(niva):
                 {"stad": "Bangkok", "bas_tim": 11, "bas_min": 0, "tidsskillnad": 6},
                 {"stad": "Dubai", "bas_tim": 6, "bas_min": 10, "tidsskillnad": 3}
             ]
-
             destination = random.choice(resmal_lista)
             avresa_h = random.randint(6, 22)
             avresa_m = random.choice([0, 10, 20, 30, 40, 50])
-
             extra_min = random.choice([-20, -10, 0, 10, 20, 30])
             total_restid_m = destination["bas_tim"] * 60 + destination["bas_min"] + extra_min
 
             restid_h = total_restid_m // 60
             restid_m_rest = total_restid_m % 60
-
             start_minuter = avresa_h * 60 + avresa_m
             ankomst_svensk_tid = start_minuter + total_restid_m
             ankomst_lokal_tid = ankomst_svensk_tid + (destination["tidsskillnad"] * 60)
             ankomst_lokal_tid = ankomst_lokal_tid % (24 * 60)
-
             ankomst_h = ankomst_lokal_tid // 60
             ankomst_m = ankomst_lokal_tid % 60
 
             avresa_str = f"{avresa_h:02d}:{avresa_m:02d}"
             restid_str = f"{restid_h}h {restid_m_rest}min"
-            
-            if destination['tidsskillnad'] > 0:
-                diff_str = f"+{destination['tidsskillnad']}h"
-            else:
-                diff_str = f"{destination['tidsskillnad']}h"
+            diff_str = f"+{destination['tidsskillnad']}h" if destination['tidsskillnad'] > 0 else f"{destination['tidsskillnad']}h"
 
             info = f"Du reser från Stockholm kl. {avresa_str} och resan till {destination['stad']} tar {restid_str}."
             fraga = f"Vad är klockan lokalt i {destination['stad']} när du landar om tidsskillnaden är {diff_str}? (Svara i formatet HH:MM)"
             svar = f"{ankomst_h:02d}:{ankomst_m:02d}"
-
-            return {
-                "info_box_blue": info,
-                "fraga": fraga,
-                "ratt_svar": svar,
-                "input_typ": "text",
-                "svarstyp": "string",
-                "undertext": "Svara med klockslag i formatet HH:MM (till exempel 08:30 eller 15:00)."
-            }
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga=fraga, ratt_svar=svar, input_typ="text", svarstyp="string", undertext="Svara med klockslag i formatet HH:MM (till exempel 08:30 eller 15:00).")
 
         elif typ == 'jamfora_abonnemang':
             R_B = random.choice([30, 40, 50])
@@ -1296,61 +1122,28 @@ def skapa_problemlosning_uppgift(niva):
             visits = random.choice([4, 5, 6, 8, 10])
             F_A = random.choice([100, 150, 200, 250])
             F_B = F_A + visits * (R_A - R_B)
-            
             info = f"Du funderar på att skaffa gymkort.<br><br>&bull; <b>Gym A</b> tar {F_A} kr i fast månadsavgift och sedan {R_A} kr per träningspass.<br>&bull; <b>Gym B</b> tar {F_B} kr i fast månadsavgift och sedan {R_B} kr per träningspass."
-            return {
-                "info_box_blue": info,
-                "fraga": "Vid exakt hur många träningspass under en månad kostar de båda gymmen lika mycket?",
-                "ratt_svar": visits,
-                "input_typ": "text",
-                "svarstyp": "int",
-                "suffix": "pass",
-                "undertext": "Lös uppgiften på papper (utan miniräknare)."
-            }
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Vid exakt hur många träningspass under en månad kostar de båda gymmen lika mycket?", ratt_svar=visits, input_typ="text", svarstyp="int", suffix="pass", undertext="Lös uppgiften på papper (utan miniräknare).")
 
         elif typ == 'vattenlackage':
             start_vol = random.randint(10, 50) * 10
             leak = random.randint(2, 8)
             info = f"En vattentunna innehåller från början {start_vol} liter vatten. Det har gått hål i botten och tunnan läcker därefter {leak} liter per minut."
-            return {
-                "info_box_blue": info,
-                "fraga": "Skriv ett algebraiskt uttryck för volymen vatten (i liter) som finns kvar i tunnan efter t minuter.",
-                "ratt_svar": f"{start_vol} - {leak}*t",
-                "input_typ": "text",
-                "svarstyp": "string_math",
-                "undertext": "Använd t som variabel. Lös uppgiften med huvudräkning (utan miniräknare)."
-            }
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Skriv ett algebraiskt uttryck för volymen vatten (i liter) som finns kvar i tunnan efter t minuter.", ratt_svar=f"{start_vol} - {leak}*t", input_typ="text", svarstyp="string_math", undertext="Använd t som variabel. Lös uppgiften med huvudräkning (utan miniräknare).")
 
         elif typ == 'upprepad_procent_rea':
             rea1 = random.choice([20, 30, 40])
             rea2 = random.choice([10, 20, 25])
             rabatt_total = 100 - 100 * (1 - rea1/100.0) * (1 - rea2/100.0)
-            
             info = f"En klädbutik har en stor utförsäljning med {rea1} % rabatt på alla varor i butiken. Eftersom du är VIP-medlem får du dessutom ytterligare {rea2} % rabatt i kassan på det redan sänkta priset."
-            return {
-                "info_box_blue": info,
-                "fraga": "Hur stor blir den TOTALA rabatten i procent från varans ursprungspris?",
-                "ratt_svar": int(round(rabatt_total)),
-                "input_typ": "text",
-                "svarstyp": "procent",
-                "suffix": "%",
-                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
-            }
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Hur stor blir den TOTALA rabatten i procent från varans ursprungspris?", ratt_svar=int(round(rabatt_total)), input_typ="text", svarstyp="procent", suffix="%", undertext="Lös uppgiften med huvudräkning (utan miniräknare).")
 
         elif typ == 'enhetsomvandling_regn':
             area = random.choice([50, 100, 150, 200, 500])
             regn = random.choice([2, 5, 8, 10, 12, 15])
             svar = area * regn
             info = f"Ett kraftigt regnoväder drar in och det faller {regn} mm regn över ett platt tak som har arean {area} m²."
-            return {
-                "info_box_blue": info,
-                "fraga": "Hur många liter vatten har det fallit på taket?",
-                "ratt_svar": svar,
-                "input_typ": "text",
-                "svarstyp": "int",
-                "suffix": "liter",
-                "undertext": "Tips: 1 liter är detsamma som 1 kubikdecimeter (dm³). Lös uppgiften med huvudräkning."
-            }
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Hur många liter vatten har det fallit på taket?", ratt_svar=svar, input_typ="text", svarstyp="int", suffix="liter", undertext="Tips: 1 liter är detsamma som 1 kubikdecimeter (dm³). Lös uppgiften med huvudräkning.")
 
         elif typ == 'formel_kokpunkt':
             fraga_typ = random.choice(['hitta_t', 'hitta_h'])
@@ -1358,26 +1151,12 @@ def skapa_problemlosning_uppgift(niva):
                 h = random.choice([1500, 3000, 4500, 6000])
                 t = int(100 - h / 300)
                 info = f"Vattnets kokpunkt <i>t</i> (i °C) beror på höjden över havet <i>h</i> (i meter) enligt formeln:<br><br><b>t = 100 - h/300</b><br><br>Du befinner dig på ett berg på {formatera_kr(h)} meters höjd."
-                fraga = "Vid vilken temperatur kokar vattnet där du är?"
-                svar = t
-                suffix = "°C"
+                return Uppgift(info_box_text=info, info_box_style="blue", fraga="Vid vilken temperatur kokar vattnet där du är?", ratt_svar=t, input_typ="text", svarstyp="int", suffix="°C", undertext="Lös uppgiften med huvudräkning (utan miniräknare).")
             else:
                 t = random.choice([80, 85, 90, 95])
                 h = (100 - t) * 300
                 info = f"Vattnets kokpunkt <i>t</i> (i °C) beror på höjden över havet <i>h</i> (i meter) enligt formeln:<br><br><b>t = 100 - h/300</b><br><br>Du kokar vatten uppe på ett berg och märker att det börjar koka redan vid {t} °C."
-                fraga = "På ungefär vilken höjd över havet befinner du dig?"
-                svar = h
-                suffix = "meter"
-                
-            return {
-                "info_box_blue": info,
-                "fraga": fraga,
-                "ratt_svar": svar,
-                "input_typ": "text",
-                "svarstyp": "int",
-                "suffix": suffix,
-                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
-            }
+                return Uppgift(info_box_text=info, info_box_style="blue", fraga="På ungefär vilken höjd över havet befinner du dig?", ratt_svar=h, input_typ="text", svarstyp="int", suffix="meter", undertext="Lös uppgiften med huvudräkning (utan miniräknare).")
 
     else: # Nivå 2
         typ = random.choice([
@@ -1389,70 +1168,37 @@ def skapa_problemlosning_uppgift(niva):
             namn1, namn2 = random.sample(namn_lista, 2)
             A_den = random.choice([3, 4, 5])
             B_den = random.choice([2, 3])
-            
             kvar_1 = Fraction(1, 1) - Fraction(1, A_den)
             ata_2 = Fraction(1, B_den) * kvar_1
             kvar_total = kvar_1 - ata_2
-            
             info = f"{namn1} och {namn2} köper en stor pizza tillsammans. {namn1} äter upp 1/{A_den} av hela pizzan. Senare äter {namn2} upp 1/{B_den} av det som är kvar."
-            return {
-                "info_box_blue": info,
-                "fraga": "Hur stor andel av HELA pizzan finns sedan kvar?",
-                "ratt_svar": kvar_total,
-                "input_typ": "text",
-                "svarstyp": "fraction",
-                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare).\nSvara i bråkform med ett snedstreck (t.ex. 3/8)."
-            }
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Hur stor andel av HELA pizzan finns sedan kvar?", ratt_svar=kvar_total, input_typ="text", svarstyp="fraction", undertext="Lös uppgiften med huvudräkning (utan miniräknare).\nSvara i bråkform med ett snedstreck (t.ex. 3/8).")
             
         elif typ == 'algebraisk_forstaelse':
             namn1, namn2 = random.sample(namn_lista, 2)
             proc_okning = random.choice([15, 20, 25, 30, 40])
             dec_okning = round(proc_okning / 100.0, 2)
-            
             info = f"{namn1} väger <i>a</i> kg och {namn2} väger <i>b</i> kg. Du vet att följande samband gäller:<br><br><b>a + {str(dec_okning).replace('.', ',')}a = b</b>"
-            
             ratt1 = f"{namn2} väger {proc_okning} % mer än {namn1}"
             ratt2 = f"{namn2}s vikt är {str(round(1+dec_okning, 2)).replace('.', ',')} gånger {namn1}s vikt"
-            
             fel1 = f"{namn1} väger {proc_okning} % mer än {namn2}"
             fel2 = f"{namn1} väger {str(dec_okning).replace('.', ',')} kg mer än {namn2}"
             fel3 = f"{namn2} väger {str(dec_okning).replace('.', ',')} kg mer än {namn1}"
             fel4 = f"{namn1}s vikt är {str(round(1+dec_okning, 2)).replace('.', ',')} gånger {namn2}s vikt"
-            
             valt_ratt = random.choice([ratt1, ratt2])
             alts_visning = random.sample([valt_ratt, fel1, random.choice([fel2, fel3]), fel4], 4)
-            
-            return {
-                "info_box_blue": info,
-                "fraga": "Vilket av följande alternativ stämmer alltid?",
-                "ratt_svar": valt_ratt,
-                "alternativ": alts_visning,
-                "input_typ": "radio",
-                "svarstyp": "string",
-                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare)."
-            }
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Vilket av följande alternativ stämmer alltid?", ratt_svar=valt_ratt, alternativ=alts_visning, input_typ="radio", svarstyp="string", undertext="Lös uppgiften med huvudräkning (utan miniräknare).")
             
         elif typ == 'monster_stickor':
             k = random.randint(2, 5)
             m = random.randint(1, 4)
             f1, f2, f3 = k*1 + m, k*2 + m, k*3 + m
-            
             info = f"Ett mönster byggs med tändstickor.<br><br>&bull; Figur 1 består av {f1} stickor.<br>&bull; Figur 2 består av {f2} stickor.<br>&bull; Figur 3 består av {f3} stickor."
-            svar_ratt = f"{k}*n + {m}"
-            
-            return {
-                "info_box_blue": info,
-                "fraga": "Skriv ett generellt algebraiskt uttryck för antalet stickor i figur n.",
-                "ratt_svar": svar_ratt,
-                "input_typ": "text",
-                "svarstyp": "string_math",
-                "undertext": "Lös uppgiften med huvudräkning (utan miniräknare).\nAnvänd n som variabel. Svara med ett uttryck, till exempel 6n + 2."
-            }
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Skriv ett generellt algebraiskt uttryck för antalet stickor i figur n.", ratt_svar=f"{k}*n + {m}", input_typ="text", svarstyp="string_math", undertext="Lös uppgiften med huvudräkning (utan miniräknare).\nAnvänd n som variabel. Svara med ett uttryck, till exempel 6n + 2.")
             
         elif typ == 'tolka_uttryck_rabatt':
             engangs = random.randint(5, 8) * 10 - 1
             klipp = engangs * 10 - random.randint(10, 20) * 10
-            
             varianter = [
                 (f"(10 &middot; {engangs} - {klipp}) / 10", "Hur mycket man i snitt sparar per badtillfälle med rabattkortet."),
                 (f"{klipp} / 10", "Vad ett bad kostar per gång med rabattkortet."),
@@ -1460,138 +1206,58 @@ def skapa_problemlosning_uppgift(niva):
                 (f"{klipp} / {engangs}", "Hur många gånger man måste bada för att tjäna in rabattkortet.")
             ]
             valt_uttryck, ratt_svar_text = random.choice(varianter)
-            
             info = f"I simhallen kostar en engångsentré {engangs} kr. Man kan också köpa ett rabattkort för 10 gånger som kostar {klipp} kr.<br><br>En person beräknar följande:<br><b>{valt_uttryck}</b>"
             alts = [v[1] for v in varianter]
             random.shuffle(alts)
-            
-            return {
-                "info_box_blue": info,
-                "fraga": "Förklara vad personen har beräknat genom att välja rätt svarsalternativ.",
-                "ratt_svar": ratt_svar_text,
-                "alternativ": alts,
-                "input_typ": "radio",
-                "svarstyp": "string",
-                "undertext": "Läs uttrycket noggrant och fundera på vad uträkningen faktiskt ger för svar.<br>Lös uppgiften med huvudräkning (utan miniräknare)."
-            }
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Förklara vad personen har beräknat genom att välja rätt svarsalternativ.", ratt_svar=ratt_svar_text, alternativ=alts, input_typ="radio", svarstyp="string", undertext="Läs uttrycket noggrant och fundera på vad uträkningen faktiskt ger för svar.<br>Lös uppgiften med huvudräkning (utan miniräknare).")
 
         elif typ == 'tidsvinst_hastighet':
-            combos = [
-                (30, 60, 90, 10), (40, 80, 120, 10), (60, 90, 120, 10),
-                (20, 60, 80, 5), (10, 40, 60, 5)
-            ]
+            combos = [(30, 60, 90, 10), (40, 80, 120, 10), (60, 90, 120, 10), (20, 60, 80, 5), (10, 40, 60, 5)]
             s, v1, v2, t = random.choice(combos)
             info = f"I en tidningsartikel presenteras en formel för att beräkna tidsskillnaden <i>t</i> (i minuter) om man kör en viss sträcka <i>s</i> (i km) med två olika hastigheter:<br><br><b>t = (1/v<sub>1</sub> - 1/v<sub>2</sub>) &middot; s &middot; 60</b><br><br>Du brukar köra till jobbet med hastigheten {v1} km/h, men funderar på hur mycket tid du tjänar på att istället köra {v2} km/h. Sträckan till jobbet är {s} km."
-            return {
-                "info_box_blue": info,
-                "fraga": "Hur många minuter tjänar du på att köra i den snabbare hastigheten?",
-                "ratt_svar": t,
-                "input_typ": "text",
-                "svarstyp": "int",
-                "suffix": "min",
-                "undertext": "Sätt in siffrorna i formeln och räkna. Lös uppgiften med papper och penna."
-            }
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Hur många minuter tjänar du på att köra i den snabbare hastigheten?", ratt_svar=t, input_typ="text", svarstyp="int", suffix="min", undertext="Sätt in siffrorna i formeln och räkna. Lös uppgiften med papper och penna.")
 
         elif typ == 'area_uttryck':
             L = random.randint(2, 6) * 10
             info = f"En bonde ska bygga en rektangulär hage till sina djur. Hagen ska byggas mot en lång, rak ladugårdsvägg, så bonden behöver bara bygga staket på tre av sidorna. Bonden har totalt {L} meter staket att använda.<br><br>Sidorna som är vinkelräta (går rakt ut) från väggen kallas för <i>x</i>."
-            
             ratt = f"x({L} - 2x)"
-            alt1 = f"x({L} - x)"
-            alt2 = f"x(2x - {L})"
-            alt3 = f"x(\\frac{{{L}}}{{2}} - x)"
-            alts = [f"${ratt}$", f"${alt1}$", f"${alt2}$", f"${alt3}$"]
+            alts = [f"${ratt}$", f"$x({L} - x)$", f"$x(2x - {L})$", f"$x(\\frac{{{L}}}{{2}} - x)$"]
             random.shuffle(alts)
-            
-            return {
-                "info_box_blue": info,
-                "fraga": "Vilket av följande uttryck beskriver hagens area (i kvadratmeter) beroende på x?",
-                "ratt_svar": f"${ratt}$",
-                "alternativ": alts,
-                "input_typ": "radio",
-                "svarstyp": "string",
-                "undertext": "Börja gärna med att rita en figur på papper."
-            }
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Vilket av följande uttryck beskriver hagens area (i kvadratmeter) beroende på x?", ratt_svar=f"${ratt}$", alternativ=alts, input_typ="radio", svarstyp="string", undertext="Börja gärna med att rita en figur på papper.")
             
         elif typ == 'medelfart':
-            combos = [
-                (30, 15, 10), # s=30, v1=15, v2=10 => medel=12
-                (60, 30, 20), # s=60, v1=30, v2=20 => medel=24
-                (24, 24, 12), # s=24, v1=24, v2=12 => medel=16
-                (60, 20, 12)  # s=60, v1=20, v2=12 => medel=15
-            ]
+            combos = [(30, 15, 10), (60, 30, 20), (24, 24, 12), (60, 20, 12)]
             s, v1, v2 = random.choice(combos)
-            
-            t1 = s / v1
-            t2 = s / v2
             tot_s = 2 * s
-            tot_t = t1 + t2
+            tot_t = (s / v1) + (s / v2)
             medelfart = int(tot_s / tot_t)
-            
             namn = random.choice(namn_lista)
             fordon = random.choice(['cyklar', 'kör moped', 'kör elsparkcykel'])
             info = f"{namn} {fordon} till en ort som ligger {s} km bort. På ditvägen är medelhastigheten {v1} km/h. På hemvägen är det motvind och medelhastigheten blir bara {v2} km/h."
-            
-            return {
-                "info_box_blue": info,
-                "fraga": "Vad är medelhastigheten för HELA resan (dit och hem)?",
-                "ratt_svar": medelfart,
-                "input_typ": "text",
-                "svarstyp": "int",
-                "suffix": "km/h",
-                "undertext": "Tänk på att du måste räkna ut den totala tiden först. Lös gärna med huvudräkning."
-            }
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Vad är medelhastigheten för HELA resan (dit och hem)?", ratt_svar=medelfart, input_typ="text", svarstyp="int", suffix="km/h", undertext="Tänk på att du måste räkna ut den totala tiden först. Lös gärna med huvudräkning.")
 
         elif typ == 'relativ_procent':
             namn1, namn2, namn3 = random.sample(namn_lista, 3)
-            # Fasta snygga procentkombinationer som ger jämna svar
-            combos = [
-                (40, 20, 75),  # 140 / 80 = 1.75 (+75%)
-                (50, 25, 100), # 150 / 75 = 2.0 (+100%)
-                (20, 40, 100), # 120 / 60 = 2.0 (+100%)
-                (80, 10, 100), # 180 / 90 = 2.0 (+100%)
-                (10, 45, 100)  # 110 / 55 = 2.0 (+100%)
-            ]
+            combos = [(40, 20, 75), (50, 25, 100), (20, 40, 100), (80, 10, 100), (10, 45, 100)]
             p_mer, p_mindre, p_svar = random.choice(combos)
             sak = random.choice(['vinner pengar i ett lotteri', 'får lön för ett sommarjobb', 'säljer jultidningar'])
-            
             info = f"Tre vänner {sak}.<br><br>&bull; {namn1} får {p_mer} % <b>mer</b> än {namn2}.<br>&bull; {namn3} får {p_mindre} % <b>mindre</b> än {namn2}."
-            
-            return {
-                "info_box_blue": info,
-                "fraga": f"Hur många procent MER får {namn1} jämfört med {namn3}?",
-                "ratt_svar": p_svar,
-                "input_typ": "text",
-                "svarstyp": "int",
-                "suffix": "%",
-                "undertext": "Lös med huvudräkning."
-            }
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga=f"Hur många procent MER får {namn1} jämfört med {namn3}?", ratt_svar=p_svar, input_typ="text", svarstyp="int", suffix="%", undertext="Lös med huvudräkning.")
 
         elif typ == 'valgorenhet':
             pop_milj = random.choice([5, 10, 20])
             items = random.choice([50000, 100000, 200000])
             price = random.choice([200, 400, 500])
             effektivitet = random.choice([80, 50])
-            
             total_items_cost = items * price
             total_needed = total_items_cost / (effektivitet / 100.0)
             per_person = int(total_needed / (pop_milj * 1000000))
-            
             sak = random.choice(['nödpaket', 'vaccindoser', 'varma filtar'])
             info = f"I ett land med {pop_milj} miljoner invånare startas en insamling för att köpa {formatera_kr(items)} {sak}. De kostar {price} kr styck.<br><br>På grund av administrativa kostnader går dock bara {effektivitet} % av de insamlade pengarna till själva inköpen."
-            
-            return {
-                "info_box_blue": info,
-                "fraga": "Hur mycket måste varje invånare i landet i genomsnitt skänka för att målet ska nås?",
-                "ratt_svar": per_person,
-                "input_typ": "text",
-                "svarstyp": "int",
-                "suffix": "kr",
-                "undertext": "Håll koll på nollorna! Lös gärna med papper och penna."
-            }
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Hur mycket måste varje invånare i landet i genomsnitt skänka för att målet ska nås?", ratt_svar=per_person, input_typ="text", svarstyp="int", suffix="kr", undertext="Håll koll på nollorna! Lös gärna med papper och penna.")
 
 # ==========================================
-# 2. LOGIK FÖR ATT GENERERA NY UPPGIFT
+# 3. LOGIK FÖR ATT GENERERA NY UPPGIFT
 # ==========================================
 
 KATEGORIER = {
@@ -1634,15 +1300,15 @@ def generera_ny_uppgift():
             
         valbar_kat = random.choice(tillgangliga_kategorier)
         u = KATEGORIER[valbar_kat](niva)
-        u['visnings_kategori'] = valbar_kat 
+        u.visnings_kategori = valbar_kat 
     else:
         u = KATEGORIER[kat](niva)
-        u['visnings_kategori'] = kat
+        u.visnings_kategori = kat
         
     st.session_state.aktiv_uppgift = u
 
 # ==========================================
-# 3. MENYSYSTEM
+# 4. MENYSYSTEM
 # ==========================================
 st.sidebar.title("Välj Träningsläge")
 vald_kategori = st.sidebar.radio("Vad vill du träna på?", list(KATEGORIER.keys()) + ["Blandat (Slumpas)"])
@@ -1667,7 +1333,7 @@ if ny_niva != st.session_state.niva:
     st.rerun()
 
 # ==========================================
-# 4. UNIVERSELL UI-RENDERING
+# 5. UNIVERSELL UI-RENDERING
 # ==========================================
 u = st.session_state.aktiv_uppgift
 st.title(TITLAR[st.session_state.aktuell_kategori])
@@ -1675,55 +1341,50 @@ st.title(TITLAR[st.session_state.aktuell_kategori])
 col_vanster, col_hoger = st.columns([1.2, 1], gap="large")
 
 with col_vanster:
-    if u.get('graf_f') is not None:
+    if u.graf_f is not None:
         fig = rita_plotly_graf(
-            f = u['graf_f'],
+            f = u.graf_f,
             visa_facit = st.session_state.rattat,
-            q_vis_type = u.get('q_type_vis', 'vis_none'),
-            trace_x = u.get('trace_x'),
-            trace_y = u.get('trace_y'),
-            trace_alla_x = u.get('trace_alla_x')
+            q_vis_type = u.q_type_vis,
+            trace_x = u.trace_x,
+            trace_y = u.trace_y,
+            trace_alla_x = u.trace_alla_x
         )
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
         
-    if u.get('plotly_fig') is not None:
-        st.plotly_chart(u['plotly_fig'], use_container_width=True, config={'displayModeBar': False})
+    if u.plotly_fig is not None:
+        st.plotly_chart(u.plotly_fig, use_container_width=True, config={'displayModeBar': False})
 
-    if 'info_text' in u:
-        st.markdown(f"<div style='text-align: center; font-size: 20px; color: gray; margin-top: 50px;'>{u['info_text']}</div>", unsafe_allow_html=True)
-    if 'latex_text' in u:
-        st.latex(u['latex_text'])
+    if u.info_text:
+        st.markdown(f"<div style='text-align: center; font-size: 20px; color: gray; margin-top: 50px;'>{u.info_text}</div>", unsafe_allow_html=True)
+    if u.latex_text:
+        st.latex(u.latex_text)
     
-    if 'info_box_blue' in u:
-        st.markdown(f"<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: #f8f9fa; padding: 25px; border-radius: 10px; border-left: 6px solid #0056b3;'>{u['info_box_blue']}</div>", unsafe_allow_html=True)
-    if 'info_box_green' in u:
-        st.markdown(f"<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: #e9ecef; padding: 25px; border-radius: 10px; border-left: 6px solid #28a745;'>{u['info_box_green']}</div>", unsafe_allow_html=True)
-    if 'info_box_pink' in u:
-        st.markdown(f"<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: #fce4ec; padding: 25px; border-radius: 10px; border-left: 6px solid #e83e8c;'>{u['info_box_pink']}</div>", unsafe_allow_html=True)
-    if 'info_box_purple' in u:
-        st.markdown(f"<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: #f3e5f5; padding: 25px; border-radius: 10px; border-left: 6px solid #8B008B;'>{u['info_box_purple']}</div>", unsafe_allow_html=True)
-    if 'info_text_italic' in u:
-        st.markdown(f"<div style='font-size: 20px; font-style: italic; color: gray;'>{u['info_text_italic']}</div>", unsafe_allow_html=True)
+    if u.info_box_text and u.info_box_style:
+        visa_infobox(u.info_box_text, u.info_box_style)
+
+    if u.info_text_italic:
+        st.markdown(f"<div style='font-size: 20px; font-style: italic; color: gray;'>{u.info_text_italic}</div>", unsafe_allow_html=True)
         
-    if 'html_table' in u:
+    if u.html_table:
         st.write("")
-        st.markdown(u['html_table'], unsafe_allow_html=True)
+        st.markdown(u.html_table, unsafe_allow_html=True)
 
 with col_hoger:
     st.subheader("Uppgift")
-    if 'undertext' in u:
-        st.markdown(f"<p style='font-size: 14px; font-style: italic; color: #666; margin-bottom: 5px;'>{u['undertext'].replace(chr(10), '<br>')}</p>", unsafe_allow_html=True)
+    if u.undertext:
+        st.markdown(f"<p style='font-size: 14px; font-style: italic; color: #666; margin-bottom: 5px;'>{u.undertext.replace(chr(10), '<br>')}</p>", unsafe_allow_html=True)
         
     q_color = "#0056b3"
-    if u['visnings_kategori'] == "Förändringsfaktor": q_color = "#28a745"
-    elif u['visnings_kategori'] == "Sannolikhetslära": q_color = "#e83e8c"
-    elif u['visnings_kategori'] == "Statistik": q_color = "#8B008B"
-    elif u['visnings_kategori'] == "Problemlösning": q_color = "#d35400"
+    if u.visnings_kategori == "Förändringsfaktor": q_color = "#28a745"
+    elif u.visnings_kategori == "Sannolikhetslära": q_color = "#e83e8c"
+    elif u.visnings_kategori == "Statistik": q_color = "#8B008B"
+    elif u.visnings_kategori == "Problemlösning": q_color = "#d35400"
     
-    if u['visnings_kategori'] == "Ekvationer":
+    if u.visnings_kategori == "Ekvationer":
         st.markdown("<div style='font-size: 32px; font-weight: bold; color: transparent; margin-bottom: 25px;'>&nbsp;</div>", unsafe_allow_html=True) 
     else:
-        st.markdown(f"<div style='font-size: 26px; font-weight: bold; color: {q_color}; margin-bottom: 25px;'>{u['fraga']}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size: 26px; font-weight: bold; color: {q_color}; margin-bottom: 25px;'>{u.fraga}</div>", unsafe_allow_html=True)
     
     uid = st.session_state.uppgift_id
     rattat = st.session_state.get('rattat', False)
@@ -1735,58 +1396,50 @@ with col_hoger:
             generera_ny_uppgift()
             st.rerun()
     else:
-        # Om eleven inte svarat rätt än, visa svarsformuläret
+        # Visar svarsformuläret och mappar onSubmit till callback-funktionen
         with st.form(key=f"form_{uid}"):
-            input_svar = None
-            if u['input_typ'] == 'flera_text':
-                input_svar = []
-                for i in range(len(u['ratt_svar'])):
-                    etikett = f"Svar {i+1}:" if len(u['ratt_svar']) > 1 else "Ditt svar:"
-                    input_svar.append(st.text_input(etikett, key=f"input_{uid}_{i}"))
-            elif u['input_typ'] == 'text':
-                input_svar = st.text_input("Ditt svar:", key=f"input_text_{uid}")
-            elif u['input_typ'] == 'radio':
-                input_svar = st.radio("Alternativ:", u['alternativ'], index=None, label_visibility="collapsed", key=f"input_radio_{uid}")
-            elif u['input_typ'] == 'selectbox':
-                input_svar = st.selectbox("Välj ett alternativ:", u['alternativ'], label_visibility="collapsed", key=f"input_select_{uid}")
+            if u.input_typ == 'flera_text':
+                for i in range(len(u.ratt_svar)):
+                    etikett = f"Svar {i+1}:" if len(u.ratt_svar) > 1 else "Ditt svar:"
+                    st.text_input(etikett, key=f"input_{uid}_{i}")
+            elif u.input_typ == 'text':
+                st.text_input("Ditt svar:", key=f"input_single_{uid}")
+            elif u.input_typ == 'radio':
+                st.radio("Alternativ:", u.alternativ, index=None, label_visibility="collapsed", key=f"input_single_{uid}")
+            elif u.input_typ == 'selectbox':
+                st.selectbox("Välj ett alternativ:", u.alternativ, index=0, label_visibility="collapsed", key=f"input_single_{uid}")
             
             st.write("")
-            submit_btn = st.form_submit_button("Rätta svar", use_container_width=True)
-            
-            # Vid klick eller Enter
-            if submit_btn:
-                st.session_state.rattat = True
-                st.session_state.svar_status = ratta_svar(u, input_svar)
-                st.rerun()
+            st.form_submit_button("Rätta svar", use_container_width=True, on_submit=hantera_svar)
 
         # Feedback för fel och format visas under formuläret
         if rattat and status != 'ratt':
             if status == 'fel':
-                if u['svarstyp'] == 'array_float':
-                    ratt_txt = ' och '.join([f"{a:g}".replace('.', ',') for a in u['ratt_svar']])
-                elif u['svarstyp'] == 'fraction':
-                    ratt_txt = f"{u['ratt_svar'].numerator}/{u['ratt_svar'].denominator}"
-                elif u['svarstyp'] in ['float', 'procent']:
-                    ratt_txt = f"{float(u['ratt_svar']):g}".replace('.', ',')
-                elif u['svarstyp'] == 'kalkyl_formel':
-                    ratt_txt = u['ratt_svar_visning']
-                elif u['svarstyp'] == 'string_math':
-                    ratt_txt = str(u['ratt_svar']).replace("**", "^").replace("*", " \cdot ")
+                if u.svarstyp == 'array_float':
+                    ratt_txt = ' och '.join([f"{a:g}".replace('.', ',') for a in u.ratt_svar])
+                elif u.svarstyp == 'fraction':
+                    ratt_txt = f"{u.ratt_svar.numerator}/{u.ratt_svar.denominator}"
+                elif u.svarstyp in ['float', 'procent']:
+                    ratt_txt = f"{float(u.ratt_svar):g}".replace('.', ',')
+                elif u.svarstyp == 'kalkyl_formel':
+                    ratt_txt = u.ratt_svar_visning
+                elif u.svarstyp == 'string_math':
+                    ratt_txt = str(u.ratt_svar).replace("**", "^").replace("*", " \cdot ")
                 else:
-                    ratt_txt = str(u['ratt_svar'])
+                    ratt_txt = str(u.ratt_svar)
                     
-                if u.get('suffix'): ratt_txt += f" {u['suffix']}"
-                if u['svarstyp'] == 'procent': ratt_txt += " %"
+                if u.suffix: ratt_txt += f" {u.suffix}"
+                if u.svarstyp == 'procent': ratt_txt += " %"
                 
                 st.error(f"❌ Tyvärr fel. Rätt svar var:\n\n {ratt_txt}")
             elif status == 'format':
-                if u['svarstyp'] in ['float', 'procent']:
+                if u.svarstyp in ['float', 'procent']:
                     st.warning("⚠️ Svaret är i fel format (skriv bara siffror/decimaltal, t.ex. 1,25).")
-                elif u['svarstyp'] == 'int':
+                elif u.svarstyp == 'int':
                     st.warning("⚠️ Svaret ska vara ett heltal.")
-                elif u['svarstyp'] == 'fraction':
+                elif u.svarstyp == 'fraction':
                     st.warning("⚠️ Skriv svaret som ett bråk, till exempel 3/8.")
-                elif u['svarstyp'] == 'string_math':
+                elif u.svarstyp == 'string_math':
                     st.warning("⚠️ Ditt uttryck är tyvärr felaktigt formaterat och kan inte rättas matematiskt.")
                 else:
                     st.warning("⚠️ Svaret är i fel format.")
@@ -1795,12 +1448,11 @@ with col_hoger:
             elif status == 'format_saknar_likamed':
                 st.warning("⚠️ Formler i kalkylark måste alltid börja med ett likamedstecken (=).")
             elif status == 'tom':
-                if u['input_typ'] in ['radio', 'selectbox']:
+                if u.input_typ in ['radio', 'selectbox']:
                     st.warning("Vänligen välj ett alternativ i listan.")
                 else:
                     st.warning("Vänligen fyll i ett svar innan du rättar.")
             
-            # En "hoppa över"-knapp om de tröttnar på att gissa
             st.write("")
             if st.button("Hoppa över / Nästa uppgift", use_container_width=True, key=f"skip_{uid}"):
                 generera_ny_uppgift()
