@@ -172,7 +172,7 @@ def visa_infobox(text: str, style: str):
 
 
 def hantera_svar():
-    """Callback som hanterar inmatning och rättning on-submit."""
+    """Callback som hanterar inmatning och rättning on-click."""
     st.session_state.rattat = True
     u = st.session_state.aktiv_uppgift
     uid = st.session_state.uppgift_id
@@ -1014,6 +1014,52 @@ def skapa_stat_uppgift(niva=1):
         random.shuffle(alts)
         return Uppgift(info_box_text=f"En undersökning visar att {resultat} % av eleverna på en stor skola vill ha längre raster. Undersökningen har en felmarginal på ±{fm} procentenheter vid 95 % konfidensgrad.", info_box_style="purple", fraga="Vilket av följande påståenden är FALSKT (felaktigt)?", ratt_svar=ratt, alternativ=alts, input_typ="radio", svarstyp="string")
 
+def rita_mönster_kuber(max_fig=4):
+    """Ritar isometriska kuber som ett plotlymönster."""
+    fig = go.Figure()
+    offset_u = 0
+    
+    for n in range(1, max_fig + 1):
+        kuber = []
+        for x in range(n):
+            for y in range(n):
+                kuber.append((x, y, 0, 'vit'))
+                if x + y <= n - 2:
+                    kuber.append((x, y, 1, 'grå'))
+        
+        # Painter's algorithm: sort back-to-front
+        kuber.sort(key=lambda k: (k[0], k[1], k[2]))
+        
+        for x, y, z, farg in kuber:
+            u_c = (x - y) + offset_u
+            v_c = z - 0.5 * (x + y)
+            
+            if farg == 'vit':
+                c_top, c_left, c_right = '#ffffff', '#e0e0e0', '#cccccc'
+            else:
+                c_top, c_left, c_right = '#888888', '#666666', '#444444'
+                
+            # Top
+            fig.add_trace(go.Scatter(x=[u_c, u_c+1, u_c, u_c-1, u_c], y=[v_c+0.5, v_c, v_c-0.5, v_c, v_c+0.5], fill='toself', fillcolor=c_top, mode='lines', line=dict(color='#333', width=1), hoverinfo='skip'))
+            # Right
+            fig.add_trace(go.Scatter(x=[u_c, u_c+1, u_c+1, u_c, u_c], y=[v_c-0.5, v_c, v_c-1, v_c-1.5, v_c-0.5], fill='toself', fillcolor=c_right, mode='lines', line=dict(color='#333', width=1), hoverinfo='skip'))
+            # Left
+            fig.add_trace(go.Scatter(x=[u_c, u_c-1, u_c-1, u_c, u_c], y=[v_c-0.5, v_c, v_c-1, v_c-1.5, v_c-0.5], fill='toself', fillcolor=c_left, mode='lines', line=dict(color='#333', width=1), hoverinfo='skip'))
+        
+        fig.add_trace(go.Scatter(
+            x=[offset_u], y=[-n - 1.5], mode='text', text=[f"<b>Figur {n}</b>"], 
+            textfont=dict(size=16, color='black'), hoverinfo='skip'
+        ))
+        
+        offset_u += (2 * n) + 1 # Dynamisk förskjutning i sidled
+        
+    fig.update_layout(
+        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, visible=False),
+        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, visible=False, scaleanchor="x", scaleratio=1),
+        showlegend=False, margin=dict(l=10, r=10, t=10, b=10), plot_bgcolor='white', height=350, dragmode=False
+    )
+    return fig
+
 def skapa_problemlosning_uppgift(niva):
     namn_lista = ["Charlie", "Kim", "Ali", "Maja", "Sami", "Robin", "Nilo", "Alex", "Noa", "Elsa", "Viktor"]
     
@@ -1160,11 +1206,46 @@ def skapa_problemlosning_uppgift(niva):
 
     else: # Nivå 2
         typ = random.choice([
-            'pizza_brak', 'algebraisk_forstaelse', 'monster_stickor', 'tolka_uttryck_rabatt', 
+            'pizza_brak', 'algebraisk_forstaelse', 'monster_stickor', 'monster_kuber', 'tolka_uttryck_rabatt', 
             'tidsvinst_hastighet', 'area_uttryck', 'medelfart', 'relativ_procent', 'valgorenhet'
         ])
         
-        if typ == 'pizza_brak':
+        if typ == 'monster_kuber':
+            fraga_typ = random.choice(['antal_gra', 'formel_vita', 'formel_total'])
+            fig_graf = rita_mönster_kuber(4)
+            info = "Bilden visar ett mönster byggt av vita och grå kuber. Kika noga på hur mönstret växer från Figur 1 till Figur 4."
+            
+            if fraga_typ == 'antal_gra':
+                target_fig = random.choice([6, 7, 8])
+                svar = int(target_fig * (target_fig - 1) / 2)
+                return Uppgift(
+                    info_box_text=info, info_box_style="blue", plotly_fig=fig_graf,
+                    fraga=f"Hur många GRÅ kuber kommer det att finnas i Figur {target_fig}?",
+                    ratt_svar=svar, input_typ="text", svarstyp="int",
+                    undertext="Lös uppgiften på papper (utan miniräknare)."
+                )
+            elif fraga_typ == 'formel_vita':
+                return Uppgift(
+                    info_box_text=info, info_box_style="blue", plotly_fig=fig_graf,
+                    fraga="Skriv ett algebraiskt uttryck för antalet VITA kuber i figur n.",
+                    ratt_svar="n**2", input_typ="text", svarstyp="string_math",
+                    undertext="Lös uppgiften på papper (utan miniräknare). Använd n som variabel."
+                )
+            elif fraga_typ == 'formel_total':
+                ratt = "n^2 + \\frac{n(n-1)}{2}"
+                d1 = "n^2 + \\frac{n(n+1)}{2}"
+                d2 = "n^2 + n - 1"
+                d3 = "2n^2 - n"
+                alts = [f"${ratt}$", f"${d1}$", f"${d2}$", f"${d3}$"]
+                random.shuffle(alts)
+                return Uppgift(
+                    info_box_text=info, info_box_style="blue", plotly_fig=fig_graf,
+                    fraga="Vilket av följande algebraiska uttryck beskriver det TOTALA antalet kuber (vita och grå) i figur n?",
+                    ratt_svar=f"${ratt}$", alternativ=alts, input_typ="radio", svarstyp="string",
+                    undertext="Börja gärna med att ställa upp tabellvärden på ett papper."
+                )
+                
+        elif typ == 'pizza_brak':
             namn1, namn2 = random.sample(namn_lista, 2)
             A_den = random.choice([3, 4, 5])
             B_den = random.choice([2, 3])
