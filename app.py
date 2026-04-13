@@ -1410,7 +1410,7 @@ with col_hoger:
                 st.selectbox("Välj ett alternativ:", u.alternativ, index=0, label_visibility="collapsed", key=f"input_single_{uid}")
             
             st.write("")
-            st.form_submit_button("Rätta svar", use_container_width=True, on_submit=hantera_svar)
+            st.form_submit_button("Rätta svar", use_container_width=True, on_click=hantera_svar)
 
         # Feedback för fel och format visas under formuläret
         if rattat and status != 'ratt':
