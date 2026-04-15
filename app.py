@@ -171,7 +171,6 @@ def visa_infobox(text: str, style: str):
     border_color, bg_color = colors.get(style, ('#333', '#f4f4f4'))
     st.markdown(f"<div style='font-size: 22px; font-weight: bold; color: #333; margin-top: 30px; background-color: {bg_color}; padding: 25px; border-radius: 10px; border-left: 6px solid {border_color};'>{text}</div>", unsafe_allow_html=True)
 
-
 def hantera_svar():
     """Callback som hanterar inmatning och rättning on-click."""
     st.session_state.rattat = True
@@ -186,7 +185,6 @@ def hantera_svar():
             input_svar = 'Välj svar...' if u.input_typ == 'selectbox' else ""
             
     st.session_state.svar_status = ratta_svar(u, input_svar)
-
 
 # ==========================================
 # 2. MATEMATIKGENERATORER (Returnerar data)
@@ -1085,10 +1083,55 @@ def skapa_problemlosning_uppgift(niva):
             'hyra_fordon', 'vardeminskning', 'pannkakor_proportion', 'valuta_omvandling', 
             'jamfora_abonnemang', 'vattenlackage', 'upprepad_procent_rea', 
             'enhetsomvandling_regn', 'formel_kokpunkt', 'enkel_tidszon_resa', 'jamforpris',
-            'monster_kuber_1'
+            'monster_kuber_1', 'bil_vs_elbil', 'lon_och_ob'
         ])
         
-        if typ == 'monster_kuber_1':
+        if typ == 'lon_och_ob':
+            namn = random.choice(namn_lista)
+            grundlon = random.randint(100, 150)
+            vardag_tim = random.randint(10, 20)
+            helg_tim = random.randint(5, 12)
+            skatt_procent = random.choice([25, 30, 32, 35])
+            
+            brutto_vardag = grundlon * vardag_tim
+            brutto_helg = (grundlon * 1.5) * helg_tim
+            brutto_total = brutto_vardag + brutto_helg
+            netto = brutto_total * (1 - skatt_procent/100)
+            
+            info = f"{namn} jobbar extra på helgerna. Hen har en grundlön på {grundlon}\xa0kr/h. På söndagar får hen dessutom 50\xa0% i OB-tillägg.<br><br>Förra månaden jobbade {namn} {vardag_tim}\xa0timmar på vanliga vardagar och {helg_tim}\xa0timmar på söndagar. Kommunalskatten dras med {skatt_procent}\xa0%."
+            return Uppgift(
+                info_box_text=info, info_box_style="blue", 
+                fraga=f"Hur mycket pengar fick {namn} totalt behålla efter att skatten dragits?", 
+                ratt_svar=int(round(netto)), input_typ="text", svarstyp="int", suffix="kr", 
+                undertext="Lös uppgiften i flera steg på papper."
+            )
+            
+        elif typ == 'bil_vs_elbil':
+            namn = random.choice(namn_lista)
+            bensin_forbrukning = round(random.uniform(0.5, 0.8), 1)
+            bensin_pris = random.choice([18, 19, 20, 21])
+            el_forbrukning = round(random.uniform(1.5, 2.5), 1)
+            el_pris = round(random.uniform(2.0, 4.0), 1)
+            
+            kostnad_bensin_per_mil = bensin_forbrukning * bensin_pris
+            kostnad_el_per_mil = el_forbrukning * el_pris
+            
+            skillnad_per_mil = kostnad_bensin_per_mil - kostnad_el_per_mil
+            if skillnad_per_mil <= 0: return skapa_problemlosning_uppgift(niva) # Säkerhetskoll
+            
+            fasta_kostnader_el_extra = random.randint(300, 800) * 10
+            
+            mil_for_breakeven = int(round(fasta_kostnader_el_extra / skillnad_per_mil))
+            
+            info = f"{namn} funderar på att byta sin bensinbil mot en elbil.<br><br>&bull; Bensinbilen drar {bensin_forbrukning}\xa0liter/mil och bensinen kostar {bensin_pris}\xa0kr/liter.<br>&bull; Elbilen drar {el_forbrukning}\xa0kWh/mil och elen kostar i snitt {el_pris:.2f}\xa0kr/kWh.<br><br>Elbilen är dock dyrare i inköp och försäkring, vilket ger en extra fast kostnad på {formatera_kr(fasta_kostnader_el_extra)}\xa0kr om året jämfört med bensinbilen."
+            return Uppgift(
+                info_box_text=info.replace('.', ','), info_box_style="blue", 
+                fraga="Vid exakt hur många körda mil per år blir de båda bilarna lika dyra totalt sett?", 
+                ratt_svar=mil_for_breakeven, input_typ="text", svarstyp="int", suffix="mil", 
+                undertext="Ställ upp en ekvation. Avrunda ditt svar till närmaste heltal om det behövs."
+            )
+            
+        elif typ == 'monster_kuber_1':
             monster_typ = random.choice([1, 2, 3])
             fig_graf = rita_mönster_kuber(4, monster_typ)
             info = "Bilden visar ett mönster byggt av vita och grå kuber. Kika noga på hur mönstret växer från Figur 1 till Figur 4."
@@ -1255,10 +1298,118 @@ def skapa_problemlosning_uppgift(niva):
     else: # Nivå 2
         typ = random.choice([
             'pizza_brak', 'algebraisk_forstaelse', 'monster_stickor', 'monster_kuber_2', 'tolka_uttryck_rabatt', 
-            'tidsvinst_hastighet', 'area_uttryck', 'medelfart', 'relativ_procent', 'valgorenhet'
+            'tidsvinst_hastighet', 'area_uttryck', 'medelfart', 'relativ_procent', 'valgorenhet', 
+            'omvanda_proportioner', 'pizza_area', 'kakla_rum', 'handskakningar', 'blanda_saft'
         ])
         
-        if typ == 'monster_kuber_2':
+        if typ == 'blanda_saft':
+            vol1 = random.choice([1, 2, 3])
+            halt1 = random.choice([10, 15, 20])
+            vol2 = random.choice([2, 3, 4, 5])
+            while vol1 == vol2: vol2 = random.randint(2, 5)
+            halt2 = random.choice([25, 30, 40])
+            
+            socker_total = (vol1 * halt1) + (vol2 * halt2)
+            vol_total = vol1 + vol2
+            ny_halt = socker_total / vol_total
+            
+            # Säkerställ att det blir ett jämnt svar
+            while not ny_halt.is_integer():
+                vol1 = random.choice([1, 2, 3])
+                halt1 = random.choice([10, 15, 20])
+                vol2 = random.choice([2, 3, 4, 5])
+                halt2 = random.choice([25, 30, 40])
+                socker_total = (vol1 * halt1) + (vol2 * halt2)
+                vol_total = vol1 + vol2
+                ny_halt = socker_total / vol_total
+
+            info = f"Du har {vol1}\xa0liter saft som har en sockerhalt på {halt1}\xa0%. Du häller därefter i {vol2}\xa0liter av en annan saft som har sockerhalten {halt2}\xa0%."
+            return Uppgift(
+                info_box_text=info, info_box_style="blue", 
+                fraga="Vilken sockerhalt (i procent) får den nya, färdiga blandningen?", 
+                ratt_svar=int(ny_halt), input_typ="text", svarstyp="int", suffix="%", 
+                undertext="Tips: Räkna ut hur mycket 'ren socker' som finns totalt först."
+            )
+            
+        elif typ == 'handskakningar':
+            n = random.randint(6, 12)
+            svar = int(n * (n - 1) / 2)
+            scenario_typ = random.choice(['sport', 'fest'])
+            if scenario_typ == 'sport':
+                sport = random.choice(['innebandyserie', 'fotbollsturnering', 'schackturnering'])
+                info = f"I en {sport} med {n}\xa0lag (eller spelare) ska alla möta varandra exakt en gång."
+                fraga = "Hur många matcher spelas det totalt i turneringen?"
+            else:
+                info = f"På ett affärsmöte deltar {n}\xa0personer. Innan mötet börjar hälsar alla på varandra genom att skaka hand med alla andra exakt en gång."
+                fraga = "Hur många handskakningar blir det totalt?"
+            return Uppgift(
+                info_box_text=info, info_box_style="blue", fraga=fraga, 
+                ratt_svar=svar, input_typ="text", svarstyp="int", 
+                undertext="Börja gärna med att rita upp hur det fungerar för 3 eller 4 personer."
+            )
+            
+        elif typ == 'kakla_rum':
+            langd = random.choice([2.4, 3.0, 3.6, 4.2])
+            bredd = random.choice([2.0, 2.5, 3.0])
+            sida_cm = random.choice([10, 20, 30])
+            
+            area_m2 = langd * bredd
+            sida_m = sida_cm / 100
+            area_platta_m2 = sida_m * sida_m
+            antal_plattor = int(round(area_m2 / area_platta_m2))
+            
+            info = f"Ett badrumsgolv är rektangulärt och har måtten {str(langd).replace('.', ',')}\xa0meter gånger {str(bredd).replace('.', ',')}\xa0meter.<br><br>Golvet ska täckas med kvadratiska kakelplattor som är {sida_cm}\xa0cm x {sida_cm}\xa0cm."
+            return Uppgift(
+                info_box_text=info, info_box_style="blue", 
+                fraga="Hur många kakelplattor går det åt (om vi bortser från fogar och spill)?", 
+                ratt_svar=antal_plattor, input_typ="text", svarstyp="int", suffix="st", 
+                undertext="Håll tungan rätt i mun när du omvandlar mellan längdenheter och areaenheter!"
+            )
+            
+        elif typ == 'pizza_area':
+            d_liten = random.choice([20, 25])
+            d_stor = d_liten * 2
+            
+            info = f"Pizzeria Napoli säljer små pizzor med diametern {d_liten}\xa0cm och stora familjepizzor med diametern {d_stor}\xa0cm. Tjockleken är densamma."
+            ratt = "Familjepizzan är exakt lika stor som FYRA små pizzor tillsammans."
+            alts = [
+                ratt,
+                "Familjepizzan är exakt lika stor som TVÅ små pizzor tillsammans.",
+                "Familjepizzan är exakt lika stor som TRE små pizzor tillsammans.",
+                "Det går inte att jämföra arean utan att veta pizzans radie."
+            ]
+            random.shuffle(alts)
+            return Uppgift(
+                info_box_text=info, info_box_style="blue", 
+                fraga="Vilket av följande påståenden om pizzornas storlek (area) är matematiskt korrekt?", 
+                ratt_svar=ratt, alternativ=alts, input_typ="radio", svarstyp="string"
+            )
+            
+        elif typ == 'omvanda_proportioner':
+            n_start = random.choice([4, 6])
+            dagar_start = random.choice([6, 8, 12])
+            arbetstimmar = n_start * dagar_start
+            n_ny = n_start - random.choice([1, 2])
+            
+            # Säkerställ jämnt svar
+            while arbetstimmar % n_ny != 0:
+                n_ny -= 1
+                if n_ny == 1: break
+                
+            dagar_ny = int(arbetstimmar / n_ny)
+            
+            yrke = random.choice(['målare', 'snickare', 'programmerare'])
+            jobb = random.choice(['måla om en skola', 'bygga ett hus', 'skriva en app'])
+            
+            info = f"{n_start} stycken {yrke} behöver arbeta i {dagar_start}\xa0dagar för att {jobb}.<br><br>Inför ett exakt likadant jobb nästa månad blir några sjuka, så de är bara {n_ny} stycken {yrke} som kan arbeta. De jobbar i samma tempo som tidigare."
+            return Uppgift(
+                info_box_text=info, info_box_style="blue", 
+                fraga="Hur många dagar tar det för den mindre gruppen att göra klart jobbet?", 
+                ratt_svar=dagar_ny, input_typ="text", svarstyp="int", suffix="dagar", 
+                undertext="Lös uppgiften på papper. Tänk på vad som händer med tiden när antalet personer minskar."
+            )
+
+        elif typ == 'monster_kuber_2':
             monster_typ = random.choice([1, 2, 3])
             fig_graf = rita_mönster_kuber(4, monster_typ)
             info = "Bilden visar ett mönster byggt av vita och grå kuber. Kika noga på hur mönstret växer från Figur 1 till Figur 4."
