@@ -1083,7 +1083,7 @@ def skapa_problemlosning_uppgift(niva):
             'hyra_fordon', 'vardeminskning', 'pannkakor_proportion', 'valuta_omvandling', 
             'jamfora_abonnemang', 'vattenlackage', 'upprepad_procent_rea', 
             'enhetsomvandling_regn', 'formel_kokpunkt', 'enkel_tidszon_resa', 'jamforpris',
-            'monster_kuber_1', 'bil_vs_elbil', 'lon_och_ob'
+            'monster_kuber_1', 'lon_och_ob'
         ])
         
         if typ == 'lon_och_ob':
@@ -1104,31 +1104,6 @@ def skapa_problemlosning_uppgift(niva):
                 fraga=f"Hur mycket pengar fick {namn} totalt behålla efter att skatten dragits?", 
                 ratt_svar=int(round(netto)), input_typ="text", svarstyp="int", suffix="kr", 
                 undertext="Lös uppgiften i flera steg på papper."
-            )
-            
-        elif typ == 'bil_vs_elbil':
-            namn = random.choice(namn_lista)
-            bensin_forbrukning = round(random.uniform(0.5, 0.8), 1)
-            bensin_pris = random.choice([18, 19, 20, 21])
-            el_forbrukning = round(random.uniform(1.5, 2.5), 1)
-            el_pris = round(random.uniform(2.0, 4.0), 1)
-            
-            kostnad_bensin_per_mil = bensin_forbrukning * bensin_pris
-            kostnad_el_per_mil = el_forbrukning * el_pris
-            
-            skillnad_per_mil = kostnad_bensin_per_mil - kostnad_el_per_mil
-            if skillnad_per_mil <= 0: return skapa_problemlosning_uppgift(niva) # Säkerhetskoll
-            
-            fasta_kostnader_el_extra = random.randint(300, 800) * 10
-            
-            mil_for_breakeven = int(round(fasta_kostnader_el_extra / skillnad_per_mil))
-            
-            info = f"{namn} funderar på att byta sin bensinbil mot en elbil.<br><br>&bull; Bensinbilen drar {bensin_forbrukning}\xa0liter/mil och bensinen kostar {bensin_pris}\xa0kr/liter.<br>&bull; Elbilen drar {el_forbrukning}\xa0kWh/mil och elen kostar i snitt {el_pris:.2f}\xa0kr/kWh.<br><br>Elbilen är dock dyrare i inköp och försäkring, vilket ger en extra fast kostnad på {formatera_kr(fasta_kostnader_el_extra)}\xa0kr om året jämfört med bensinbilen."
-            return Uppgift(
-                info_box_text=info.replace('.', ','), info_box_style="blue", 
-                fraga="Vid exakt hur många körda mil per år blir de båda bilarna lika dyra totalt sett?", 
-                ratt_svar=mil_for_breakeven, input_typ="text", svarstyp="int", suffix="mil", 
-                undertext="Ställ upp en ekvation. Avrunda ditt svar till närmaste heltal om det behövs."
             )
             
         elif typ == 'monster_kuber_1':
@@ -1288,21 +1263,46 @@ def skapa_problemlosning_uppgift(niva):
                 h = random.choice([1500, 3000, 4500, 6000])
                 t = int(100 - h / 300)
                 info = f"Vattnets kokpunkt <i>t</i> (i °C) beror på höjden över havet <i>h</i> (i meter) enligt formeln:<br><br><b>t = 100 - h/300</b><br><br>Du befinner dig på ett berg på {formatera_kr(h)}\xa0meters höjd."
-                return Uppgift(info_box_text=info, info_box_style="blue", fraga="Vid vilken temperatur kokar vattnet där du är?", ratt_svar=t, input_typ="text", svarstyp="int", suffix="°C", undertext="Lös uppgiften med huvudräkning (utan miniräknare).")
+                return Uppgift(info_box_text=info, info_box_style="blue", fraga="Vid vilken temperatur kokar vattnet där du är?", ratt_svar=t, input_typ="text", svarstyp="int", suffix="°C")
             else:
                 t = random.choice([80, 85, 90, 95])
                 h = (100 - t) * 300
                 info = f"Vattnets kokpunkt <i>t</i> (i °C) beror på höjden över havet <i>h</i> (i meter) enligt formeln:<br><br><b>t = 100 - h/300</b><br><br>Du kokar vatten uppe på ett berg och märker att det börjar koka redan vid {t}\xa0°C."
-                return Uppgift(info_box_text=info, info_box_style="blue", fraga="På ungefär vilken höjd över havet befinner du dig?", ratt_svar=h, input_typ="text", svarstyp="int", suffix="meter", undertext="Lös uppgiften med huvudräkning (utan miniräknare).")
+                return Uppgift(info_box_text=info, info_box_style="blue", fraga="På ungefär vilken höjd över havet befinner du dig?", ratt_svar=h, input_typ="text", svarstyp="int", suffix="meter")
 
     else: # Nivå 2
         typ = random.choice([
             'pizza_brak', 'algebraisk_forstaelse', 'monster_stickor', 'monster_kuber_2', 'tolka_uttryck_rabatt', 
             'tidsvinst_hastighet', 'area_uttryck', 'medelfart', 'relativ_procent', 'valgorenhet', 
-            'omvanda_proportioner', 'pizza_area', 'kakla_rum', 'handskakningar', 'blanda_saft'
+            'omvanda_proportioner', 'pizza_area', 'kakla_rum', 'handskakningar', 'blanda_saft', 'bil_vs_elbil'
         ])
         
-        if typ == 'blanda_saft':
+        if typ == 'bil_vs_elbil':
+            namn = random.choice(namn_lista)
+            bensin_forbrukning = round(random.uniform(0.5, 0.8), 1)
+            bensin_pris = random.choice([18, 19, 20, 21])
+            el_forbrukning = round(random.uniform(1.5, 2.5), 1)
+            el_pris = round(random.uniform(2.0, 4.0), 1)
+            
+            kostnad_bensin_per_mil = bensin_forbrukning * bensin_pris
+            kostnad_el_per_mil = el_forbrukning * el_pris
+            
+            skillnad_per_mil = kostnad_bensin_per_mil - kostnad_el_per_mil
+            if skillnad_per_mil <= 0: return skapa_problemlosning_uppgift(niva) # Säkerhetskoll
+            
+            fasta_kostnader_el_extra = random.randint(300, 800) * 10
+            
+            mil_for_breakeven = int(round(fasta_kostnader_el_extra / skillnad_per_mil))
+            
+            info = f"{namn} funderar på att byta sin bensinbil mot en elbil.<br><br>&bull; Bensinbilen drar {bensin_forbrukning}\xa0liter/mil och bensinen kostar {bensin_pris}\xa0kr/liter.<br>&bull; Elbilen drar {el_forbrukning}\xa0kWh/mil och elen kostar i snitt {el_pris:.2f}\xa0kr/kWh.<br><br>Elbilen är dock dyrare i inköp och försäkring, vilket ger en extra fast kostnad på {formatera_kr(fasta_kostnader_el_extra)}\xa0kr om året jämfört med bensinbilen."
+            return Uppgift(
+                info_box_text=info.replace('.', ','), info_box_style="blue", 
+                fraga="Vid exakt hur många körda mil per år blir de båda bilarna lika dyra totalt sett?", 
+                ratt_svar=mil_for_breakeven, input_typ="text", svarstyp="int", suffix="mil", 
+                undertext="Ställ upp en ekvation. Avrunda ditt svar till närmaste heltal om det behövs."
+            )
+            
+        elif typ == 'blanda_saft':
             vol1 = random.choice([1, 2, 3])
             halt1 = random.choice([10, 15, 20])
             vol2 = random.choice([2, 3, 4, 5])
