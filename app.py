@@ -1118,10 +1118,29 @@ def skapa_problemlosning_uppgift(niva):
             'hyra_fordon', 'vardeminskning', 'pannkakor_proportion', 'valuta_omvandling', 
             'jamfora_abonnemang', 'vattenlackage', 'upprepad_procent_rea', 
             'enhetsomvandling_regn', 'formel_kokpunkt', 'enkel_tidszon_resa', 'jamforpris',
-            'monster_kuber_1', 'lon_och_ob'
+            'monster_kuber_1', 'lon_och_ob', 'steg_genomsnitt'
         ])
+
+        if typ == 'steg_genomsnitt':
+            namn = random.choice(namn_lista)
+            # Slumpar ett målsnitt mellan 8 000 och 12 000 i jämna hundratal
+            mal_snitt = random.randint(80, 120) * 100 
+            # Snittet för de 6 första dagarna (oftast lite mindre än målet)
+            diff = random.choice([-800, -600, -500, -400, -200, -100, 100, 200])
+            snitt_6_dagar = mal_snitt + diff
+            
+            # Formeln för att räkna ut sista dagen: (Mål * 7) - (Hittills * 6)
+            svar = (mal_snitt * 7) - (snitt_6_dagar * 6)
+            
+            info = f"{namn} har som mål att under en vecka (7 dagar) gå i genomsnitt {formatera_kr(mal_snitt)}\xa0steg per dag.<br><br>Under de sex första dagarna har hen gått i genomsnitt {formatera_kr(snitt_6_dagar)}\xa0steg per dag."
+            return Uppgift(
+                info_box_text=info, info_box_style="blue", 
+                fraga="Hur många steg behöver hen minst gå den sjunde dagen för att nå sitt mål?", 
+                ratt_svar=svar, input_typ="text", svarstyp="int", suffix="steg", 
+                undertext="Lös uppgiften med huvudräkning (utan miniräknare)."
+            )
         
-        if typ == 'lon_och_ob':
+        elif typ == 'lon_och_ob':
             namn = random.choice(namn_lista)
             grundlon = random.randint(100, 150)
             vardag_tim = random.randint(10, 20)
@@ -1592,7 +1611,6 @@ def skapa_problemlosning_uppgift(niva):
             sak = random.choice(['nödpaket', 'vaccindoser', 'varma filtar'])
             info = f"I ett land med {pop_milj}\xa0miljoner invånare startas en insamling för att köpa {formatera_kr(items)} {sak}. De kostar {pris}\xa0kr styck.<br><br>På grund av administrativa kostnader går dock bara {effektivitet}\xa0% av de insamlade pengarna till själva inköpen."
             return Uppgift(info_box_text=info, info_box_style="blue", fraga="Hur mycket måste varje invånare i landet i genomsnitt skänka för att målet ska nås?", ratt_svar=per_person, input_typ="text", svarstyp="int", suffix="kr", undertext="Håll koll på nollorna! Lös gärna med papper och penna.")
-
 # ==========================================
 # 3. LOGIK FÖR ATT GENERERA NY UPPGIFT
 # ==========================================
