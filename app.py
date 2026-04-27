@@ -953,7 +953,7 @@ def rita_stat_graf(x, y):
     return fig
 
 def skapa_stat_uppgift(niva=1):
-    typ = random.choice(['spridning', 'konf_overlapp', 'konf_baklanges', 'konf_urval', 'konf_falskt'])
+    typ = random.choice(['spridning', 'konf_overlapp', 'konf_baklanges', 'konf_urval', 'konf_falskt', 'kausalitet'])
     
     if typ == 'spridning':
         num_points = random.randint(40, 60)
@@ -1016,6 +1016,41 @@ def skapa_stat_uppgift(niva=1):
         random.shuffle(alts)
         return Uppgift(info_box_text=f"En undersökning visar att {resultat}\xa0% av eleverna på en stor skola vill ha längre raster. Undersökningen har en felmarginal på ±{fm}\xa0procentenheter vid 95\xa0% konfidensgrad.", info_box_style="purple", fraga="Vilket av följande påståenden är FALSKT (felaktigt)?", ratt_svar=ratt, alternativ=alts, input_typ="radio", svarstyp="string")
 
+    elif typ == 'kausalitet':
+        scenario = random.choice(['glass', 'skor', 'pulsklocka'])
+        if scenario == 'glass':
+            info = "En kommunal utredare har samlat in data över ett helt år. Hen upptäcker ett starkt samband (en positiv korrelation) mellan hur mycket glass som säljs och hur många personer som drunknar. Ju mer glass som säljs, desto fler drunkningsolyckor inträffar.<br><br>Utredaren drar slutsatsen att glassätande gör människor trötta, vilket orsakar drunkningsolyckorna. Kommunen överväger därför att förbjuda glassförsäljning vid stränderna."
+            fraga = "Vad är det mest sannolika felet med utredarens slutsats?"
+            ratt = "Utredaren blandar ihop korrelation med kausalitet. Varmt sommarväder är en bakomliggande faktor som orsakar BÅDE mer glassätande och fler badande."
+            alts = [
+                ratt,
+                "Utredaren borde ha kollat på data över tio år, ett år är för kort tid för att bevisa att glass orsakar drunkning.",
+                "Felmarginalen i undersökningen är troligtvis för stor.",
+                "Drunkningsolyckor orsakar stress och sorg, vilket leder till att människor tröstäter glass i högre utsträckning."
+            ]
+        elif scenario == 'skor':
+            info = "En stor undersökning genomförs på en grundskola, från förskoleklass till årskurs 9. Forskarna mäter elevernas skostorlek och testar sedan deras förmåga att lösa svåra matematikuppgifter. Resultatet visar en mycket stark positiv korrelation: Ju större fötter en elev har, desto bättre är eleven på matematik."
+            fraga = "Vilken är den mest rimliga förklaringen till det starka sambandet?"
+            ratt = "Det finns en bakomliggande orsak (ålder) som förklarar båda sakerna. Äldre barn har hunnit få både större fötter och lära sig mer matematik."
+            alts = [
+                ratt,
+                "Att ha stora fötter ger bättre balans, vilket frigör hjärnkapacitet till att räkna matematik.",
+                "Det är ett slumpmässigt fel (statistiskt brus), och sambandet skulle försvinna om man frågade fler elever.",
+                "Att tänka intensivt på svår matematik ökar blodcirkulationen, vilket på sikt får fötterna att växa snabbare."
+            ]
+        else: # pulsklocka
+            info = "Ett företag säljer dyra pulsklockor. I sin reklamkampanj hänvisar de till en ny undersökning som visar att personer som äger företagets pulsklocka i genomsnitt har lägre blodtryck och bättre kondition än de som inte äger en pulsklocka.<br><br>Företaget hävdar därför i reklamen: <i>'Köp vår pulsklocka – den förbättrar din hälsa!'</i>"
+            fraga = "Varför kan man kritisera företagets påstående med hjälp av begreppet kausalitet?"
+            ratt = "Bara för att det finns ett samband betyder det inte att klockan ORSAKAR hälsan. Personer som redan tränar mycket är mer benägna att köpa pulsklockor."
+            alts = [
+                ratt,
+                "Företaget har inte angett någon konfidensgrad, så man vet inte om resultatet är säkerställt.",
+                "Personer med dålig hälsa kanske inte har råd att köpa dyra pulsklockor.",
+                "Klockorna mäter ofta fel, så den uppmätta konditionen stämmer förmodligen inte överens med verkligheten."
+            ]
+            
+        random.shuffle(alts)
+        return Uppgift(info_box_text=info, info_box_style="purple", fraga=fraga, ratt_svar=ratt, alternativ=alts, input_typ="radio", svarstyp="string")
 def rita_mönster_kuber(max_fig=4, typ=1):
     """Ritar isometriska kuber som ett plotlymönster baserat på vald typ."""
     fig = go.Figure()
