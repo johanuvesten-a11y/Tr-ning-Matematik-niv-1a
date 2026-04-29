@@ -1118,7 +1118,7 @@ def skapa_problemlosning_uppgift(niva):
             'hyra_fordon', 'vardeminskning', 'pannkakor_proportion', 'valuta_omvandling', 
             'jamfora_abonnemang', 'vattenlackage', 'upprepad_procent_rea', 
             'enhetsomvandling_regn', 'formel_kokpunkt', 'enkel_tidszon_resa', 'jamforpris',
-            'monster_kuber_1', 'lon_och_ob', 'steg_genomsnitt'
+            'monster_kuber_1', 'lon_och_ob', 'steg_genomsnitt', 'linjar_vs_exponentiell'
         ])
 
         if typ == 'steg_genomsnitt':
@@ -1138,6 +1138,59 @@ def skapa_problemlosning_uppgift(niva):
                 fraga="Hur många steg behöver hen minst gå den sjunde dagen för att nå sitt mål?", 
                 ratt_svar=svar, input_typ="text", svarstyp="int", suffix="steg", 
                 undertext="Lös uppgiften med huvudräkning (utan miniräknare)."
+            )
+
+        elif typ == 'linjar_vs_exponentiell':
+            linjara = [
+                "En bilhyra kostar 300 kr i grundavgift och 20 kr per mil.",
+                "En snickare tar 450 kr i framkörningsavgift och sedan 600 kr i timmen.",
+                "Du sparar 500 kr varje månad på ett räntefritt konto.",
+                "En vattentank töms med exakt 15 liter vatten i minuten.",
+                "En solros växer i genomsnitt 2 cm per dygn.",
+                "Priset på en biobiljett höjs med 5 kr varje år."
+            ]
+            exponentiella = [
+                "Värdet på en moped minskar med 15 % varje år.",
+                "Antalet bakterier i en odling fördubblas varje timme.",
+                "Ett radioaktivt ämne halveras i massa var sjätte månad.",
+                "Du sätter in pengar på en fond som växer med 6 % i genomsnitt per år.",
+                "En kaninpopulation blir tre gånger så stor varje år.",
+                "Ett isberg förlorar en tiondel av sin volym varje vecka."
+            ]
+            
+            # Slumpa händelse A
+            typ_A = random.choice(['linjar', 'exponentiell'])
+            text_A = random.choice(linjara) if typ_A == 'linjar' else random.choice(exponentiella)
+            
+            # Slumpa händelse B (se till att vi inte råkar dra exakt samma text)
+            typ_B = random.choice(['linjar', 'exponentiell'])
+            while True:
+                text_B = random.choice(linjara) if typ_B == 'linjar' else random.choice(exponentiella)
+                if text_A != text_B:
+                    break
+                    
+            info = f"<b>Händelse A:</b> {text_A}<br><br><b>Händelse B:</b> {text_B}"
+            
+            if typ_A == 'exponentiell' and typ_B == 'linjar':
+                ratt = "Bara händelse A"
+            elif typ_A == 'linjar' and typ_B == 'exponentiell':
+                ratt = "Bara händelse B"
+            elif typ_A == 'exponentiell' and typ_B == 'exponentiell':
+                ratt = "Båda händelserna"
+            else:
+                ratt = "Ingen av händelserna"
+                
+            alts = ["Bara händelse A", "Bara händelse B", "Båda händelserna", "Ingen av händelserna"]
+            
+            return Uppgift(
+                info_box_text=info, 
+                info_box_style="blue", 
+                fraga="Vilken eller vilka av händelserna beskriver en exponentiell förändring?", 
+                ratt_svar=ratt, 
+                alternativ=alts, 
+                input_typ="radio", 
+                svarstyp="string", 
+                undertext="Tänk på att en exponentiell förändring innebär en relativ förändring (samma faktor/procent varje gång), medan en linjär är en absolut förändring (samma belopp/antal varje gång)."
             )
         
         elif typ == 'lon_och_ob':
