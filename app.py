@@ -1157,7 +1157,6 @@ def skapa_procent_vs_enheter_uppgift(niva=1):
             return Uppgift(info_box_text=info, info_box_style="blue", fraga="Vad var kommunalskatten innan sänkningen?", ratt_svar=gammal, input_typ="text", svarstyp="float", suffix="%")
             
     else: # Nivå 2
-        else: # Nivå 2
         typ = random.choice(['baklanges', 'flersteg', 'jamforelse', 'indexfalla'])
 
         if typ == 'baklanges':
@@ -1199,6 +1198,7 @@ def skapa_procent_vs_enheter_uppgift(niva=1):
             
             info = f"Prisindex för en kaffemaskin har gått från {start_index} till {nytt_index}. En butiksägare påstår att maskinens pris har ökat med {okning_enheter}\xa0% eftersom {nytt_index} - {start_index} = {okning_enheter}."
             return Uppgift(info_box_text=info, info_box_style="blue", fraga="Butiksägaren räknar fel. Vad är den faktiska procentuella prishöjningen?", ratt_svar=faktisk_proc, input_typ="text", svarstyp="int", suffix="%")
+
 def skapa_problemlosning_uppgift(niva):
     namn_lista = ["Charlie", "Kim", "Ali", "Maja", "Sami", "Robin", "Nilo", "Alex", "Noa", "Elsa", "Viktor"]
     
