@@ -1157,9 +1157,48 @@ def skapa_procent_vs_enheter_uppgift(niva=1):
             return Uppgift(info_box_text=info, info_box_style="blue", fraga="Vad var kommunalskatten innan sänkningen?", ratt_svar=gammal, input_typ="text", svarstyp="float", suffix="%")
             
     else: # Nivå 2
-        # Platshållare tills vi bygger nivå 2
-        return skapa_procent_vs_enheter_uppgift(1)
+        else: # Nivå 2
+        typ = random.choice(['baklanges', 'flersteg', 'jamforelse', 'indexfalla'])
 
+        if typ == 'baklanges':
+            start = random.choice([4.0, 5.0, 6.0, 8.0])
+            okning_enheter = random.choice([1.0, 1.5, 2.0])
+            relativ_proc = int(round((okning_enheter / start) * 100))
+            
+            info = f"Ett politiskt parti ökar sitt väljarstöd med {str(okning_enheter).replace('.', ',')}\xa0procentenheter i den senaste mätningen.<br><br>Partiledaren är väldigt nöjd, eftersom detta motsvarar en relativ ökning av deras väljarstöd med exakt {relativ_proc}\xa0%."
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Vad var partiets väljarstöd (i procent) INNAN ökningen?", ratt_svar=start, input_typ="text", svarstyp="float", suffix="%")
+            
+        elif typ == 'flersteg':
+            start = random.choice([3.0, 4.0, 5.0])
+            relativ_okning = random.choice([20, 25, 50])
+            ny_ranta_1 = start * (1 + relativ_okning/100.0)
+            sankning_enheter = random.choice([0.5, 1.0])
+            slut_ranta = round(ny_ranta_1 - sankning_enheter, 2)
+            
+            info = f"En bank har en bolåneränta på {str(start).replace('.', ',')}\xa0%. Först höjer de räntan med {relativ_okning}\xa0% (en relativ höjning). Ett halvår senare sänker de den nya räntan med {str(sankning_enheter).replace('.', ',')}\xa0procentenheter."
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Vad är den nya räntan efter båda ändringarna?", ratt_svar=slut_ranta, input_typ="text", svarstyp="float", suffix="%")
+            
+        elif typ == 'jamforelse':
+            start_A = random.choice([20, 25])
+            start_B = random.choice([30, 40])
+            relativ_okning_A = random.choice([40, 50, 60])
+            okning_enheter_B = random.choice([4, 5, 6])
+            
+            ny_A = start_A * (1 + relativ_okning_A/100.0)
+            ny_B = start_B + okning_enheter_B
+            diff = int(abs(ny_A - ny_B))
+            
+            info = f"På en skola cyklar {start_A}\xa0% av tjejerna och {start_B}\xa0% av killarna till skolan.<br><br>Efter en kampanj för bättre hälsa ökar andelen tjejer som cyklar med {relativ_okning_A}\xa0% (relativ ökning). Samtidigt ökar andelen killar som cyklar med {okning_enheter_B}\xa0procentenheter."
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Vad är skillnaden i procentenheter mellan tjejernas och killarnas nya andelar?", ratt_svar=diff, input_typ="text", svarstyp="int", suffix="procentenheter")
+            
+        elif typ == 'indexfalla':
+            start_index = random.choice([150, 200, 250])
+            okning_enheter = random.choice([6, 8, 10, 15])
+            nytt_index = start_index + okning_enheter
+            faktisk_proc = int(round((okning_enheter / start_index) * 100))
+            
+            info = f"Prisindex för en kaffemaskin har gått från {start_index} till {nytt_index}. En butiksägare påstår att maskinens pris har ökat med {okning_enheter}\xa0% eftersom {nytt_index} - {start_index} = {okning_enheter}."
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Butiksägaren räknar fel. Vad är den faktiska procentuella prishöjningen?", ratt_svar=faktisk_proc, input_typ="text", svarstyp="int", suffix="%")
 def skapa_problemlosning_uppgift(niva):
     namn_lista = ["Charlie", "Kim", "Ali", "Maja", "Sami", "Robin", "Nilo", "Alex", "Noa", "Elsa", "Viktor"]
     
