@@ -1110,6 +1110,56 @@ def rita_mönster_kuber(max_fig=4, typ=1):
     )
     return fig
 
+def skapa_procent_vs_enheter_uppgift(niva=1):
+    if niva == 1:
+        typ = random.choice(['rantehojning', 'valbarometern', 'batteriladdning', 'skattesankning'])
+        
+        if typ == 'rantehojning':
+            start = random.choice([1.5, 2.0, 2.5, 3.0])
+            hojning_enheter = random.choice([0.5, 1.0, 1.5])
+            ny_ranta = round(start + hojning_enheter, 1)
+            relativ = int(round((hojning_enheter / start) * 100))
+            
+            fraga_typ = random.choice(['enheter', 'procent'])
+            info = f"Banken höjer räntan på ditt bolån från {str(start).replace('.', ',')}\xa0% till {str(ny_ranta).replace('.', ',')}\xa0%."
+            
+            if fraga_typ == 'enheter':
+                return Uppgift(info_box_text=info, info_box_style="blue", fraga="Med hur många procentenheter har räntan höjts?", ratt_svar=hojning_enheter, input_typ="text", svarstyp="float", suffix="procentenheter")
+            else:
+                return Uppgift(info_box_text=info, info_box_style="blue", fraga="Med hur många procent har din räntekostnad ökat?", ratt_svar=relativ, input_typ="text", svarstyp="int", suffix="%")
+                
+        elif typ == 'valbarometern':
+            start = random.choice([4.0, 5.0, 8.0])
+            nytt = start + random.choice([1.0, 2.0])
+            relativ = int(round(((nytt - start) / start) * 100))
+            
+            info = f"Ett politiskt parti ökar sitt väljarstöd från {str(start).replace('.', ',')}\xa0% till {str(nytt).replace('.', ',')}\xa0% i en ny mätning.<br><br>Partiledaren jublar i en intervju och säger: <i>'Fantastiskt! Vårt stöd har ökat med {relativ}\xa0%!'</i><br><br>En politisk motståndare twittrar: <i>'Vilken överdrift, ni har ju bara ökat med {str(nytt - start).replace('.', ',')}\xa0%.'</i>"
+            ratt = "Bara partiledaren (motståndaren blandar ihop % och procentenheter)"
+            alts = [ratt, "Bara den politiska motståndaren", "Båda har rätt", "Båda har fel"]
+            random.shuffle(alts)
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Vem uttrycker sig matematiskt korrekt?", ratt_svar=ratt, alternativ=alts, input_typ="radio", svarstyp="string")
+            
+        elif typ == 'batteriladdning':
+            start = random.choice([10, 20, 25, 40])
+            okning = random.choice([20, 30, 40, 50])
+            nytt = start + okning
+            relativ = int(round((okning / start) * 100))
+            
+            info = f"Du sätter din mobil på laddning. Batterinivån går från {start}\xa0% till {nytt}\xa0%."
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Hur stor är den procentuella (relativa) ökningen av din batterinivå?", ratt_svar=relativ, input_typ="text", svarstyp="int", suffix="%")
+            
+        elif typ == 'skattesankning':
+            ny = random.choice([30.0, 31.5, 32.0, 33.5])
+            sankning = random.choice([0.5, 1.0, 1.5])
+            gammal = round(ny + sankning, 1)
+            
+            info = f"Din kommun beslutar sig för att sänka kommunalskatten med {str(sankning).replace('.', ',')}\xa0procentenheter. Efter sänkningen är skatten {str(ny).replace('.', ',')}\xa0%."
+            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Vad var kommunalskatten innan sänkningen?", ratt_svar=gammal, input_typ="text", svarstyp="float", suffix="%")
+            
+    else: # Nivå 2
+        # Platshållare tills vi bygger nivå 2
+        return skapa_procent_vs_enheter_uppgift(1)
+
 def skapa_problemlosning_uppgift(niva):
     namn_lista = ["Charlie", "Kim", "Ali", "Maja", "Sami", "Robin", "Nilo", "Alex", "Noa", "Elsa", "Viktor"]
     
@@ -1695,55 +1745,7 @@ TITLAR = {
     "Blandat (Slumpas)": "Blandade uppgifter - Träna på allt!"
 }
 
-def skapa_procent_vs_enheter_uppgift(niva=1):
-    if niva == 1:
-        typ = random.choice(['rantehojning', 'valbarometern', 'batteriladdning', 'skattesankning'])
-        
-        if typ == 'rantehojning':
-            start = random.choice([1.5, 2.0, 2.5, 3.0])
-            hojning_enheter = random.choice([0.5, 1.0, 1.5])
-            ny_ranta = round(start + hojning_enheter, 1)
-            relativ = int(round((hojning_enheter / start) * 100))
-            
-            fraga_typ = random.choice(['enheter', 'procent'])
-            info = f"Banken höjer räntan på ditt bolån från {str(start).replace('.', ',')}\xa0% till {str(ny_ranta).replace('.', ',')}\xa0%."
-            
-            if fraga_typ == 'enheter':
-                return Uppgift(info_box_text=info, info_box_style="blue", fraga="Med hur många procentenheter har räntan höjts?", ratt_svar=hojning_enheter, input_typ="text", svarstyp="float", suffix="procentenheter")
-            else:
-                return Uppgift(info_box_text=info, info_box_style="blue", fraga="Med hur många procent har din räntekostnad ökat?", ratt_svar=relativ, input_typ="text", svarstyp="int", suffix="%")
-                
-        elif typ == 'valbarometern':
-            start = random.choice([4.0, 5.0, 8.0])
-            nytt = start + random.choice([1.0, 2.0])
-            relativ = int(round(((nytt - start) / start) * 100))
-            
-            info = f"Ett politiskt parti ökar sitt väljarstöd från {str(start).replace('.', ',')}\xa0% till {str(nytt).replace('.', ',')}\xa0% i en ny mätning.<br><br>Partiledaren jublar i en intervju och säger: <i>'Fantastiskt! Vårt stöd har ökat med {relativ}\xa0%!'</i><br><br>En politisk motståndare twittrar: <i>'Vilken överdrift, ni har ju bara ökat med {str(nytt - start).replace('.', ',')}\xa0%.'</i>"
-            ratt = "Bara partiledaren (motståndaren blandar ihop % och procentenheter)"
-            alts = [ratt, "Bara den politiska motståndaren", "Båda har rätt", "Båda har fel"]
-            random.shuffle(alts)
-            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Vem uttrycker sig matematiskt korrekt?", ratt_svar=ratt, alternativ=alts, input_typ="radio", svarstyp="string")
-            
-        elif typ == 'batteriladdning':
-            start = random.choice([10, 20, 25, 40])
-            okning = random.choice([20, 30, 40, 50])
-            nytt = start + okning
-            relativ = int(round((okning / start) * 100))
-            
-            info = f"Du sätter din mobil på laddning. Batterinivån går från {start}\xa0% till {nytt}\xa0%."
-            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Hur stor är den procentuella (relativa) ökningen av din batterinivå?", ratt_svar=relativ, input_typ="text", svarstyp="int", suffix="%")
-            
-        elif typ == 'skattesankning':
-            ny = random.choice([30.0, 31.5, 32.0, 33.5])
-            sankning = random.choice([0.5, 1.0, 1.5])
-            gammal = round(ny + sankning, 1)
-            
-            info = f"Din kommun beslutar sig för att sänka kommunalskatten med {str(sankning).replace('.', ',')}\xa0procentenheter. Efter sänkningen är skatten {str(ny).replace('.', ',')}\xa0%."
-            return Uppgift(info_box_text=info, info_box_style="blue", fraga="Vad var kommunalskatten innan sänkningen?", ratt_svar=gammal, input_typ="text", svarstyp="float", suffix="%")
-            
-    else: # Nivå 2
-        # Platshållare tills vi bygger nivå 2
-        return skapa_procent_vs_enheter_uppgift(1)
+
 
 def generera_ny_uppgift():
     st.session_state.rattat = False
