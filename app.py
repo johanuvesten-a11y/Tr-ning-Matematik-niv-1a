@@ -808,7 +808,8 @@ def skapa_lan_uppgift(niva):
 
 def skapa_ff_uppgift(niva):
     if niva == 1:
-        typ = random.choice(['berakna_ff', 'nytt_pris', 'hitta_procent', 'index_berakna', 'index_nytt_varde', 'index_procentuell_forandring'])
+        # Tog bort index-uppgifterna från valen
+        typ = random.choice(['berakna_ff', 'nytt_pris', 'hitta_procent'])
         
         if typ == 'berakna_ff':
             riktning, procent = random.choice(['ökar', 'minskar']), round(random.uniform(1.5, 80.5), 1) if random.choice([True, False]) else random.randint(5, 80)
@@ -823,7 +824,27 @@ def skapa_ff_uppgift(niva):
             startpris, riktning, procent = random.choice([100, 200, 250, 400, 500, 800, 1000, 1500]), random.choice(['höjs', 'sänks']), random.choice([10, 15, 20, 25, 30, 40, 50, 12.5])
             return Uppgift(info_box_text=f"En vara kostar {startpris}\xa0kr. Priset {riktning} med {f'{procent:g}'.replace('.', ',')}\xa0%.", info_box_style="green", fraga="Vad blir det nya priset? (Svara i hela kronor)", ratt_svar=int(round(startpris * (1 + procent / 100))) if riktning == 'höjs' else int(round(startpris * (1 - procent / 100))), input_typ="text", svarstyp="int", suffix="kr")
             
-        elif typ == 'index_berakna':
+    else:
+        # Tog bort index-uppgifterna från nivå 2
+        typ = random.choice(['hitta_gammalt', 'upprepad_procent'])
+        
+        if typ == 'hitta_gammalt':
+            gammalt_pris, procent, riktning = random.choice([400, 500, 800, 1000, 1200, 1500, 2000]), random.choice([10, 20, 25, 30, 40, 50]), random.choice(['höjs', 'sänks'])
+            nytt_pris = int(round(gammalt_pris * (1 + procent / 100))) if riktning == 'höjs' else int(round(gammalt_pris * (1 - procent / 100)))
+            return Uppgift(info_box_text=f"Efter att priset på en vara {riktning} med {procent}\xa0% kostar den nu {nytt_pris}\xa0kr.", info_box_style="green", fraga="Vad kostade varan från början? (Svara i hela kronor)", ratt_svar=gammalt_pris, input_typ="text", svarstyp="int", suffix="kr")
+            
+        elif typ == 'upprepad_procent':
+            p1, p2 = random.choice([10, 20, 25, 30]), random.choice([10, 20, 25, 30])
+            r1, r2 = random.choice(['ökar', 'minskar']), random.choice(['ökar', 'minskar'])
+            f1 = (1 + p1/100) if r1 == 'ökar' else (1 - p1/100)
+            f2 = (1 + p2/100) if r2 == 'ökar' else (1 - p2/100)
+            return Uppgift(info_box_text=f"Priset på en produkt {r1} först med {p1}\xa0% och {r2} därefter med {p2}\xa0%.", info_box_style="green", fraga="Vad är den totala förändringsfaktorn för båda ändringarna tillsammans? (Svara med decimaltal)", ratt_svar=round(f1 * f2, 4), input_typ="text", svarstyp="float")
+
+def skapa_index_uppgift(niva):
+    if niva == 1:
+        typ = random.choice(['index_berakna', 'index_nytt_varde', 'index_procentuell_forandring'])
+        
+        if typ == 'index_berakna':
             P0 = random.choice([50, 100, 200, 250, 400, 500])
             idx_val = random.choice([110, 120, 125, 130, 140, 150])
             P1 = int(P0 * idx_val / 100)
@@ -841,22 +862,10 @@ def skapa_ff_uppgift(niva):
             i2 = int(round(i1 * (1 + ans / 100.0)))
             return Uppgift(info_box_text=f"Index för en viss vara var {i1} år 1 och {i2} år 2.", info_box_style="green", fraga="Med hur många procent ökade priset från år 1 till år 2?", ratt_svar=ans, input_typ="text", svarstyp="procent")
             
-    else:
-        typ = random.choice(['hitta_gammalt', 'upprepad_procent', 'index_byta_basar', 'index_reallon'])
+    else: # Nivå 2
+        typ = random.choice(['index_byta_basar', 'index_reallon'])
         
-        if typ == 'hitta_gammalt':
-            gammalt_pris, procent, riktning = random.choice([400, 500, 800, 1000, 1200, 1500, 2000]), random.choice([10, 20, 25, 30, 40, 50]), random.choice(['höjs', 'sänks'])
-            nytt_pris = int(round(gammalt_pris * (1 + procent / 100))) if riktning == 'höjs' else int(round(gammalt_pris * (1 - procent / 100)))
-            return Uppgift(info_box_text=f"Efter att priset på en vara {riktning} med {procent}\xa0% kostar den nu {nytt_pris}\xa0kr.", info_box_style="green", fraga="Vad kostade varan från början? (Svara i hela kronor)", ratt_svar=gammalt_pris, input_typ="text", svarstyp="int", suffix="kr")
-            
-        elif typ == 'upprepad_procent':
-            p1, p2 = random.choice([10, 20, 25, 30]), random.choice([10, 20, 25, 30])
-            r1, r2 = random.choice(['ökar', 'minskar']), random.choice(['ökar', 'minskar'])
-            f1 = (1 + p1/100) if r1 == 'ökar' else (1 - p1/100)
-            f2 = (1 + p2/100) if r2 == 'ökar' else (1 - p2/100)
-            return Uppgift(info_box_text=f"Priset på en produkt {r1} först med {p1}\xa0% och {r2} därefter med {p2}\xa0%.", info_box_style="green", fraga="Vad är den totala förändringsfaktorn för båda ändringarna tillsammans? (Svara med decimaltal)", ratt_svar=round(f1 * f2, 4), input_typ="text", svarstyp="float")
-            
-        elif typ == 'index_byta_basar':
+        if typ == 'index_byta_basar':
             komb = [(120, 144, 120), (120, 150, 125), (125, 150, 120), (140, 168, 120), (150, 180, 120), (150, 195, 130)]
             old_i2, old_i3, new_i3 = random.choice(komb)
             return Uppgift(info_box_text=f"I en indextabell är index 100 för år 1, {old_i2} för år 2, och {old_i3} för år 3. Man bestämmer sig sedan för att byta basår till år 2.", info_box_style="green", fraga="Vilket index får år 3 i den nya tabellen?", ratt_svar=new_i3, input_typ="text", svarstyp="int")
@@ -1764,6 +1773,7 @@ KATEGORIER = {
     "Algebra": skapa_alg_uttryck_uppgift,
     "Lån och ränta": skapa_lan_uppgift,
     "Förändringsfaktor": skapa_ff_uppgift,
+    "Index": skapa_index_uppgift,               # <-- NY RAD
     "Sannolikhetslära": skapa_slump_uppgift,
     "Statistik": skapa_stat_uppgift,
     "Procent vs Procentenheter": skapa_procent_vs_enheter_uppgift,
@@ -1777,13 +1787,13 @@ TITLAR = {
     "Algebra": "Algebra & Förhållanden",
     "Lån och ränta": "Beräkna Lån och Ränta",
     "Förändringsfaktor": "Träna på Förändringsfaktor",
+    "Index": "Index och Prisutveckling",        # <-- NY RAD
     "Sannolikhetslära": "Träna på Sannolikhetslära",
     "Statistik": "Tolka Statistik och Diagram",
     "Procent vs Procentenheter": "Procent och Procentenheter",
     "Problemlösning": "Problemlösning & Lästal",
     "Blandat (Slumpas)": "Blandade uppgifter - Träna på allt!"
 }
-
 
 
 def generera_ny_uppgift():
