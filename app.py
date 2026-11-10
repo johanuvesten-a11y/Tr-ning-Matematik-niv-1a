@@ -1792,6 +1792,7 @@ TITLAR = {
     "Statistik": "Tolka Statistik och Diagram",
     "Procent vs Procentenheter": "Procent och Procentenheter",
     "Problemlösning": "Problemlösning & Lästal",
+    "Träning till halvkursprov": "Träning inför halvkursprov",
     "Blandat (Slumpas)": "Blandade uppgifter - Träna på allt!"
 }
 
@@ -1812,6 +1813,20 @@ def generera_ny_uppgift():
         valbar_kat = random.choice(tillgangliga_kategorier)
         u = KATEGORIER[valbar_kat](niva)
         u.visnings_kategori = valbar_kat 
+        
+    elif kat == "Träning till halvkursprov":  # <-- NY EGEN SLUMPLOGIK
+        halvkursprov_kategorier = [
+            "Ekvationer",
+            "Algebra",
+            "Lån och ränta",
+            "Förändringsfaktor",
+            "Index",
+            "Procent vs Procentenheter"
+        ]
+        valbar_kat = random.choice(halvkursprov_kategorier)
+        u = KATEGORIER[valbar_kat](niva)
+        u.visnings_kategori = valbar_kat
+
     else:
         u = KATEGORIER[kat](niva)
         u.visnings_kategori = kat
@@ -1822,7 +1837,7 @@ def generera_ny_uppgift():
 # 4. MENYSYSTEM
 # ==========================================
 st.sidebar.title("Välj Träningsläge")
-vald_kategori = st.sidebar.radio("Vad vill du träna på?", list(KATEGORIER.keys()) + ["Blandat (Slumpas)"])
+vald_kategori = st.sidebar.radio("Vad vill du träna på?", list(KATEGORIER.keys()) + ["Träning till halvkursprov", "Blandat (Slumpas)"])
 
 if 'aktuell_kategori' not in st.session_state or st.session_state.aktuell_kategori != vald_kategori:
     st.session_state.aktuell_kategori = vald_kategori
