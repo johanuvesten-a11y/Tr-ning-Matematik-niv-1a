@@ -1,170 +1,92 @@
-import math
-import re
 import streamlit as st
-from sympy import simplify, expand, SympifyError
-from sympy.parsing.sympy_parser import (
-    parse_expr, 
-    standard_transformations, 
-    implicit_multiplication_application, 
-    convert_xor
-)
-
-def visa_infobox(text: str, style: str):
-    """
-    Renderar en snygg informationsruta i Streamlit.
-    style kan vara 'info', 'warning', eller 'success'.
-    """
-    colors = {
-        "info": {"bg": "#e7f3fe", "border": "#b3d4fc", "icon": "ℹ️"},
-        "warning": {"bg": "#fff3cd", "border": "#ffeeba", "icon": "⚠️"},
-        "success": {"bg": "#d4edda", "border": "#c3e6cb", "icon": "✅"}
-    }
-    c = colors.get(style, colors["info"])
-    
-    html = f"""
-    <div style="background-color: {c['bg']}; border-left: 5px solid {c['border']}; padding: 15px; margin: 10px 0; border-radius: 5px;">
-        <strong>{c['icon']} Info:</strong><br>{text}
-    </div>
-    """
-    st.markdown(html, unsafe_allow_html=True)
+from fractions import Fraction
+import sympy as sp
+from sympy.parsing.sympy_parser import parse_expr, standard_transformations, implicit_multiplication_application
+from models import Uppgift
 
 def formatera_polynom(termer):
-    """
-    Hjälpfunktion för att bygga snygga matematiska uttryck som strängar.
-    Förväntar sig en lista med tupler: [(koefficient, "variabel")], t.ex. [(1, "x^2"), (-3, "x"), (2, "")]
-    """
-    uttryck = []
-    for i, (c, v) in enumerate(termer):
-        if c == 0:
-            continue
-            
-        if i == 0:
-            tecken = "-" if c < 0 else ""
-            c_abs = abs(c)
+    """Formaterar en lista med termer till ett snyggt polynom som en sträng."""
+    if not termer:
+        return "0"
+    res = str(termer[0])
+    for term in termer[1:]:
+        if str(term).startswith("-"):
+            res += f" - {str(term)[1:]}"
         else:
-            tecken = " - " if c < 0 else " + "
-            c_abs = abs(c)
-            
-        if c_abs == 1 and v != "":
-            uttryck.append(f"{tecken}{v}")
-        else:
-            uttryck.append(f"{tecken}{c_abs}{v}")
-            
-    res = "".join(uttryck)
-    return res if res else "0"
+            res += f" + {term}"
+    return res
 
-def ratta_svar(u, input_svar):
-    """
-    Huvudfunktion för att rätta elevens svar baserat på svarstypen i Uppgift-objektet.
-    Returnerar 'ratt', 'fel', 'tom', 'format', 'format_saknar_x', 'format_saknar_y' eller 'ej_forenklad'.
-    """
-    if not input_svar:
-        return 'tom'
+def formatera_kr(b):
+    """Formaterar belopp till ett snyggt format med tusentalsavskiljare (mellanslag)."""
+    return f"{b:,.0f}".replace(",", " ")
+
+def visa_infobox(text: str, style: str = "info"):
+    """Visar en formaterad infobox (t.ex. för lösningar eller tips)."""
+    farger = {
+        "info": "#e7f3fe",
+        "success": "#d4edda",
+        "warning": "#fff3cd",
+        "error": "#f8d7da"
+    }
+    bg_color = farger.get(style, "#f8f9fa")
+    st.markdown(
+        f'<div style="background-color: {bg_color}; padding: 10px; border-radius: 5px; margin-bottom: 10px;">{text}</div>',
+        unsafe_allow_html=True
+    )
+
+def ratta_svar(u: Uppgift, input_svar: any) -> str:
+    """Rättar svaret baserat på uppgiftens svarstyp och det förväntade svaret."""
+    # Hantera tomma inmatningar
+    if input_svar is None or input_svar == "":
+        return "fel"
         
-    if isinstance(input_svar, list):
-        if any(not s or str(s).strip() == "" for s in input_svar):
-            return 'tom'
-    elif isinstance(input_svar, str) and input_svar.strip() == "":
-        return 'tom'
+    svarstyp = u.svarstyp
+    ratt = u.ratt_svar
 
-    typ = u.svarstyp
+    try:
+        if svarstyp == "string_math":
+            # Använd Sympy för att utvärdera om två algebraiska uttryck är ekvivalenta
+            transformations = (standard_transformations + (implicit_multiplication_application,))
+            expr_input = parse_expr(str(input_svar).replace(",", "."), transformations=transformations)
+            expr_ratt = parse_expr(str(ratt).replace(",", "."), transformations=transformations)
+            if sp.simplify(expr_input - expr_ratt) == 0:
+                return "ratt"
+            else:
+                return "fel"
+                
+        elif svarstyp == "fraction":
+            # Hantera bråktal
+            in_frac = Fraction(str(input_svar).replace(",", ".").strip())
+            ratt_frac = Fraction(str(ratt).strip())
+            if in_frac == ratt_frac:
+                return "ratt"
+            else:
+                return "fel"
+                
+        elif svarstyp == "float":
+            # Tolerans för flyttal
+            in_float = float(str(input_svar).replace(",", ".").strip())
+            ratt_float = float(ratt)
+            if abs(in_float - ratt_float) < 1e-5:
+                return "ratt"
+            else:
+                return "fel"
+                
+        else: # "string", "int", "flerval", etc.
+            if str(input_svar).strip().lower() == str(ratt).strip().lower():
+                return "ratt"
+            else:
+                return "fel"
+    except Exception:
+        # Fångar upp formateringsfel från användaren (t.ex. bokstäver i ett fält för bråktal)
+        return "fel"
 
-    # --- Hantera svar med flera fält (listor) ---
-    if typ in ['ekvationssystem', 'punkt', 'ordered_float']:
-        try:
-            svar = [float(s.replace(',', '.').replace(' ', '')) for s in input_svar]
-            if len(svar) == len(u.ratt_svar):
-                for s, r in zip(svar, u.ratt_svar):
-                    if not math.isclose(s, r, abs_tol=u.tolerans):
-                        return 'fel'
-                return 'ratt'
-            return 'fel'
-        except ValueError:
-            return 'format'
-
-    # --- Hantera text/strängfält ---
-    if isinstance(input_svar, str):
-        svar_clean = str(input_svar).replace(',', '.').strip()
+def hantera_svar():
+    """Hämtar inmatat värde och sätter rättningsstatus i session_state."""
+    if 'current_input' in st.session_state and 'aktuell_uppgift' in st.session_state:
+        inmatning = st.session_state.current_input
+        u = st.session_state.aktuell_uppgift
         
-        # Enkla strängar
-        if typ == 'string':
-            return 'ratt' if svar_clean.lower() == str(u.ratt_svar).lower() else 'fel'
-            
-        # Numeriska värden
-        if typ in ['float', 'int', 'procent']:
-            try:
-                val = float(svar_clean.replace('%', ''))
-                if math.isclose(val, float(u.ratt_svar), abs_tol=u.tolerans):
-                    return 'ratt'
-                return 'fel'
-            except ValueError:
-                return 'format'
-                
-        # Flera flyttal i samma textruta (t.ex. "2 och 4")
-        if typ == 'array_float':
-            try:
-                svar_parts = [float(p.strip()) for p in re.split(r'[,;\s]+(?:och\s+)?', svar_clean) if p.strip()]
-                if len(svar_parts) != len(u.ratt_svar): 
-                    return 'fel'
-                    
-                svar_parts.sort()
-                ratt_sort = sorted(u.ratt_svar)
-                for s, r in zip(svar_parts, ratt_sort):
-                    if not math.isclose(s, float(r), abs_tol=u.tolerans): 
-                        return 'fel'
-                return 'ratt'
-            except ValueError:
-                return 'format'
-
-        # --- Matematiska uttryck via SymPy ---
-        if typ in ['string_math', 'ekvation_x', 'ekvation_linje', 'faktoriserad']:
-            
-            # Formatkrav för symmetrilinjer
-            if typ == 'ekvation_x':
-                if not svar_clean.startswith('x='):
-                    svar_clean_test = svar_clean.replace(' ', '')
-                    if svar_clean_test.startswith('x='):
-                        svar_clean = svar_clean_test
-                    elif '=' in svar_clean_test and svar_clean_test.split('=')[0] == 'x':
-                        svar_clean = svar_clean_test
-                    else:
-                        return 'format_saknar_x'
-                svar_clean = svar_clean.replace('x=', '').strip()
-                    
-            # Formatkrav för linjens ekvation
-            if typ == 'ekvation_linje':
-                if not svar_clean.replace(' ', '').startswith('y='):
-                    return 'format_saknar_y'
-                svar_clean = svar_clean.replace(' ', '').replace('y=', '').strip()
-                     
-            # Begränsning mot onödiga parenteser
-            if u.krav_inga_parenteser:
-                if '(' in svar_clean or ')' in svar_clean:
-                    return 'ej_forenklad'
-                    
-            transformations = (standard_transformations + (implicit_multiplication_application, convert_xor))
-            
-            try:
-                expr_elev = parse_expr(svar_clean, transformations=transformations)
-                
-                # Rensa y= från rättningsnyckeln om det finns
-                ratt_str = str(u.ratt_svar).replace('y=', '').replace('x=', '').strip()
-                expr_ratt = parse_expr(ratt_str, transformations=transformations)
-                
-                if typ == 'faktoriserad':
-                    if expand(expr_elev) == expand(expr_ratt):
-                        return 'ratt'
-                    return 'fel'
-
-                diff = simplify(expr_elev - expr_ratt)
-                if diff == 0:
-                    return 'ratt'
-                return 'fel'
-                
-            except (SympifyError, ValueError, TypeError):
-                return 'format'
-                
-    # Fallback om inga andra villkor uppfylls
-    if input_svar == u.ratt_svar:
-        return 'ratt'
-    return 'fel'
+        status = ratta_svar(u, inmatning)
+        st.session_state.svar_status = status
+        st.session_state.senaste_svar = inmatning
