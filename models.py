@@ -35,6 +35,7 @@ class Uppgift:
     ratt_svar_lista: Optional[list] = None
     ratt_svar_visning: Optional[str] = None
     suffix: Optional[str] = None
+    tolerans: float = 0.001
     extra_data: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
@@ -55,6 +56,8 @@ class Uppgift:
             "trace_alla_x",
             "alternativ",
             "suffix",
+            "losningsforslag",
+            "tolerans",
         ):
-            if key in self.extra_data and getattr(self, key) in (None, "vis_none"):
+            if key in self.extra_data and getattr(self, key) in (None, "vis_none", 0.001):
                 setattr(self, key, self.extra_data[key])
