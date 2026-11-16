@@ -2,7 +2,7 @@ import random
 import streamlit as st
 from models import Uppgift
 from utils import visa_infobox, hantera_svar
-from graphics import rita_plotly_graf, rita_traddiagram, rita_stat_graf
+from graphics import rita_plotly_graf
 from generators import (
     skapa_graf_uppgift,
     skapa_alg_func_uppgift,
@@ -76,6 +76,7 @@ TITLAR = {
 def generera_ny_uppgift():
     st.session_state.rattat = False
     st.session_state.svar_status = None
+    st.session_state.poang_raknad = False
     st.session_state.uppgift_id = st.session_state.get("uppgift_id", 0) + 1
 
     kat = st.session_state.aktuell_kategori
@@ -83,6 +84,8 @@ def generera_ny_uppgift():
 
     if kat == "Blandat (Slumpas)":
         tillgangliga = list(KATEGORIER.keys())
+        if niva == 2 and "Statistik" in tillgangliga:
+            tillgangliga.remove("Statistik")
         valbar_kat = random.choice(tillgangliga)
         u = KATEGORIER[valbar_kat](niva)
         if u is not None:
@@ -127,17 +130,29 @@ if "aktuell_kategori" not in st.session_state or st.session_state.aktuell_katego
 
 st.sidebar.divider()
 st.sidebar.subheader("Inställningar")
-ny_niva = st.sidebar.radio(
-    "Välj svårighetsgrad:",
-    [1, 2],
-    horizontal=True,
-    index=st.session_state.niva - 1,
-)
+if vald_kategori == "Statistik":
+    ny_niva = st.sidebar.radio("Välj svårighetsgrad:", [1], horizontal=True, index=0)
+else:
+    ny_niva = st.sidebar.radio(
+        "Välj svårighetsgrad:",
+        [1, 2],
+        horizontal=True,
+        index=st.session_state.niva - 1,
+    )
 
 if ny_niva != st.session_state.niva:
     st.session_state.niva = ny_niva
     generera_ny_uppgift()
     st.rerun()
+
+st.sidebar.divider()
+st.sidebar.subheader("Ditt resultat")
+col_stat1, col_stat2 = st.sidebar.columns(2)
+antal_ratt = st.session_state.get("antal_ratt", 0)
+antal_forsok = st.session_state.get("antal_forsok", 0)
+streak = st.session_state.get("streak", 0)
+col_stat1.metric("Rätt", f"{antal_ratt}/{antal_forsok}")
+col_stat2.metric("Svit", f"{streak} i rad")
 
 
 # ==========================================
@@ -153,38 +168,20 @@ if u is None:
 col_vanster, col_hoger = st.columns([1.2, 1], gap="large")
 
 with col_vanster:
-    # 1. Funktionsgraf
     if u.graf_f is not None:
-        tx = [u.trace_x] if (st.session_state.rattat and u.trace_x is not None) else None
-        ty = [u.trace_y] if (st.session_state.rattat and u.trace_y is not None) else None
         fig = rita_plotly_graf(
             f=u.graf_f,
             visa_facit=st.session_state.rattat,
             q_vis_type=u.q_type_vis,
-            trace_x=tx,
-            trace_y=ty,
+            trace_x=u.trace_x,
+            trace_y=u.trace_y,
             trace_alla_x=u.trace_alla_x,
         )
         st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False}, theme=None)
 
-    # 2. Färdigt Plotly-diagram (t.ex. kuber)
     if u.plotly_fig is not None:
         st.plotly_chart(u.plotly_fig, use_container_width=True, config={"displayModeBar": False}, theme=None)
 
-    # 3. Statistik- eller träddiagram från extra_data
-    if "stat_graf" in u.extra_data:
-        fig_stat = rita_stat_graf(**u.extra_data["stat_graf"])
-        st.plotly_chart(fig_stat, use_container_width=True, config={"displayModeBar": False}, theme=None)
-
-    if u.extra_data.get("visa_traddiagram"):
-        fig_trad = rita_traddiagram(
-            grenar=[],
-            farg1=u.extra_data.get("farg1", "#1f77b4"),
-            farg2=u.extra_data.get("farg2", "#ff7f0e"),
-        )
-        st.plotly_chart(fig_trad, use_container_width=True, config={"displayModeBar": False}, theme=None)
-
-    # 4. Text, LaTeX, Infobox och Tabell
     if u.info_text:
         st.markdown(
             f"<div style='text-align: center; font-size: 20px; color: gray; margin-top: 50px;'>{u.info_text}</div>",
@@ -241,6 +238,9 @@ with col_hoger:
 
     if rattat and status == "ratt":
         st.success("✅ Helt rätt! Snyggt jobbat.")
+        if u.losningsforslag:
+            visa_infobox(f"💡 Förklaring: {u.losningsforslag}", "blue")
+        st.write("")
         if st.button("Nästa uppgift", type="primary", use_container_width=True, key=f"next_{uid}"):
             generera_ny_uppgift()
             st.rerun()
@@ -293,6 +293,8 @@ with col_hoger:
                     ratt_txt += "\xa0%"
 
                 st.error(f"❌ Tyvärr fel. Rätt svar var:\n\n {ratt_txt}")
+                if u.losningsforslag:
+                    visa_infobox(f"💡 Lösningstips: {u.losningsforslag}", "blue")
 
             elif status == "format":
                 if u.svarstyp in ["float", "procent"]:
