@@ -6,6 +6,7 @@ from graphics import rita_plotly_graf
 from generators import (
     skapa_graf_uppgift,
     skapa_alg_func_uppgift,
+    skapa_kalkylblad,
     skapa_ekv_uppgift,
     skapa_alg_uttryck,
     skapa_lan,
@@ -50,6 +51,7 @@ KATEGORIER = {
     "Lån och ränta": skapa_lan,
     "Förändringsfaktor": skapa_ff,
     "Index": skapa_index,
+    "Kalkylblad": skapa_kalkylblad,
     "Sannolikhetslära": skapa_slump,
     "Statistik": skapa_stat_uppgift,
     "Procent vs Procentenheter": skapa_procent,
@@ -64,6 +66,7 @@ TITLAR = {
     "Lån och ränta": "Beräkna Lån och Ränta",
     "Förändringsfaktor": "Träna på Förändringsfaktor",
     "Index": "Index och Prisutveckling",
+    "Kalkylblad": "Formler i Kalkylblad",
     "Sannolikhetslära": "Träna på Sannolikhetslära",
     "Statistik": "Tolka Statistik och Diagram",
     "Procent vs Procentenheter": "Procent och Procentenheter",
@@ -71,7 +74,6 @@ TITLAR = {
     "Träning till halvkursprov": "Träning inför halvkursprov",
     "Blandat (Slumpas)": "Blandade uppgifter - Träna på allt!",
 }
-
 
 def generera_ny_uppgift():
     st.session_state.rattat = False
