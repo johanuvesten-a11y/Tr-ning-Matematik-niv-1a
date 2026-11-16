@@ -71,11 +71,12 @@ def ratta_svar(u: Uppgift, input_svar) -> str:
                         .replace("\xa0", "")
                         .replace("%", "")
                     )
-                    return "ratt" if abs(float(svar_clean) - float(u.ratt_svar)) < 0.001 else "fel"
+                    tol = getattr(u, "tolerans", 0.001)
+                    return "ratt" if abs(float(svar_clean) - float(u.ratt_svar)) < tol else "fel"
 
                 elif u.svarstyp == "fraction":
                     svar_clean = input_svar.strip().replace(" ", "").replace("\xa0", "").replace(",", ".")
-                    return "ratt" if Fraction(svar_clean) == Fraction(str(u.ratt_svar)) else "fel"
+                    return "ratt" if Fraction(svar_clean) == Fraction(u.ratt_svar) else "fel"
 
                 elif u.svarstyp == "ratio":
                     svar_clean = input_svar.strip().replace(" ", "").replace("\xa0", "")
@@ -84,11 +85,24 @@ def ratta_svar(u: Uppgift, input_svar) -> str:
                     return "ratt" if svar_clean == str(u.ratt_svar) else "fel"
 
                 elif u.svarstyp == "string_math":
-                    svar_clean = input_svar.replace(",", ".").replace(" ", "").replace("\xa0", "").replace("^", "**")
+                    svar_clean = (
+                        input_svar.lower()
+                        .replace(",", ".")
+                        .replace("·", "*")
+                        .replace(" ", "")
+                        .replace("\xa0", "")
+                        .replace("^", "**")
+                    )
                     try:
                         transformations = standard_transformations + (implicit_multiplication_application,)
                         expr_elev = parse_expr(svar_clean, transformations=transformations)
-                        ratt_svar_str = str(u.ratt_svar).replace(" ", "").replace("^", "**")
+                        ratt_svar_str = (
+                            str(u.ratt_svar)
+                            .lower()
+                            .replace("·", "*")
+                            .replace(" ", "")
+                            .replace("^", "**")
+                        )
                         expr_facit = parse_expr(ratt_svar_str, transformations=transformations)
                         return "ratt" if sp.simplify(expr_elev - expr_facit) == 0 else "fel"
                     except Exception:
@@ -104,7 +118,7 @@ def ratta_svar(u: Uppgift, input_svar) -> str:
                 elif u.svarstyp == "string":
                     svar_clean = str(input_svar).strip()
                     return "ratt" if svar_clean.lower() == str(u.ratt_svar).strip().lower() else "fel"
-            except ValueError:
+            except (ValueError, ZeroDivisionError):
                 return "format"
         return "tom"
 
@@ -128,4 +142,14 @@ def hantera_svar():
         if input_svar is None:
             input_svar = "Välj svar..." if u.input_typ == "selectbox" else ""
 
-    st.session_state.svar_status = ratta_svar(u, input_svar)
+    status = ratta_svar(u, input_svar)
+    st.session_state.svar_status = status
+
+    if status in ("ratt", "fel") and not st.session_state.get("poang_raknad", False):
+        st.session_state.poang_raknad = True
+        st.session_state.antal_forsok = st.session_state.get("antal_forsok", 0) + 1
+        if status == "ratt":
+            st.session_state.antal_ratt = st.session_state.get("antal_ratt", 0) + 1
+            st.session_state.streak = st.session_state.get("streak", 0) + 1
+        else:
+            st.session_state.streak = 0
