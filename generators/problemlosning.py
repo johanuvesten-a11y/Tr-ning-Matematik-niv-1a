@@ -356,63 +356,188 @@ def skapa_ff_uppgift(niva):
             )
 
 
+def _bygg_indextabell_html(ar_lista, index_lista):
+    """Bygger en tydlig indextabell med årtal och indextal."""
+    html = """
+    <div style="overflow-x: auto; margin-top: 10px; margin-bottom: 18px;">
+        <table style="width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 15px; background-color: white; color: black; border: 1px solid #ccc; text-align: center;">
+            <thead>
+                <tr style="background-color: #f1f3f4; border-bottom: 2px solid #ccc;">
+                    <th style="padding: 8px 12px; border: 1px solid #ccc; text-align: left; color: black;">År</th>
+    """
+    for ar in ar_lista:
+        html += f'<th style="padding: 8px 12px; border: 1px solid #ccc; color: black;">{ar}</th>'
+
+    html += """
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding: 8px 12px; border: 1px solid #ccc; font-weight: bold; text-align: left; background-color: #f8f9fa; color: black;">Index</td>
+    """
+    for idx in index_lista:
+        html += f'<td style="padding: 8px 12px; border: 1px solid #ccc; color: black;">{idx}</td>'
+
+    html += """
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    """
+    return html
+
+
 def skapa_index_uppgift(niva):
+    varor = [
+        "prisindex för livsmedel",
+        "konsumentprisindex (KPI)",
+        "prisindex för byggmaterial",
+        "prisindex för drivmedel",
+        "prisindex för kollektivtrafik",
+    ]
+
     if niva == 1:
         typ = random.choice(['index_berakna', 'index_nytt_varde', 'index_procentuell_forandring'])
+
         if typ == 'index_berakna':
+            start_ar = random.randint(2018, 2021)
+            senare_ar = start_ar + random.randint(2, 4)
             P0 = random.choice([50, 100, 200, 250, 400, 500])
             idx_val = random.choice([110, 120, 125, 130, 140, 150])
             P1 = int(P0 * idx_val / 100)
             return Uppgift(
-                info_box_text=f"Ett basår kostade en specifik vara {P0}\xa0kr. Några år senare kostar samma vara {P1}\xa0kr.",
+                info_box_text=f"År {start_ar} (basår) kostade en vara {P0}\xa0kr. År {senare_ar} kostar samma vara {P1}\xa0kr.",
                 info_box_style="green",
-                fraga="Vilket index har varan det senare året? (Svara med ett heltal)",
-                ratt_svar=idx_val, input_typ="text", svarstyp="int"
+                fraga=f"Vilket index har varan år {senare_ar}? (Svara med ett heltal)",
+                ratt_svar=idx_val,
+                input_typ="text",
+                svarstyp="int",
+                losningsforslag=f"Dela det nya priset med basårets pris och multiplicera med 100: ({P1} / {P0}) · 100 = {idx_val}.",
             )
+
         elif typ == 'index_nytt_varde':
+            start_ar = random.randint(2018, 2020)
+            ar_lista = [start_ar + k for k in range(5)]
             P0 = random.choice([100, 200, 500, 1000, 2000, 5000])
             idx_val = random.choice([112, 115, 120, 130, 140, 150])
             P1 = int(P0 * idx_val / 100)
+
+            mal_pos = random.randint(2, 4)
+            index_lista = [100]
+            for k in range(1, 5):
+                if k == mal_pos:
+                    index_lista.append(idx_val)
+                elif k < mal_pos:
+                    index_lista.append(round(100 + (idx_val - 100) * (k / mal_pos)))
+                else:
+                    index_lista.append(index_lista[-1] + random.randint(4, 10))
+
+            tabell = _bygg_indextabell_html(ar_lista, index_lista)
+            vara = random.choice(varor)
             return Uppgift(
-                info_box_text=f"En vara kostade {P0}\xa0kr under basåret (då index alltid är 100). Ett senare år är index för varan {idx_val}.",
+                info_box_text=f"Tabellen visar {vara} (basår {start_ar}). En vara kostade {P0}\xa0kr år {start_ar}.",
                 info_box_style="green",
-                fraga="Vad kostar varan det senare året? (Svara i kr)",
-                ratt_svar=P1, input_typ="text", svarstyp="int", suffix="kr"
+                html_table=tabell,
+                fraga=f"Vad kostar varan år {ar_lista[mal_pos]}? (Svara i kr)",
+                ratt_svar=P1,
+                input_typ="text",
+                svarstyp="int",
+                suffix="kr",
+                losningsforslag=f"Läs av index för år {ar_lista[mal_pos]} i tabellen ({idx_val}). Förändringsfaktorn är {idx_val}/100 = {idx_val/100:g}, så priset blir {P0} · {idx_val/100:g} = {P1}\xa0kr.",
             )
+
         elif typ == 'index_procentuell_forandring':
-            ans = random.choice(range(5, 155, 5))
-            i1 = random.randint(5, 15) * 20
-            i2 = int(round(i1 * (1 + ans / 100.0)))
+            start_ar = random.randint(2018, 2020)
+            ar_lista = [start_ar + k for k in range(5)]
+
+            pos1, pos2 = sorted(random.sample([0, 1, 2, 3, 4], 2))
+            if pos1 == 0:
+                i1 = 100
+                ans = random.choice(range(5, 65, 5))
+                i2 = 100 + ans
+            else:
+                giltiga_par = [
+                    (val_1, p_okning, (val_1 * (100 + p_okning)) // 100)
+                    for val_1 in [110, 120, 125, 130, 140, 150, 160, 180, 200]
+                    for p_okning in range(5, 65, 5)
+                    if (val_1 * (100 + p_okning)) % 100 == 0
+                ]
+                i1, ans, i2 = random.choice(giltiga_par)
+
+            index_lista = [0] * 5
+            index_lista[0] = 100
+            index_lista[pos1] = i1
+            index_lista[pos2] = i2
+
+            for k in range(1, pos1):
+                index_lista[k] = round(100 + (i1 - 100) * (k / pos1))
+            for k in range(pos1 + 1, pos2):
+                index_lista[k] = round(i1 + (i2 - i1) * ((k - pos1) / (pos2 - pos1)))
+            for k in range(pos2 + 1, 5):
+                index_lista[k] = index_lista[k - 1] + random.randint(4, 12)
+
+            tabell = _bygg_indextabell_html(ar_lista, index_lista)
+            vara = random.choice(varor)
+            ar_1, ar_2 = ar_lista[pos1], ar_lista[pos2]
+
             return Uppgift(
-                info_box_text=f"Index för en viss vara var {i1} år 1 och {i2} år 2.",
+                info_box_text=f"Tabellen visar {vara} mellan åren {ar_lista[0]} och {ar_lista[-1]} (basår {ar_lista[0]}).",
                 info_box_style="green",
-                fraga="Med hur många procent ökade priset från år 1 till år 2?",
-                ratt_svar=ans, input_typ="text", svarstyp="procent"
+                html_table=tabell,
+                fraga=f"Med hur många procent har index ökat från år {ar_1} till år {ar_2}?",
+                ratt_svar=ans,
+                input_typ="text",
+                svarstyp="procent",
+                suffix="%",
+                losningsforslag=f"Läs av värdena i tabellen: år {ar_1} var index {i1} och år {ar_2} var index {i2}. Förändringsfaktorn är {i2} / {i1} = {i2/i1:g}, vilket motsvarar en ökning med {ans}\xa0%.",
             )
+
     else:  # Nivå 2
         typ = random.choice(['index_byta_basar', 'index_reallon'])
         if typ == 'index_byta_basar':
-            komb = [(120, 144, 120), (120, 150, 125), (125, 150, 120), (140, 168, 120), (150, 180, 120), (150, 195, 130)]
+            start_ar = random.randint(2019, 2021)
+            ar_lista = [start_ar + k for k in range(4)]
+            komb = [
+                (120, 144, 120),
+                (120, 150, 125),
+                (125, 150, 120),
+                (140, 168, 120),
+                (150, 180, 120),
+                (150, 195, 130),
+            ]
             old_i2, old_i3, new_i3 = random.choice(komb)
+            index_lista = [100, old_i2, old_i3, old_i3 + random.randint(6, 15)]
+            tabell = _bygg_indextabell_html(ar_lista, index_lista)
+
             return Uppgift(
-                info_box_text=f"I en indextabell är index 100 för år 1, {old_i2} för år 2, och {old_i3} för år 3. Man bestämmer sig sedan för att byta basår till år 2.",
+                info_box_text=f"Tabellen visar en indexserie med {ar_lista[0]} som basår. Man bestämmer sig sedan för att byta basår till år {ar_lista[1]}.",
                 info_box_style="green",
-                fraga="Vilket index får år 3 i den nya tabellen?",
-                ratt_svar=new_i3, input_typ="text", svarstyp="int"
+                html_table=tabell,
+                fraga=f"Vilket index får år {ar_lista[2]} i den nya tabellen?",
+                ratt_svar=new_i3,
+                input_typ="text",
+                svarstyp="int",
+                losningsforslag=f"Dela det gamla indextalet för år {ar_lista[2]} ({old_i3}) med det nya basårets index för år {ar_lista[1]} ({old_i2}) och multiplicera med 100: ({old_i3} / {old_i2}) · 100 = {new_i3}.",
             )
+
         elif typ == 'index_reallon':
+            ar_1 = random.randint(2016, 2019)
+            ar_2 = ar_1 + random.randint(3, 5)
             kpi = random.choice([110, 120, 125, 140, 150])
             lon_faktor = random.choice([1.05, 1.1, 1.15, 1.2])
             base_lon = random.choice([20000, 25000, 30000, 35000])
             new_lon = int(base_lon * (kpi / 100) * lon_faktor)
             reallon = int(new_lon / (kpi / 100))
             return Uppgift(
-                info_box_text=f"År 1 är KPI 100 och din månadslön är {formatera_kr(base_lon)}\xa0kr. År 2 är KPI {kpi} och din lön har ökat till {formatera_kr(new_lon)}\xa0kr.",
+                info_box_text=f"År {ar_1} är KPI 100 och din månadslön är {formatera_kr(base_lon)}\xa0kr. År {ar_2} är KPI {kpi} och din lön har ökat till {formatera_kr(new_lon)}\xa0kr.",
                 info_box_style="green",
-                fraga="Vad är din lön år 2 omräknad till penningvärdet för år 1 (så kallad reallön)?",
-                ratt_svar=reallon, input_typ="text", svarstyp="int", suffix="kr"
+                fraga=f"Vad är din lön år {ar_2} omräknad till penningvärdet för år {ar_1} (så kallad reallön)?",
+                ratt_svar=reallon,
+                input_typ="text",
+                svarstyp="int",
+                suffix="kr",
+                losningsforslag=f"Dividera lönen år {ar_2} med KPI och multiplicera med 100: ({formatera_kr(new_lon)} / {kpi}) · 100 = {formatera_kr(reallon)}\xa0kr.",
             )
-
 
 def skapa_procent_vs_enheter_uppgift(niva=1):
     if niva == 1:
