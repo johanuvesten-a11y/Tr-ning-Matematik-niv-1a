@@ -305,6 +305,85 @@ def skapa_alg_uttryck_uppgift(niva):
                     svarstyp="string_math",
                 )
 
+            elif typ == 'ekvation_uttryck':
+            variant = random.choice([
+                'multipel_add_sub',
+                'multipel_omvand',
+                'halva_add_sub',
+                'halva_omvand',
+            ])
+
+            if variant == 'multipel_add_sub':
+                a = random.choice([2, 3, 4, 5])
+                k = random.choice([2, 3])
+                # Välj b så att b inte är jämnt delbart med a (t.ex. 3x = 11 -> 6x + 4)
+                b = random.choice([v for v in range(5, 20) if v % a != 0])
+                c = random.choice([-7, -5, -4, -3, 3, 4, 5, 6, 8])
+
+                ny_koeff = a * k
+                svar = k * b + c
+                uttryck = f"{ny_koeff}x + {c}" if c > 0 else f"{ny_koeff}x - {abs(c)}"
+                steg = f"{k} · {b} {'+' if c > 0 else '-'} {abs(c)} = {k * b} {'+' if c > 0 else '-'} {abs(c)} = {svar}"
+                forklaring = (
+                    f"Du behöver inte räkna ut vad x är. Eftersom {ny_koeff}x är {k} gånger så mycket som {a}x, "
+                    f"gäller att {ny_koeff}x = {k} · {b} = {k * b}. Då blir {uttryck} = {steg}."
+                )
+
+            elif variant == 'multipel_omvand':
+                a = random.choice([2, 3, 4])
+                k = random.choice([2, 3])
+                b = random.choice([v for v in range(4, 15) if v % a != 0])
+                c = random.choice([15, 20, 25, 30, 40])
+
+                ny_koeff = a * k
+                svar = c - k * b
+                uttryck = f"{c} - {ny_koeff}x"
+                forklaring = (
+                    f"Eftersom {ny_koeff}x = {k} · ({a}x) = {k} · {b} = {k * b}, "
+                    f"blir {uttryck} = {c} - {k * b} = {svar}."
+                )
+
+            elif variant == 'halva_add_sub':
+                halv_a = random.choice([2, 3, 4, 5])
+                a = halv_a * 2
+                # Välj jämnt b som inte är delbart med a (t.ex. 6x = 10 -> 3x + 4)
+                b = random.choice([v for v in range(4, 22, 2) if v % a != 0])
+                c = random.choice([-7, -5, -4, -3, 3, 4, 5, 6, 8])
+
+                halv_b = b // 2
+                svar = halv_b + c
+                uttryck = f"{halv_a}x + {c}" if c > 0 else f"{halv_a}x - {abs(c)}"
+                steg = f"{halv_b} {'+' if c > 0 else '-'} {abs(c)} = {svar}"
+                forklaring = (
+                    f"Du behöver inte räkna ut vad x är. Eftersom {halv_a}x är hälften av {a}x, "
+                    f"måste {halv_a}x vara hälften av {b}, alltså {halv_b}. Då blir {uttryck} = {steg}."
+                )
+
+            else:  # halva_omvand (t.ex. 6x = 10 -> 20 - 3x)
+                halv_a = random.choice([2, 3, 4, 5])
+                a = halv_a * 2
+                b = random.choice([v for v in range(4, 22, 2) if v % a != 0])
+                c = random.choice([12, 15, 20, 25, 30])
+
+                halv_b = b // 2
+                svar = c - halv_b
+                uttryck = f"{c} - {halv_a}x"
+                forklaring = (
+                    f"Eftersom {halv_a}x är hälften av {a}x, är {halv_a}x = {b} / 2 = {halv_b}. "
+                    f"Då blir {uttryck} = {c} - {halv_b} = {svar}."
+                )
+
+            return Uppgift(
+                info_box_text=f"Anta att <b>{a}x = {b}</b>.",
+                info_box_style="blue",
+                fraga=f"Vad är då värdet av uttrycket {uttryck}?",
+                ratt_svar=svar,
+                input_typ="text",
+                svarstyp="int",
+                undertext="Tips: Du behöver inte lösa ut x.",
+                losningsforslag=forklaring,
+            )
+            
             elif typ == 'faktorisera_avancerat':
                 c, a = random.choice([2, 3, 4, 5]), random.choice([2, 3, 4, 5])
                 b = random.choice([1, 2, 3, 4, 5])
