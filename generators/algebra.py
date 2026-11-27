@@ -196,9 +196,10 @@ def skapa_alg_uttryck_uppgift(niva):
                 B = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
                 alg_uttryck_str = f"(x {f'+ {A}' if A > 0 else f'- {-A}'})(x {f'+ {B}' if B > 0 else f'- {-B}'})"
                 svar_ratt = formatera_svar(1, A + B, A * B)
-                d1 = formatera_svar(1, 0, A * B)
-                d2 = formatera_svar(1, A + B, A + B)
-                d3 = formatera_svar(1, A * B, A * B)
+                # Realistiska tecken- och termfel på både x-koefficient och konstantterm
+                d1 = formatera_svar(1, -(A + B), A * B)
+                d2 = formatera_svar(1, A - B, -A * B)
+                d3 = formatera_svar(1, -A + B, -A * B)
 
             elif typ == 'faktorisera':
                 k = random.choice([2, 3, 4, 5, 6, 7])
@@ -405,9 +406,10 @@ def skapa_alg_uttryck_uppgift(niva):
                 b, d = random.choice([-4, -3, -2, -1, 1, 2, 3, 4]), random.choice([-4, -3, -2, -1, 1, 2, 3, 4])
                 alg_uttryck_str = f"({a}x {f'+ {b}' if b > 0 else f'- {-b}'})({c}x {f'+ {d}' if d > 0 else f'- {-d}'})"
                 svar_ratt = formatera_svar(a * c, a * d + b * c, b * d)
-                d1 = formatera_svar(a * c, 0, b * d)
-                d2 = formatera_svar(a * c, a * d + b * c, b + d)
-                d3 = formatera_svar(a + c, a * d + b * c, b * d)
+                # Förvräng både x-termen och konstanttermen så rätt x-koefficient inte sticker ut
+                d1 = formatera_svar(a * c, a * d - b * c, -b * d)
+                d2 = formatera_svar(a * c, -(a * d + b * c), b * d)
+                d3 = formatera_svar(a * c, a * c + b * d, -b * d)
 
             elif typ == 'flersteg':
                 a = random.choice([2, 3])
