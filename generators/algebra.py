@@ -178,8 +178,9 @@ def skapa_alg_uttryck_uppgift(niva):
                 B = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
                 alg_uttryck_str = f"x - ({c}x {f'+ {B}' if B > 0 else f'- {-B}'})"
                 svar_ratt = formatera_svar(0, 1 - c, -B)
+                # Variera båda delarna så att rätt x-term eller konstantterm inte sticker ut i par
                 d1 = formatera_svar(0, 1 - c, B)
-                d2 = formatera_svar(0, 1 + c, -B)
+                d2 = formatera_svar(0, 1 + c, B)
                 d3 = formatera_svar(0, -c, -B)
 
             elif typ == 'konstant_parentes':
