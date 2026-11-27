@@ -192,15 +192,15 @@ def skapa_alg_uttryck_uppgift(niva):
                 d2 = formatera_svar(0, a + c, a * A - c * B)
                 d3 = formatera_svar(0, a - c, a * A - B)
 
-            elif typ == 'mult_parentes':
-                A = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
-                B = random.choice([-5, -4, -3, -2, -1, 1, 2, 3, 4, 5])
-                alg_uttryck_str = f"(x {f'+ {A}' if A > 0 else f'- {-A}'})(x {f'+ {B}' if B > 0 else f'- {-B}'})"
-                svar_ratt = formatera_svar(1, A + B, A * B)
-                # Realistiska tecken- och termfel på både x-koefficient och konstantterm
-                d1 = formatera_svar(1, -(A + B), A * B)
-                d2 = formatera_svar(1, A - B, -A * B)
-                d3 = formatera_svar(1, -A + B, -A * B)
+            elif typ == 'mult_parentes_koeff':
+              a, c = random.choice([2, 3, 4]), random.choice([2, 3, 4])
+              b, d = random.choice([-4, -3, -2, -1, 1, 2, 3, 4]), random.choice([-4, -3, -2, -1, 1, 2, 3, 4])
+              alg_uttryck_str = f"({a}x {f'+ {b}' if b > 0 else f'- {-b}'})({c}x {f'+ {d}' if d > 0 else f'- {-d}'})"
+              svar_ratt = formatera_svar(a * c, a * d + b * c, b * d)
+              # Förvräng både x-termen och konstanttermen så rätt x-koefficient inte sticker ut
+              d1 = formatera_svar(a * c, a * d - b * c, -b * d)
+              d2 = formatera_svar(a * c, -(a * d + b * c), b * d)
+              d3 = formatera_svar(a * c, a * c + b * d, -b * d)
 
             elif typ == 'faktorisera':
                 k = random.choice([2, 3, 4, 5, 6, 7])
@@ -413,17 +413,17 @@ def skapa_alg_uttryck_uppgift(niva):
                 d3 = formatera_svar(a * c, a * c + b * d, -b * d)
 
             elif typ == 'flersteg':
-                a = random.choice([2, 3])
-                b, c, d = (
-                    random.choice([-4, -3, 2, 3, 4]),
-                    random.choice([-3, -2, -1, 1, 2, 3]),
-                    random.choice([-3, -2, -1, 1, 2, 3]),
-                )
-                alg_uttryck_str = f"x({a}x {f'+ {b}' if b > 0 else f'- {-b}'}) - (x {f'+ {c}' if c > 0 else f'- {-c}'})(x {f'+ {d}' if d > 0 else f'- {-d}'})"
-                svar_ratt = formatera_svar(a - 1, b - (c + d), -(c * d))
-                d1 = formatera_svar(a - 1, b - (c + d), c * d)
-                d2 = formatera_svar(a + 1, b - (c + d), -(c * d))
-                d3 = formatera_svar(a - 1, b + c + d, -(c * d))
+              a = random.choice([2, 3])
+              b, c, d = (
+                  random.choice([-4, -3, 2, 3, 4]),
+                  random.choice([-3, -2, -1, 1, 2, 3]),
+                  random.choice([-3, -2, -1, 1, 2, 3]),
+              )
+              alg_uttryck_str = f"x({a}x {f'+ {b}' if b > 0 else f'- {-b}'}) - (x {f'+ {c}' if c > 0 else f'- {-c}'})(x {f'+ {d}' if d > 0 else f'- {-d}'})"
+              svar_ratt = formatera_svar(a - 1, b - (c + d), -(c * d))
+              d1 = formatera_svar(a, b - (c + d), c * d)
+              d2 = formatera_svar(a + 1, b + c - d, -(c * d))
+              d3 = formatera_svar(a - 1, b + c + d, c * d)
 
             elif typ == 'rationell':
                 C = random.choice([2, 3, 4, 5])
